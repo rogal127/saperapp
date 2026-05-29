@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Finding;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -28,7 +29,8 @@ class FindingController extends Controller
             $data['photo_path'] = $request->file('photo')->store('findings', 'public');
         }
 
-        $request->user()->findings()->create($data);
+        $user = $request->user() ?? User::where('email', 'test@example.com')->first();
+        $user->findings()->create($data);
 
         return redirect()->route('home')->with('success', 'Znalezisko dodane!');
     }

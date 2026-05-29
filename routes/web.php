@@ -19,10 +19,8 @@ Route::get('/', function () {
     return view('home');
 })->name('home');
 
-Route::middleware('auth')->group(function () {
-    Route::get('/findings/create', [FindingController::class, 'create'])->name('findings.create');
-    Route::post('/findings', [FindingController::class, 'store'])->name('findings.store');
-});
+Route::get('/findings/create', [FindingController::class, 'create'])->name('findings.create');
+Route::post('/findings', [FindingController::class, 'store'])->name('findings.store');
 
 Route::get('/map', [FindingController::class, 'map'])->name('findings.map');
 Route::get('/api/findings', [FindingController::class, 'apiSearch'])->name('findings.api');

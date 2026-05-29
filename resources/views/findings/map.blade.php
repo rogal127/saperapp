@@ -161,11 +161,9 @@
             ‹
         </a>
         <h1 class="text-lg font-bold text-white flex-1">Przeglądaj znaleziska</h1>
-        @auth
         <a href="{{ route('findings.create') }}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 text-xl flex-shrink-0">
             ➕
         </a>
-        @endauth
     </div>
 
     {{-- Map area --}}
@@ -218,12 +216,10 @@
             <span class="nav-icon">🗺️</span>
             <span>Mapa</span>
         </span>
-        @auth
         <a href="{{ route('findings.create') }}" class="nav-item">
             <span class="nav-icon">➕</span>
             <span>Dodaj</span>
         </a>
-        @endauth
     </div>
 
 </div>

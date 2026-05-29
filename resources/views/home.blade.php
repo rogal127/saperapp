@@ -40,7 +40,6 @@
     <div class="px-6 flex-1 flex flex-col gap-4">
 
         {{-- Add finding --}}
-        @auth
         <a href="{{ route('findings.create') }}" class="block">
             <div class="card flex items-center gap-4 active:scale-95 transition-transform">
                 <div class="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center text-3xl flex-shrink-0">
@@ -53,20 +52,6 @@
                 <span class="text-gray-500 text-xl">›</span>
             </div>
         </a>
-        @else
-        <a href="{{ route('login') }}" class="block">
-            <div class="card flex items-center gap-4 active:scale-95 transition-transform border border-amber-500/30">
-                <div class="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center text-3xl flex-shrink-0">
-                    ➕
-                </div>
-                <div class="flex-1">
-                    <h3 class="font-bold text-white text-lg">Dodaj znalezisko</h3>
-                    <p class="text-sm text-amber-400/80">Zaloguj się, aby dodać</p>
-                </div>
-                <span class="text-gray-500 text-xl">›</span>
-            </div>
-        </a>
-        @endauth
 
         {{-- Browse map --}}
         <a href="{{ route('findings.map') }}" class="block">
@@ -94,24 +79,10 @@
             <span class="nav-icon">🗺️</span>
             <span>Mapa</span>
         </a>
-        @auth
         <a href="{{ route('findings.create') }}" class="nav-item">
             <span class="nav-icon">➕</span>
             <span>Dodaj</span>
         </a>
-        <form method="POST" action="{{ route('logout') }}" class="nav-item">
-            @csrf
-            <button type="submit" class="nav-item" style="padding:0">
-                <span class="nav-icon">🚪</span>
-                <span>Wyloguj</span>
-            </button>
-        </form>
-        @else
-        <a href="{{ route('login') }}" class="nav-item">
-            <span class="nav-icon">👤</span>
-            <span>Zaloguj</span>
-        </a>
-        @endauth
     </div>
 
 </div>
