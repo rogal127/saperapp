@@ -15,34 +15,49 @@
     #panel {
         position: absolute;
         top: 0; right: 0;
-        width: 52%;
-        max-width: 240px;
+        width: 80%;
+        max-width: 300px;
         height: 100%;
-        background: rgba(26, 26, 46, 0.92);
-        backdrop-filter: blur(8px);
+        background: rgba(26, 26, 46, 0.95);
+        backdrop-filter: blur(10px);
         border-left: 1px solid #2a2a3e;
         display: flex;
         flex-direction: column;
         z-index: 800;
-        transform: translateX(0);
+        transform: translateX(100%);
         transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
     }
-    #panel.hidden-panel { transform: translateX(100%); }
+    #panel.panel-open { transform: translateX(0); }
     #panel-toggle {
         position: absolute;
-        left: -36px; top: 50%;
+        left: -52px; top: 50%;
         transform: translateY(-50%);
-        width: 36px; height: 60px;
+        width: 52px; height: 90px;
         background: rgba(26,26,46,0.92);
-        border-radius: 0.5rem 0 0 0.5rem;
+        border-radius: 0.75rem 0 0 0.75rem;
         border: 1px solid #2a2a3e;
         border-right: none;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
         cursor: pointer;
         z-index: 801;
         touch-action: manipulation;
+    }
+    #toggle-arrow {
+        font-size: 1.1rem;
         color: #e2e8f0;
+        line-height: 1;
+    }
+    #toggle-count {
+        font-size: 0.62rem;
+        color: #f59e0b;
+        font-weight: 700;
+        text-align: center;
+        line-height: 1.3;
+        white-space: nowrap;
     }
     #findings-list {
         flex: 1;
@@ -64,14 +79,12 @@
     .finding-item-depth { font-size: 0.75rem; color: #f59e0b; margin-top: 4px; font-weight: 600; }
     #controls-bar {
         position: absolute;
-        top: 12px; left: 8px; right: calc(52% + 8px);
+        top: 12px; left: 8px;
+        width: 220px;
         z-index: 800;
         display: flex;
         flex-direction: column;
         gap: 6px;
-    }
-    @media (min-width: 480px) {
-        #controls-bar { right: calc(240px + 8px); }
     }
     .control-card {
         background: rgba(26,26,46,0.92);
@@ -178,7 +191,10 @@
 
         {{-- Right panel --}}
         <div id="panel">
-            <div id="panel-toggle" onclick="togglePanel()">‹</div>
+            <div id="panel-toggle" onclick="togglePanel()">
+                <span id="toggle-arrow">‹</span>
+                <span id="toggle-count">—</span>
+            </div>
             <div id="panel-header">
                 <div class="text-sm font-bold text-white">Znaleziska</div>
                 <div id="findings-count">Ustaw promień i szukaj</div>
@@ -219,7 +235,7 @@
     let circle = null;
     let markers = [];
     let circleCenter = null;
-    let panelOpen = true;
+    let panelOpen = false;
     let allFindings = [];
 
     // Map init (Poland center)
@@ -349,6 +365,9 @@
             ? `${findings.length} znalezisk w promieniu ${radiusInput.value} km`
             : 'Brak znalezisk w tej okolicy';
 
+        document.getElementById('toggle-count').textContent =
+            findings.length > 0 ? findings.length : '0';
+
         if (findings.length === 0) {
             list.innerHTML = '<div id="empty-state">Brak znalezisk w wybranym promieniu</div>';
             return;
@@ -380,6 +399,7 @@
                 markers[i].openPopup();
                 highlightListItem(i);
                 if (!panelOpen) togglePanel();
+
             });
             list.appendChild(item);
         });
@@ -410,9 +430,8 @@
     function togglePanel() {
         panelOpen = !panelOpen;
         const panel = document.getElementById('panel');
-        const toggle = document.getElementById('panel-toggle');
-        panel.classList.toggle('hidden-panel', !panelOpen);
-        toggle.textContent = panelOpen ? '›' : '‹';
+        panel.classList.toggle('panel-open', panelOpen);
+        document.getElementById('toggle-arrow').textContent = panelOpen ? '›' : '‹';
     }
 
     function escHtml(str) {
