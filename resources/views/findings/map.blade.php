@@ -242,9 +242,10 @@
     const map = L.map('browse-map', {
         center: [52.0, 19.0],
         zoom: 6,
-        zoomControl: true,
+        zoomControl: false,
         attributionControl: false,
     });
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
