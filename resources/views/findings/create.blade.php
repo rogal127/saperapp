@@ -72,6 +72,8 @@
                 <input type="hidden" name="latitude" id="lat" value="{{ old('latitude') }}">
                 <input type="hidden" name="longitude" id="lng" value="{{ old('longitude') }}">
                 <input type="hidden" name="city" id="city" value="{{ old('city') }}">
+                <input type="hidden" name="voivodeship" id="voivodeship" value="{{ old('voivodeship') }}">
+                <input type="hidden" name="county" id="county" value="{{ old('county') }}">
                 <p class="text-xs text-gray-500 mt-1 ml-1 hidden" id="cityLabel"></p>
                 @error('latitude')
                     <p class="text-red-400 text-sm mt-1">Zaznacz lokalizację na mapie.</p>
@@ -216,9 +218,13 @@
     function reverseGeocode(lat, lng) {
         const cityLabel = document.getElementById('cityLabel');
         const cityInput = document.getElementById('city');
+        const voivodeshipInput = document.getElementById('voivodeship');
+        const countyInput = document.getElementById('county');
         cityLabel.textContent = '🔍 Wykrywanie miejscowości...';
         cityLabel.classList.remove('hidden');
         cityInput.value = '';
+        voivodeshipInput.value = '';
+        countyInput.value = '';
 
         fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=pl`, {
             headers: { 'Accept-Language': 'pl' }
@@ -226,10 +232,16 @@
         .then(r => r.json())
         .then(data => {
             const a = data.address ?? {};
-            const city = a.city ?? a.town ?? a.village ?? a.hamlet ?? a.suburb ?? a.county ?? '';
+            const city = a.city ?? a.town ?? a.village ?? a.hamlet ?? a.suburb ?? '';
+            const voivodeship = a.state ?? '';
+            const county = a.county ?? a.municipality ?? '';
+
+            cityInput.value = city;
+            voivodeshipInput.value = voivodeship;
+            countyInput.value = county;
+
             if (city) {
-                cityInput.value = city;
-                cityLabel.textContent = `🏘️ ${city}`;
+                cityLabel.textContent = `🏘️ ${city}${voivodeship ? ', ' + voivodeship : ''}`;
             } else {
                 cityLabel.textContent = '❓ Nie udało się wykryć miejscowości';
             }

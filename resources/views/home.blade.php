@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Detektorysta')
+@section('title', 'SaperApp')
 
 @section('content')
 <div class="flex flex-col h-full safe-top safe-bottom">
@@ -8,7 +8,7 @@
     <div class="px-6 pt-8 pb-4">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-white">Detektorysta</h1>
+                <h1 class="text-2xl font-bold text-white">SaperApp</h1>
                 <p class="text-sm text-gray-400 mt-0.5">Poszukiwacze skarbów</p>
             </div>
             <div class="w-12 h-12 rounded-full bg-surface-card flex items-center justify-center text-2xl">
