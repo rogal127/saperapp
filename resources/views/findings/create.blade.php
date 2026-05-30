@@ -71,6 +71,8 @@
                 </p>
                 <input type="hidden" name="latitude" id="lat" value="{{ old('latitude') }}">
                 <input type="hidden" name="longitude" id="lng" value="{{ old('longitude') }}">
+                <input type="hidden" name="city" id="city" value="{{ old('city') }}">
+                <p class="text-xs text-gray-500 mt-1 ml-1 hidden" id="cityLabel"></p>
                 @error('latitude')
                     <p class="text-red-400 text-sm mt-1">Zaznacz lokalizację na mapie.</p>
                 @enderror
@@ -187,6 +189,11 @@
     @if(old('latitude') && old('longitude'))
         placeMarker({{ old('latitude') }}, {{ old('longitude') }});
     @endif
+    @if(old('city'))
+        const _oldCity = @json(old('city'));
+        document.getElementById('cityLabel').textContent = '🏘️ ' + _oldCity;
+        document.getElementById('cityLabel').classList.remove('hidden');
+    @endif
 
     function placeMarker(lat, lng) {
         if (marker) map.removeLayer(marker);
@@ -203,6 +210,33 @@
         document.getElementById('coordsLabel').textContent =
             `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
         document.getElementById('map-picker').classList.add('selected');
+        reverseGeocode(lat, lng);
+    }
+
+    function reverseGeocode(lat, lng) {
+        const cityLabel = document.getElementById('cityLabel');
+        const cityInput = document.getElementById('city');
+        cityLabel.textContent = '🔍 Wykrywanie miejscowości...';
+        cityLabel.classList.remove('hidden');
+        cityInput.value = '';
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=pl`, {
+            headers: { 'Accept-Language': 'pl' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            const a = data.address ?? {};
+            const city = a.city ?? a.town ?? a.village ?? a.hamlet ?? a.suburb ?? a.county ?? '';
+            if (city) {
+                cityInput.value = city;
+                cityLabel.textContent = `🏘️ ${city}`;
+            } else {
+                cityLabel.textContent = '❓ Nie udało się wykryć miejscowości';
+            }
+        })
+        .catch(() => {
+            cityLabel.textContent = '❓ Nie udało się wykryć miejscowości';
+        });
     }
 
     map.on('click', e => placeMarker(e.latlng.lat, e.latlng.lng));

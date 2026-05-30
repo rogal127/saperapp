@@ -14,6 +14,10 @@ return [
     |
     */
 
+    'api' => [
+        'url' => rtrim(env('API_URL', 'http://localhost:8000'), '/') . '/api',
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

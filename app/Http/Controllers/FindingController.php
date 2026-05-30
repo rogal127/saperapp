@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Finding;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 
 class FindingController extends Controller
 {
+    private function apiToken(Request $request): string
+    {
+        return $request->session()->get('api_token', '');
+    }
+
     public function create()
     {
         return view('findings.create');
@@ -16,21 +19,38 @@ class FindingController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'city' => ['nullable', 'string', 'max:255'],
             'depth_cm' => ['required', 'integer', 'min:0', 'max:9999'],
-            'photo' => ['nullable', 'image', 'max:5120'],
+            'photo' => ['nullable', 'image', 'max:10240'],
         ]);
 
+        $pending = Http::withToken($this->apiToken($request));
+
         if ($request->hasFile('photo')) {
-            $data['photo_path'] = $request->file('photo')->store('findings', 'public');
+            $pending = $pending->attach(
+                'photo',
+                file_get_contents($request->file('photo')->getRealPath()),
+                $request->file('photo')->getClientOriginalName()
+            );
         }
 
-        $user = $request->user() ?? User::where('email', 'test@example.com')->first();
-        $user->findings()->create($data);
+        $response = $pending->post(config('services.api.url') . '/findings', [
+            'name' => $request->name,
+            'description' => $request->description,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'city' => $request->city,
+            'depth_cm' => $request->depth_cm,
+        ]);
+
+        if ($response->failed()) {
+            return back()->withErrors($response->json('errors') ?? ['name' => 'Błąd zapisu.'])->withInput();
+        }
 
         return redirect()->route('home')->with('success', 'Znalezisko dodane!');
     }
@@ -40,7 +60,7 @@ class FindingController extends Controller
         return view('findings.map');
     }
 
-    public function apiSearch(Request $request)
+    public function mapSearch(Request $request)
     {
         $request->validate([
             'lat' => ['required', 'numeric', 'between:-90,90'],
@@ -48,20 +68,17 @@ class FindingController extends Controller
             'radius' => ['required', 'integer', 'min:1', 'max:500'],
         ]);
 
-        $findings = Finding::withinRadiusCollection($request->lat, $request->lng, $request->radius)
-            ->map(fn($f) => [
-                'id' => $f->id,
-                'name' => $f->name,
-                'description' => $f->description,
-                'latitude' => $f->latitude,
-                'longitude' => $f->longitude,
-                'depth_cm' => $f->depth_cm,
-                'finder' => $f->user->name,
-                'photo_url' => $f->photo_path ? Storage::url($f->photo_path) : null,
-                'found_at' => $f->created_at->format('d.m.Y'),
-                'distance' => round($f->distance, 2),
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url') . '/map/findings', [
+                'lat' => $request->lat,
+                'lng' => $request->lng,
+                'radius' => $request->radius,
             ]);
 
-        return response()->json($findings);
+        if ($response->failed()) {
+            return response()->json(['error' => 'Błąd API'], 502);
+        }
+
+        return response()->json($response->json('data'));
     }
 }

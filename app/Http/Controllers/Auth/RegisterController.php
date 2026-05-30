@@ -3,11 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 
 class RegisterController extends Controller
 {
@@ -18,20 +15,27 @@ class RegisterController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users'],
+            'email' => ['required', 'email', 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
+        $response = Http::post(config('services.api.url') . '/auth/register', [
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => $request->password,
+            'password_confirmation' => $request->password_confirmation,
         ]);
 
-        event(new Registered($user));
-        Auth::login($user);
+        if ($response->failed()) {
+            $errors = $response->json('errors') ?? ['email' => [$response->json('message') ?? 'Błąd rejestracji.']];
+            return back()->withErrors($errors)->withInput();
+        }
+
+        $request->session()->regenerate();
+        $request->session()->put('api_token', $response->json('token'));
+        $request->session()->put('api_user', $response->json('user'));
 
         return redirect()->route('home');
     }
