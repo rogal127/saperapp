@@ -264,7 +264,14 @@ function renderData(items, zoom) {
         if (item.type === 'cluster') {
             const m = L.marker([item.lat, item.lng], { icon: bubbleIcon(item.count, item.level, item.name) })
                 .addTo(map);
-            m.on('click', () => flyToArea(item));
+            m.on('click', () => {
+                const nextZoom = {
+                    voivodeship: 9,
+                    county:      13,
+                    city:        15,
+                }[item.level] ?? map.getZoom() + 2;
+                map.setView([item.lat, item.lng], nextZoom);
+            });
             markers.push(m);
         } else if (item.type === 'finding') {
             // Własna pinezka — dokładne miejsce
