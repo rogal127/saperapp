@@ -67,14 +67,6 @@
         pointer-events: none; white-space: nowrap;
     }
 
-    #loading-indicator {
-        position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%);
-        z-index: 900;
-        background: rgba(26,26,46,0.92); border: 1px solid #323248;
-        border-radius: 2rem; padding: 0.4rem 1rem;
-        color: #f59e0b; font-size: 0.8rem; display: none;
-    }
-
     /* Bąbelki klastrów */
     .cluster-bubble {
         border-radius: 50%; display: flex; flex-direction: column;
@@ -130,7 +122,6 @@
         <div id="browse-map"></div>
 
         <div id="zoom-info">🗺️ Przybliż, aby zobaczyć szczegóły</div>
-        <div id="loading-indicator">⏳ Ładowanie...</div>
 
         <button id="locate-btn">🎯 Moja pozycja</button>
 
@@ -240,13 +231,8 @@ function fetchClusters() {
 
     fetch(`${CLUSTERS_URL}?${params}`)
         .then(r => r.json())
-        .then(data => {
-            document.getElementById('loading-indicator').style.display = 'none';
-            renderData(data, zoom);
-        })
-        .catch(() => {
-            document.getElementById('loading-indicator').style.display = 'none';
-        });
+        .then(data => renderData(data, zoom))
+        .catch(() => {});
 }
 
 // --- Renderowanie markerów i panelu ---
