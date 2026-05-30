@@ -72,6 +72,8 @@
                 <input type="hidden" name="latitude" id="lat" value="{{ old('latitude') }}">
                 <input type="hidden" name="longitude" id="lng" value="{{ old('longitude') }}">
                 <input type="hidden" name="city" id="city" value="{{ old('city') }}">
+                <input type="hidden" name="city_lat" id="city_lat" value="{{ old('city_lat') }}">
+                <input type="hidden" name="city_lng" id="city_lng" value="{{ old('city_lng') }}">
                 <input type="hidden" name="voivodeship" id="voivodeship" value="{{ old('voivodeship') }}">
                 <input type="hidden" name="county" id="county" value="{{ old('county') }}">
                 <p class="text-xs text-gray-500 mt-1 ml-1 hidden" id="cityLabel"></p>
@@ -217,12 +219,17 @@
 
     function reverseGeocode(lat, lng) {
         const cityLabel = document.getElementById('cityLabel');
-        const cityInput = document.getElementById('city');
+        const cityInput        = document.getElementById('city');
+        const cityLatInput     = document.getElementById('city_lat');
+        const cityLngInput     = document.getElementById('city_lng');
         const voivodeshipInput = document.getElementById('voivodeship');
-        const countyInput = document.getElementById('county');
+        const countyInput      = document.getElementById('county');
+
         cityLabel.textContent = '🔍 Wykrywanie miejscowości...';
         cityLabel.classList.remove('hidden');
         cityInput.value = '';
+        cityLatInput.value = '';
+        cityLngInput.value = '';
         voivodeshipInput.value = '';
         countyInput.value = '';
 
@@ -232,13 +239,15 @@
         .then(r => r.json())
         .then(data => {
             const a = data.address ?? {};
-            const city = a.city ?? a.town ?? a.village ?? a.hamlet ?? a.suburb ?? '';
+            const city        = a.city ?? a.town ?? a.village ?? a.hamlet ?? a.suburb ?? '';
             const voivodeship = a.state ?? '';
-            const county = a.county ?? a.municipality ?? '';
+            const county      = a.county ?? a.municipality ?? '';
 
-            cityInput.value = city;
+            cityInput.value        = city;
+            cityLatInput.value     = parseFloat(data.lat).toFixed(7);
+            cityLngInput.value     = parseFloat(data.lon).toFixed(7);
             voivodeshipInput.value = voivodeship;
-            countyInput.value = county;
+            countyInput.value      = county;
 
             if (city) {
                 cityLabel.textContent = `🏘️ ${city}${voivodeship ? ', ' + voivodeship : ''}`;
