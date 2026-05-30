@@ -79,7 +79,7 @@
     }
     .cluster-bubble:active { transform: scale(0.93); }
     .cluster-bubble .cb-count { font-size: 1rem; font-weight: 800; }
-    .cluster-bubble .cb-label { font-size: 0.5rem; font-weight: 600; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.03em; }
+    .cluster-bubble .cb-label { font-size: 0.5rem; font-weight: 600; opacity: 0.85; text-align: center; line-height: 1.2; padding: 0 3px; word-break: break-word; }
     .cb-voivodeship { background: #f59e0b; }
     .cb-county      { background: #60a5fa; }
     .cb-city        { background: #34d399; }
@@ -195,16 +195,28 @@ const myPinIcon = L.divIcon({
     className: '',
 });
 
-function bubbleIcon(count, level) {
-    const size = Math.max(42, Math.min(84, 42 + Math.log(count + 1) * 13));
+function bubbleIcon(count, level, name) {
+    const size = Math.max(52, Math.min(90, 52 + Math.log(count + 1) * 13));
     const cls  = LEVEL_CLASS[level] ?? 'cb-city';
-    const label = level === 'voivodeship' ? 'woj.' : level === 'county' ? 'gm.' : 'miejsc.';
+    const shortName = formatBubbleName(level, name, size);
     const html = `
         <div class="cluster-bubble ${cls}" style="width:${size}px;height:${size}px">
             <span class="cb-count">${count}</span>
-            <span class="cb-label">${label}</span>
+            <span class="cb-label">${shortName}</span>
         </div>`;
     return L.divIcon({ html, iconSize: [size, size], iconAnchor: [size/2, size/2], className: '' });
+}
+
+function formatBubbleName(level, name, size) {
+    if (!name || name === 'Nieznane') return '?';
+    const maxChars = Math.floor(size / 5.5);
+    let label = name;
+    if (level === 'voivodeship') {
+        label = label.replace(/^województwo\s+/i, '');
+    } else if (level === 'county') {
+        label = 'gm. ' + label.replace(/^(gmina|powiat)\s+/i, '');
+    }
+    return label.length > maxChars ? label.substring(0, maxChars - 1) + '…' : label;
 }
 
 // --- Ładowanie danych ---
@@ -250,7 +262,7 @@ function renderData(items, zoom) {
 
     items.forEach(item => {
         if (item.type === 'cluster') {
-            const m = L.marker([item.lat, item.lng], { icon: bubbleIcon(item.count, item.level) })
+            const m = L.marker([item.lat, item.lng], { icon: bubbleIcon(item.count, item.level, item.name) })
                 .addTo(map);
             m.on('click', () => {
                 // Kliknięcie bąbelka → przybliż do tego obszaru
