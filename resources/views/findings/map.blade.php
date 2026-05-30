@@ -264,15 +264,7 @@ function renderData(items, zoom) {
         if (item.type === 'cluster') {
             const m = L.marker([item.lat, item.lng], { icon: bubbleIcon(item.count, item.level, item.name) })
                 .addTo(map);
-            m.on('click', () => {
-                // Kliknięcie bąbelka → przybliż do tego obszaru
-                const nextZoom = {
-                    voivodeship: 9,
-                    county:      13,
-                    city:        15,
-                }[item.level] ?? map.getZoom() + 2;
-                map.setView([item.lat, item.lng], nextZoom);
-            });
+            m.on('click', () => flyToArea(item));
             markers.push(m);
         } else if (item.type === 'finding') {
             // Własna pinezka — dokładne miejsce
@@ -350,6 +342,34 @@ function updatePanel(items, zoom) {
     }
 
     list.innerHTML = '<div id="empty-state">Brak znalezisk w tym widoku</div>';
+}
+
+const NEXT_ZOOM = { voivodeship: 9, county: 13, city: 15 };
+
+function flyToArea(item) {
+    const nextZoom = NEXT_ZOOM[item.level] ?? map.getZoom() + 2;
+
+    // Dla miast mamy city_lat/city_lng w danych — używaj ich bezpośrednio
+    if (item.level === 'city') {
+        map.setView([item.lat, item.lng], nextZoom);
+        return;
+    }
+
+    // Dla województw i gmin: geocoduj nazwę → centrum obszaru administracyjnego
+    const query = item.level === 'voivodeship'
+        ? item.name                          // "Województwo Mazowieckie"
+        : item.name + ', Polska';            // "powiat krakowski, Polska"
+
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=pl&format=json&limit=1`)
+        .then(r => r.json())
+        .then(results => {
+            if (results && results[0]) {
+                map.setView([parseFloat(results[0].lat), parseFloat(results[0].lon)], nextZoom);
+            } else {
+                map.setView([item.lat, item.lng], nextZoom);
+            }
+        })
+        .catch(() => map.setView([item.lat, item.lng], nextZoom));
 }
 
 function buildFindingPopup(f) {
