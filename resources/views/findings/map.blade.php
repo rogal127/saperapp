@@ -219,8 +219,6 @@ function fetchClusters() {
     const zoom   = map.getZoom();
     const bounds = map.getBounds();
 
-    document.getElementById('loading-indicator').style.display = 'block';
-
     const params = new URLSearchParams({
         zoom,
         sw_lat: bounds.getSouth().toFixed(6),
