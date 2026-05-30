@@ -135,11 +135,20 @@
                 <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
                     📷 Zdjęcie <span class="text-gray-500 font-normal">(opcjonalne)</span>
                 </label>
-                <label class="flex flex-col items-center justify-center gap-2 card border-2 border-dashed border-gray-600 cursor-pointer active:border-amber-500 transition-colors" id="photoLabel">
-                    <span class="text-3xl" id="photoIcon">📷</span>
-                    <span class="text-sm text-gray-400" id="photoText">Dotknij, aby dodać zdjęcie</span>
-                    <input type="file" name="photo" accept="image/*" capture="environment" class="hidden" id="photoInput">
-                </label>
+                <div id="photoPickerArea">
+                    <label class="flex flex-col items-center justify-center gap-2 card border-2 border-dashed border-gray-600 cursor-pointer active:border-amber-500 transition-colors py-6" id="photoLabel">
+                        <span class="text-3xl">📷</span>
+                        <span class="text-sm text-gray-400">Dotknij, aby dodać zdjęcie</span>
+                        <input type="file" name="photo" accept="image/*" capture="environment" class="hidden" id="photoInput">
+                    </label>
+                </div>
+                <div id="photoPreviewArea" class="hidden relative rounded-xl overflow-hidden border-2 border-amber-500">
+                    <img id="photoPreview" src="" alt="Podgląd zdjęcia" class="w-full object-cover max-h-64">
+                    <button type="button" id="removePhotoBtn"
+                        class="absolute top-2 right-2 bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg leading-none">
+                        ×
+                    </button>
+                </div>
             </div>
 
             {{-- Submit --}}
@@ -211,11 +220,28 @@
     });
 
     // Photo preview
-    document.getElementById('photoInput').addEventListener('change', function () {
+    const photoInput = document.getElementById('photoInput');
+    const photoPickerArea = document.getElementById('photoPickerArea');
+    const photoPreviewArea = document.getElementById('photoPreviewArea');
+    const photoPreview = document.getElementById('photoPreview');
+
+    photoInput.addEventListener('change', function () {
         if (this.files && this.files[0]) {
-            document.getElementById('photoIcon').textContent = '✅';
-            document.getElementById('photoText').textContent = this.files[0].name;
+            const reader = new FileReader();
+            reader.onload = e => {
+                photoPreview.src = e.target.result;
+                photoPickerArea.classList.add('hidden');
+                photoPreviewArea.classList.remove('hidden');
+            };
+            reader.readAsDataURL(this.files[0]);
         }
+    });
+
+    document.getElementById('removePhotoBtn').addEventListener('click', function () {
+        photoInput.value = '';
+        photoPreview.src = '';
+        photoPreviewArea.classList.add('hidden');
+        photoPickerArea.classList.remove('hidden');
     });
 
     // Form validation
