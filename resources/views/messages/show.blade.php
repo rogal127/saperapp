@@ -56,14 +56,16 @@
     @endphp
     <div class="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-surface-card flex-shrink-0">
         <a href="{{ route('messages.index') }}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card text-gray-300 text-xl flex-shrink-0">‹</a>
-        <div class="w-10 h-10 rounded-full bg-surface-card flex items-center justify-center font-bold text-amber-400 flex-shrink-0 overflow-hidden">
-            @if(!empty($other['avatar_url']))
-                <img src="{{ $other['avatar_url'] }}" alt="" style="width:100%;height:100%;object-fit:cover">
-            @else
-                {{ $initials }}
-            @endif
-        </div>
-        <div class="font-bold text-white truncate">{{ $other['name'] ?? 'Użytkownik' }}</div>
+        <a href="{{ route('users.show', $other['id']) }}" class="flex items-center gap-3 flex-1 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-surface-card flex items-center justify-center font-bold text-amber-400 flex-shrink-0 overflow-hidden">
+                @if(!empty($other['avatar_url']))
+                    <img src="{{ $other['avatar_url'] }}" alt="" style="width:100%;height:100%;object-fit:cover">
+                @else
+                    {{ $initials }}
+                @endif
+            </div>
+            <div class="font-bold text-white truncate">{{ $other['name'] ?? 'Użytkownik' }}</div>
+        </a>
     </div>
 
     {{-- Wiadomości --}}
