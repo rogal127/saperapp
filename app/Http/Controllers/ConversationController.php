@@ -31,12 +31,9 @@ class ConversationController extends Controller
             return redirect()->route('messages.index');
         }
 
-        $conversation = $response->json('data');
-
-        $messagesResponse = Http::withToken($this->apiToken($request))
-            ->get(config('services.api.url') . "/conversations/{$id}/messages", ['per_page' => 50]);
-
-        $messages = $messagesResponse->successful() ? $messagesResponse->json('data', []) : [];
+        $data         = $response->json('data');
+        $conversation = $data;
+        $messages     = $data['messages'] ?? [];
 
         return view('messages.show', compact('conversation', 'messages'));
     }
@@ -44,17 +41,13 @@ class ConversationController extends Controller
     public function send(Request $request, int $id)
     {
         $request->validate([
-            'content' => ['required', 'string', 'min:1', 'max:2000'],
+            'body' => ['required', 'string', 'min:1', 'max:2000'],
         ]);
 
         $response = Http::withToken($this->apiToken($request))
             ->post(config('services.api.url') . "/conversations/{$id}/messages", [
-                'content' => $request->content,
+                'body' => $request->body,
             ]);
-
-        if ($response->status() === 422) {
-            return response()->json($response->json(), 422);
-        }
 
         if ($response->failed()) {
             return response()->json(['message' => 'Błąd wysyłania wiadomości.'], 502);

@@ -7,7 +7,7 @@
         background: #2a2a3e; border-radius: 1.25rem; padding: 1rem;
         display: flex; gap: 0.875rem; align-items: flex-start;
         border: 2px solid transparent; transition: border-color 0.15s;
-        cursor: pointer; touch-action: manipulation; text-decoration: none;
+        text-decoration: none;
     }
     .conv-item:active { border-color: #f59e0b; }
     .conv-avatar {
@@ -17,15 +17,10 @@
         font-weight: 700; font-size: 1.1rem; color: #f59e0b;
         overflow: hidden;
     }
-    .conv-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .conv-avatar img { width: 100%; height: 100%; object-fit: cover; }
     .conv-name { font-weight: 700; font-size: 0.9rem; color: #fff; }
-    .conv-search { font-size: 0.72rem; color: #9ca3af; margin-top: 1px; }
-    .conv-last { font-size: 0.78rem; color: #d1d5db; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+    .conv-last { font-size: 0.78rem; color: #d1d5db; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
     .conv-time { font-size: 0.65rem; color: #6b7280; flex-shrink: 0; margin-top: 2px; }
-    .unread-dot {
-        width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;
-        flex-shrink: 0; margin-top: 6px;
-    }
     .unread-badge {
         background: #f59e0b; color: #1a1a2e; border-radius: 999px;
         font-size: 0.65rem; font-weight: 700; padding: 1px 7px; flex-shrink: 0;
@@ -53,10 +48,10 @@
             <div class="flex flex-col gap-3">
                 @foreach($conversations as $conv)
                 @php
-                    $other = $conv['other_participant'] ?? [];
-                    $last  = $conv['last_message'] ?? null;
+                    $other  = $conv['other_user'] ?? [];
+                    $last   = $conv['last_message'] ?? null;
                     $unread = $conv['unread_count'] ?? 0;
-                    $initials = strtoupper(substr($other['first_name'] ?? '?', 0, 1) . substr($other['last_name'] ?? '', 0, 1));
+                    $initials = strtoupper(substr($other['name'] ?? '?', 0, 1));
                 @endphp
                 <a href="{{ route('messages.show', $conv['id']) }}" class="conv-item">
                     <div class="conv-avatar">
@@ -67,16 +62,15 @@
                         @endif
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div class="conv-name">{{ $other['full_name'] ?? 'Użytkownik' }}</div>
-                        <div class="conv-search">🔎 {{ $conv['search']['name'] ?? '' }}</div>
+                        <div class="conv-name">{{ $other['name'] ?? 'Użytkownik' }}</div>
                         @if($last)
-                        <div class="conv-last">{{ $last['content'] ?? '' }}</div>
+                        <div class="conv-last">{{ $last['body'] ?? '' }}</div>
                         @endif
                     </div>
                     <div class="flex flex-col items-end gap-1">
                         @if($last)
                         <div class="conv-time">
-                            {{ \Carbon\Carbon::parse($last['sent_at'])->diffForHumans(short: true) }}
+                            {{ \Carbon\Carbon::parse($last['sent_at'])->diffForHumans(syntax: \Carbon\CarbonInterface::DIFF_ABSOLUTE, parts: 1) }}
                         </div>
                         @endif
                         @if($unread > 0)

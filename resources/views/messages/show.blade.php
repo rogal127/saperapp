@@ -14,16 +14,13 @@
     }
     .bubble-mine {
         background: #f59e0b; color: #1a1a2e; font-weight: 500;
-        align-self: flex-end;
-        border-bottom-right-radius: 0.25rem;
+        align-self: flex-end; border-bottom-right-radius: 0.25rem;
     }
     .bubble-other {
         background: #2a2a3e; color: #e2e8f0;
-        align-self: flex-start;
-        border-bottom-left-radius: 0.25rem;
+        align-self: flex-start; border-bottom-left-radius: 0.25rem;
     }
     .bubble-time { font-size: 0.6rem; color: #6b7280; margin-top: 2px; }
-    .bubble-mine .bubble-time { text-align: right; }
     #chat-input-bar {
         border-top: 1px solid #2a2a3e;
         padding: 0.75rem 1rem;
@@ -46,7 +43,6 @@
         transition: opacity 0.15s;
     }
     #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .other-info { padding: 0.25rem 1rem 0.5rem; font-size: 0.7rem; color: #6b7280; text-align: center; }
 </style>
 @endpush
 
@@ -55,32 +51,29 @@
 
     {{-- Header --}}
     @php
-        $other = $conversation['other_participant'] ?? [];
-        $search = $conversation['search'] ?? [];
-        $initials = strtoupper(substr($other['first_name'] ?? '?', 0, 1) . substr($other['last_name'] ?? '', 0, 1));
+        $other = $conversation['other_user'] ?? [];
+        $initials = strtoupper(substr($other['name'] ?? '?', 0, 1));
     @endphp
     <div class="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-surface-card flex-shrink-0">
         <a href="{{ route('messages.index') }}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card text-gray-300 text-xl flex-shrink-0">‹</a>
         <div class="w-10 h-10 rounded-full bg-surface-card flex items-center justify-center font-bold text-amber-400 flex-shrink-0 overflow-hidden">
             @if(!empty($other['avatar_url']))
-                <img src="{{ $other['avatar_url'] }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+                <img src="{{ $other['avatar_url'] }}" alt="" style="width:100%;height:100%;object-fit:cover">
             @else
                 {{ $initials }}
             @endif
         </div>
-        <div class="flex-1 min-w-0">
-            <div class="font-bold text-white text-sm truncate">{{ $other['full_name'] ?? 'Użytkownik' }}</div>
-            <div class="text-xs text-gray-400 truncate">🔎 {{ $search['name'] ?? '' }}</div>
-        </div>
+        <div class="font-bold text-white truncate">{{ $other['name'] ?? 'Użytkownik' }}</div>
     </div>
 
     {{-- Wiadomości --}}
     <div id="chat-messages">
-        @forelse(array_reverse($messages) as $msg)
-        @php $isMine = ($msg['sender']['id'] ?? null) !== ($other['id'] ?? null); @endphp
+        @php $myId = session('api_user.id') ?? session('api_user')['id'] ?? null; @endphp
+        @forelse($messages as $msg)
+        @php $isMine = (string)($msg['sender_id'] ?? '') === (string)$myId; @endphp
         <div style="display:flex;flex-direction:column;align-items:{{ $isMine ? 'flex-end' : 'flex-start' }}">
             <div class="bubble {{ $isMine ? 'bubble-mine' : 'bubble-other' }}">
-                {{ $msg['content'] ?? '' }}
+                {{ $msg['body'] ?? '' }}
             </div>
             <div class="bubble-time">
                 {{ \Carbon\Carbon::parse($msg['created_at'])->format('d.m H:i') }}
@@ -103,16 +96,13 @@
 
 @push('scripts')
 <script>
-const CONV_ID    = {{ $conversation['id'] }};
-const SEND_URL   = '{{ route('messages.send', $conversation['id']) }}';
+const SEND_URL   = "{{ route('messages.send', $conversation['id']) }}";
 const CSRF_TOKEN = '{{ csrf_token() }}';
-const OTHER_ID   = {{ $other['id'] ?? 'null' }};
 
 const input   = document.getElementById('chat-input');
 const sendBtn = document.getElementById('send-btn');
 const msgList = document.getElementById('chat-messages');
 
-// Przewiń na dół
 msgList.scrollTop = msgList.scrollHeight;
 
 input.addEventListener('input', () => {
@@ -128,27 +118,22 @@ input.addEventListener('keydown', e => {
 sendBtn.addEventListener('click', sendMessage);
 
 function sendMessage() {
-    const content = input.value.trim();
-    if (!content) return;
+    const body = input.value.trim();
+    if (!body) return;
 
     sendBtn.disabled = true;
     input.value = '';
     input.style.height = 'auto';
 
-    appendBubble(content, true, new Date().toISOString());
+    appendBubble(body, true, new Date().toISOString());
 
     fetch(SEND_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ body }),
     })
-    .then(r => r.json().then(d => ({ ok: r.ok, d })))
-    .then(({ ok, d }) => {
-        if (!ok) {
-            appendSystemMsg('Nie udało się wysłać wiadomości.');
-        }
-    })
-    .catch(() => appendSystemMsg('Błąd połączenia.'));
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .catch(() => appendSystemMsg('Nie udało się wysłać wiadomości.'));
 }
 
 function appendBubble(text, isMine, iso) {
@@ -161,6 +146,7 @@ function appendBubble(text, isMine, iso) {
         <div class="bubble-time">${time}</div>`;
     msgList.appendChild(wrapper);
     msgList.scrollTop = msgList.scrollHeight;
+    sendBtn.disabled = false;
 }
 
 function appendSystemMsg(text) {
@@ -169,6 +155,7 @@ function appendSystemMsg(text) {
     el.textContent = text;
     msgList.appendChild(el);
     msgList.scrollTop = msgList.scrollHeight;
+    sendBtn.disabled = false;
 }
 
 function escHtml(str) {

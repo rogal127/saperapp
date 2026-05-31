@@ -23,7 +23,10 @@
         font-size: 0.85rem; border: 2px solid #1e1e2e;
         cursor: pointer;
     }
-    .section-title { font-size: 0.7rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; }
+    .section-title {
+        font-size: 0.7rem; font-weight: 700; color: #9ca3af;
+        text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem;
+    }
 </style>
 @endpush
 
@@ -56,7 +59,7 @@
                     <img src="{{ $user['avatar_url'] }}" alt="Avatar" class="avatar-ring">
                 @else
                     <div class="avatar-placeholder">
-                        {{ strtoupper(substr($user['full_name'] ?? '?', 0, 1)) }}
+                        {{ strtoupper(substr($user['name'] ?? '?', 0, 1)) }}
                     </div>
                 @endif
                 <label for="avatar-input" class="avatar-btn" title="Zmień zdjęcie">✎</label>
@@ -80,7 +83,7 @@
                 <div>
                     <label class="block text-xs text-gray-400 mb-1">Nazwa / Nick</label>
                     <input type="text" name="name"
-                        value="{{ old('name', $user['full_name'] ?? '') }}"
+                        value="{{ old('name', $user['name'] ?? '') }}"
                         class="input-field" placeholder="Twój nick">
                 </div>
                 <div>

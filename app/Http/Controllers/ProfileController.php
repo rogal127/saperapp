@@ -15,9 +15,9 @@ class ProfileController extends Controller
     public function show(Request $request)
     {
         $response = Http::withToken($this->apiToken($request))
-            ->get(config('services.api.url') . '/profile');
+            ->get(config('services.api.url') . '/me');
 
-        $user = $response->successful() ? $response->json('data') : [];
+        $user = $response->successful() ? $response->json() : [];
 
         return view('profile.index', compact('user'));
     }
@@ -25,17 +25,12 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:200'],
+            'name' => ['required', 'string', 'max:255'],
         ]);
 
-        $parts     = explode(' ', trim($request->name), 2);
-        $firstName = $parts[0];
-        $lastName  = $parts[1] ?? '';
-
         $response = Http::withToken($this->apiToken($request))
-            ->put(config('services.api.url') . '/profile', [
-                'first_name' => $firstName,
-                'last_name'  => $lastName,
+            ->put(config('services.api.url') . '/me', [
+                'name' => $request->name,
             ]);
 
         if ($response->failed()) {
@@ -52,8 +47,12 @@ class ProfileController extends Controller
         ]);
 
         $response = Http::withToken($this->apiToken($request))
-            ->attach('avatar', file_get_contents($request->file('avatar')->getRealPath()), $request->file('avatar')->getClientOriginalName())
-            ->post(config('services.api.url') . '/profile/avatar');
+            ->attach(
+                'avatar',
+                file_get_contents($request->file('avatar')->getRealPath()),
+                $request->file('avatar')->getClientOriginalName()
+            )
+            ->post(config('services.api.url') . '/me/avatar');
 
         if ($response->failed()) {
             return back()->withErrors(['avatar' => 'Nie udało się przesłać zdjęcia.']);
