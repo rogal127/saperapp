@@ -68,6 +68,28 @@ class FindingController extends Controller
         return view('findings.map');
     }
 
+    public function sendMessage(Request $request, int $findingId)
+    {
+        $request->validate([
+            'body' => ['required', 'string', 'min:1', 'max:2000'],
+        ]);
+
+        $response = Http::withToken($this->apiToken($request))
+            ->post(config('services.api.url') . "/findings/{$findingId}/message", [
+                'body' => $request->body,
+            ]);
+
+        if ($response->status() === 422) {
+            return response()->json($response->json(), 422);
+        }
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'Błąd wysyłania wiadomości.'], 502);
+        }
+
+        return response()->json($response->json(), 201);
+    }
+
     public function mapSearch(Request $request)
     {
         $request->validate([
