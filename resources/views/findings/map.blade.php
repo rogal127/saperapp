@@ -462,7 +462,7 @@ function updatePanel(items, zoom) {
                 <div class="finding-item-depth">${c.count} znalezisk</div>
             `;
             el.addEventListener('click', () => {
-                const nextZoom = { voivodeship: 9, county: 13, city: 15 }[c.level] ?? map.getZoom() + 2;
+                const nextZoom = { voivodeship: 9, county: 10, city: 15 }[c.level] ?? map.getZoom() + 2;
                 if (c.level === 'county' && c.sw_lat !== undefined) {
                     countyBbox = {
                         sw_lat: (+c.sw_lat).toFixed(6),
