@@ -71,17 +71,17 @@
 
     {{-- Bottom nav --}}
     <div class="nav-bar safe-bottom">
-        <span class="nav-item active">
-            <span class="nav-icon">🏠</span>
-            <span>Główna</span>
-        </span>
+        <a href="{{ route('profile.show') }}" class="nav-item">
+            <span class="nav-icon">👤</span><span>Profil</span>
+        </a>
         <a href="{{ route('findings.map') }}" class="nav-item">
-            <span class="nav-icon">🗺️</span>
-            <span>Mapa</span>
+            <span class="nav-icon">🗺️</span><span>Mapa</span>
         </a>
         <a href="{{ route('findings.create') }}" class="nav-item">
-            <span class="nav-icon">➕</span>
-            <span>Dodaj</span>
+            <span class="nav-icon">➕</span><span>Dodaj</span>
+        </a>
+        <a href="{{ route('messages.index') }}" class="nav-item" id="nav-messages">
+            <span class="nav-icon">💬</span><span>Wiadomości</span>
         </a>
     </div>
 

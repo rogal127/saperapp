@@ -214,27 +214,32 @@
                 <div class="modal-meta-row" id="modal-meta"></div>
                 <div class="modal-desc" id="modal-desc"></div>
                 <div class="modal-location-note">📌 Dokładna lokalizacja znaleziska jest chroniona</div>
-                <hr class="modal-divider">
-                <textarea id="modal-msg" class="modal-textarea" rows="3"
-                    placeholder="Napisz wiadomość do znalazcy…"></textarea>
-                <button id="modal-send" class="modal-send-btn" onclick="sendModalMessage()">
-                    Wyślij wiadomość
-                </button>
-                <div id="modal-status"></div>
+                <div id="modal-message-section">
+                    <hr class="modal-divider">
+                    <textarea id="modal-msg" class="modal-textarea" rows="3"
+                        placeholder="Napisz wiadomość do znalazcy…"></textarea>
+                    <button id="modal-send" class="modal-send-btn" onclick="sendModalMessage()">
+                        Wyślij wiadomość
+                    </button>
+                    <div id="modal-status"></div>
+                </div>
             </div>
         </div>
     </div>
 
     {{-- Nawigacja --}}
     <div class="nav-bar safe-bottom">
-        <a href="{{ route('home') }}" class="nav-item">
-            <span class="nav-icon">🏠</span><span>Główna</span>
+        <a href="{{ route('profile.show') }}" class="nav-item">
+            <span class="nav-icon">👤</span><span>Profil</span>
         </a>
         <span class="nav-item active">
             <span class="nav-icon">🗺️</span><span>Mapa</span>
         </span>
         <a href="{{ route('findings.create') }}" class="nav-item">
             <span class="nav-icon">➕</span><span>Dodaj</span>
+        </a>
+        <a href="{{ route('messages.index') }}" class="nav-item" id="nav-messages">
+            <span class="nav-icon">💬</span><span>Wiadomości</span>
         </a>
     </div>
 
@@ -364,9 +369,8 @@ function renderData(items, zoom) {
         } else if (item.type === 'finding') {
             if (item.is_mine) {
                 // Własne znalezisko — pinezka z dokładną lokalizacją
-                const m = L.marker([item.lat, item.lng], { icon: myPinIcon })
-                    .bindPopup(buildMyPopup(item), { className: 'popup-dark', maxWidth: 220 })
-                    .addTo(map);
+                const m = L.marker([item.lat, item.lng], { icon: myPinIcon }).addTo(map);
+                m.on('click', () => openFindingModal(item));
                 markers.push(m);
                 item._marker = m;
             }
@@ -458,16 +462,6 @@ function updatePanel(items, zoom) {
     list.innerHTML = '<div id="empty-state">Brak znalezisk w tym widoku</div>';
 }
 
-function buildMyPopup(f) {
-    return `
-        <div style="font-size:0.82rem;min-width:160px">
-            <div style="font-weight:700;font-size:0.9rem;margin-bottom:4px">🪙 ${escHtml(f.name)}</div>
-            <div style="color:#f59e0b;font-weight:600">📏 ${f.depth_cm} cm głębokości</div>
-            <div style="color:#9ca3af;font-size:0.72rem">📅 ${f.found_at}${f.city ? ' · ' + escHtml(f.city) : ''}</div>
-            ${f.description ? `<div style="margin-top:4px;color:#d1d5db">${escHtml(f.description.substring(0,80))}${f.description.length>80?'…':''}</div>` : ''}
-            ${f.photo_url ? `<img src="${f.photo_url}" style="width:100%;border-radius:6px;margin-top:6px;object-fit:cover;max-height:120px">` : ''}
-        </div>`;
-}
 
 function highlightItem(el) {
     document.querySelectorAll('.finding-item').forEach(e => e.classList.remove('active'));
@@ -494,10 +488,14 @@ function openFindingModal(f) {
     document.getElementById('modal-depth').textContent  = '📏 ' + f.depth_cm + ' cm głębokości';
     document.getElementById('modal-meta').textContent   = '📅 ' + f.found_at + (f.city ? ' · ' + f.city : '');
     document.getElementById('modal-desc').textContent   = f.description ?? '';
-    document.getElementById('modal-msg').value          = '';
-    document.getElementById('modal-status').textContent = '';
-    document.getElementById('modal-status').style.color = '';
-    document.getElementById('modal-send').disabled      = false;
+    const msgSection = document.getElementById('modal-message-section');
+    msgSection.style.display = f.is_mine ? 'none' : 'block';
+    if (!f.is_mine) {
+        document.getElementById('modal-msg').value          = '';
+        document.getElementById('modal-status').textContent = '';
+        document.getElementById('modal-status').style.color = '';
+        document.getElementById('modal-send').disabled      = false;
+    }
 
     document.getElementById('finding-modal').classList.add('open');
 }
@@ -593,5 +591,23 @@ function escHtml(str) {
 // Pierwsze załadowanie
 updateZoomInfo();
 fetchClusters();
+
+// Odznaka nieprzeczytanych w navie
+(function () {
+    fetch('{{ route('messages.unread') }}')
+        .then(r => r.json())
+        .then(data => {
+            if (data.count > 0) {
+                const link = document.getElementById('nav-messages');
+                if (!link) return;
+                link.style.position = 'relative';
+                const badge = document.createElement('span');
+                badge.style.cssText = 'position:absolute;top:6px;right:calc(50% - 18px);background:#f59e0b;color:#1a1a2e;border-radius:999px;font-size:0.55rem;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;';
+                badge.textContent = data.count > 99 ? '99+' : data.count;
+                link.appendChild(badge);
+            }
+        })
+        .catch(() => {});
+})();
 </script>
 @endpush
