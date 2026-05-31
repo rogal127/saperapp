@@ -104,7 +104,7 @@
         <div class="flex items-start gap-3 px-5 py-3 bg-amber-500/10 border-b border-amber-500/20 flex-shrink-0">
             <span class="text-amber-400 text-lg leading-tight mt-0.5">🔒</span>
             <p class="text-xs text-amber-300/90 leading-relaxed">
-                <span class="font-semibold">Dokładne współrzędne znaleziska widzi tylko Ty.</span>
+                <span class="font-semibold">Dokładne współrzędne znaleziska widzisz tylko Ty.</span>
                 Inni użytkownicy zobaczą jedynie najbliższą miejscowość.
             </p>
         </div>
