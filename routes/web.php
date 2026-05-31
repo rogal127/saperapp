@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\FindingController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('api.auth')->group(function () {
@@ -25,6 +26,8 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/messages/{id}', [ConversationController::class, 'show'])->name('messages.show');
     Route::post('/api/conversations/{id}/messages', [ConversationController::class, 'send'])->name('messages.send');
     Route::get('/api/conversations/unread-count', [ConversationController::class, 'unreadCount'])->name('messages.unread');
+
+    Route::get('/users/{id}', [UserProfileController::class, 'show'])->name('users.show');
 
     Route::post('/logout', LogoutController::class)->name('logout');
 });

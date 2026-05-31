@@ -7,7 +7,7 @@
         background: #2a2a3e; border-radius: 1.25rem; padding: 1rem;
         display: flex; gap: 0.875rem; align-items: flex-start;
         border: 2px solid transparent; transition: border-color 0.15s;
-        text-decoration: none;
+        cursor: pointer;
     }
     .conv-item:active { border-color: #f59e0b; }
     .conv-avatar {
@@ -53,7 +53,16 @@
                     $unread = $conv['unread_count'] ?? 0;
                     $initials = strtoupper(substr($other['name'] ?? '?', 0, 1));
                 @endphp
-                <a href="{{ route('messages.show', $conv['id']) }}" class="conv-item">
+                <div class="conv-item" onclick="window.location='{{ route('messages.show', $conv['id']) }}'">
+                    @if(!empty($other['id']))
+                    <a href="{{ route('users.show', $other['id']) }}" onclick="event.stopPropagation()" class="conv-avatar">
+                        @if(!empty($other['avatar_url']))
+                            <img src="{{ $other['avatar_url'] }}" alt="">
+                        @else
+                            {{ $initials }}
+                        @endif
+                    </a>
+                    @else
                     <div class="conv-avatar">
                         @if(!empty($other['avatar_url']))
                             <img src="{{ $other['avatar_url'] }}" alt="">
@@ -61,6 +70,7 @@
                             {{ $initials }}
                         @endif
                     </div>
+                    @endif
                     <div class="flex-1 min-w-0">
                         <div class="conv-name">{{ $other['name'] ?? 'Użytkownik' }}</div>
                         @if($last)
@@ -77,7 +87,7 @@
                         <span class="unread-badge">{{ $unread }}</span>
                         @endif
                     </div>
-                </a>
+                </div>
                 @endforeach
             </div>
         @endif

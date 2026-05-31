@@ -483,8 +483,15 @@ function openFindingModal(f) {
         photoEl.style.display = 'none';
     }
 
-    document.getElementById('modal-name').textContent   = f.name;
-    document.getElementById('modal-finder').textContent = '👤 ' + (f.finder ?? '');
+    document.getElementById('modal-name').textContent = f.name;
+    if (f.is_mine) {
+        document.getElementById('modal-finder').innerHTML = '👤 Twoje znalezisko';
+    } else {
+        const name = escHtml(f.finder ?? '');
+        document.getElementById('modal-finder').innerHTML = f.finder_id
+            ? `👤 <a href="/users/${f.finder_id}" style="color:#f59e0b;font-weight:600;text-decoration:none;">${name}</a>`
+            : '👤 ' + name;
+    }
     document.getElementById('modal-depth').textContent  = '📏 ' + f.depth_cm + ' cm głębokości';
     document.getElementById('modal-meta').textContent   = '📅 ' + f.found_at + (f.city ? ' · ' + f.city : '');
     document.getElementById('modal-desc').textContent   = f.description ?? '';
