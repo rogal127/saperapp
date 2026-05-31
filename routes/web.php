@@ -23,6 +23,7 @@ Route::middleware('api.auth')->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->name('profile.avatar');
 
+    Route::post('/messages/with/{userId}', [ConversationController::class, 'startWith'])->name('messages.start-with');
     Route::get('/messages', [ConversationController::class, 'index'])->name('messages.index');
     Route::get('/messages/{id}', [ConversationController::class, 'show'])->name('messages.show');
     Route::post('/api/conversations/{id}/messages', [ConversationController::class, 'send'])->name('messages.send');

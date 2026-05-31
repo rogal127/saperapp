@@ -113,9 +113,17 @@
                 <div class="text-lg font-bold text-white truncate">{{ $profile['name'] ?? 'Użytkownik' }}</div>
                 <div class="text-xs text-gray-500 mt-0.5">Detektorysta</div>
             </div>
-            <div class="stat-badge">
-                <div class="stat-value">{{ $profile['findings_count'] ?? 0 }}</div>
-                <div class="stat-label">znalezisk</div>
+            <div class="flex flex-col items-end gap-2">
+                <div class="stat-badge">
+                    <div class="stat-value">{{ $profile['findings_count'] ?? 0 }}</div>
+                    <div class="stat-label">znalezisk</div>
+                </div>
+                <form method="POST" action="{{ route('messages.start-with', $profile['id']) }}">
+                    @csrf
+                    <button type="submit" style="background:#f59e0b;color:#1a1a2e;font-weight:700;font-size:0.75rem;padding:0.4rem 0.875rem;border-radius:0.75rem;border:none;cursor:pointer;white-space:nowrap">
+                        💬 Napisz
+                    </button>
+                </form>
             </div>
         </div>
 

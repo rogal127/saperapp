@@ -15,7 +15,7 @@ class ConversationController extends Controller
     public function index(Request $request)
     {
         $response = Http::withToken($this->apiToken($request))
-            ->get(config('services.api.url') . '/conversations');
+            ->get(config('services.api.url').'/conversations');
 
         $conversations = $response->successful() ? $response->json('data', []) : [];
 
@@ -25,15 +25,15 @@ class ConversationController extends Controller
     public function show(Request $request, int $id)
     {
         $response = Http::withToken($this->apiToken($request))
-            ->get(config('services.api.url') . "/conversations/{$id}");
+            ->get(config('services.api.url')."/conversations/{$id}");
 
         if ($response->failed()) {
             return redirect()->route('messages.index');
         }
 
-        $data         = $response->json('data');
+        $data = $response->json('data');
         $conversation = $data;
-        $messages     = $data['messages'] ?? [];
+        $messages = $data['messages'] ?? [];
 
         return view('messages.show', compact('conversation', 'messages'));
     }
@@ -45,7 +45,7 @@ class ConversationController extends Controller
         ]);
 
         $response = Http::withToken($this->apiToken($request))
-            ->post(config('services.api.url') . "/conversations/{$id}/messages", [
+            ->post(config('services.api.url')."/conversations/{$id}/messages", [
                 'body' => $request->body,
             ]);
 
@@ -56,10 +56,22 @@ class ConversationController extends Controller
         return response()->json($response->json('data'), 201);
     }
 
+    public function startWith(Request $request, int $userId)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->post(config('services.api.url')."/conversations/with/{$userId}");
+
+        if ($response->failed()) {
+            return redirect()->route('messages.index');
+        }
+
+        return redirect()->route('messages.show', $response->json('id'));
+    }
+
     public function unreadCount(Request $request)
     {
         $response = Http::withToken($this->apiToken($request))
-            ->get(config('services.api.url') . '/conversations/unread-count');
+            ->get(config('services.api.url').'/conversations/unread-count');
 
         $count = $response->successful() ? $response->json('data.unread_count', 0) : 0;
 
