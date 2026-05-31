@@ -94,6 +94,16 @@
         box-shadow: 0 2px 8px rgba(0,0,0,0.5);
     }
 
+    /* Pinezka cudzego znaleziska */
+    .other-pin {
+        width: 24px; height: 24px;
+        background: #60a5fa;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 3px solid #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+
     .popup-dark .leaflet-popup-content-wrapper {
         background: #2a2a3e; color: #e2e8f0;
         border: 1px solid #404060; border-radius: 0.875rem;
@@ -166,7 +176,7 @@ const LEVEL_LABELS = {
     voivodeship: 'Województwa',
     county:      'Powiaty / Gminy',
     city:        'Miejscowości',
-    finding:     'Twoje znaleziska',
+    finding:     'Znaleziska',
 };
 
 // Kolory bąbelków
@@ -192,6 +202,12 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 
 const myPinIcon = L.divIcon({
     html: '<div class="my-pin"></div>',
     iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -30],
+    className: '',
+});
+
+const otherPinIcon = L.divIcon({
+    html: '<div class="other-pin"></div>',
+    iconSize: [24, 24], iconAnchor: [12, 24], popupAnchor: [0, -26],
     className: '',
 });
 
@@ -274,8 +290,8 @@ function renderData(items, zoom) {
             });
             markers.push(m);
         } else if (item.type === 'finding') {
-            // Własna pinezka — dokładne miejsce
-            const m = L.marker([item.lat, item.lng], { icon: myPinIcon })
+            const icon = item.is_mine ? myPinIcon : otherPinIcon;
+            const m = L.marker([item.lat, item.lng], { icon })
                 .bindPopup(buildFindingPopup(item), { className: 'popup-dark', maxWidth: 220 })
                 .addTo(map);
             markers.push(m);
@@ -305,20 +321,21 @@ function updatePanel(items, zoom) {
 
     const list = document.getElementById('findings-list');
 
-    // Na wysokim zoomie (≥14): lista własnych znalezisk
+    // Na wysokim zoomie (≥14): lista wszystkich znalezisk
     if (zoom >= 14 && findings.length > 0) {
         list.innerHTML = '';
         findings.forEach((f, i) => {
             const el = document.createElement('div');
             el.className = 'finding-item';
             el.innerHTML = `
-                <div class="finding-item-name">🪙 ${escHtml(f.name)}</div>
-                <div class="finding-item-meta">📅 ${f.found_at} · ${f.city ?? ''}</div>
-                <div class="finding-item-depth">📏 ${f.depth_cm} cm</div>
+                <div class="finding-item-name">${f.is_mine ? '🪙' : '🔵'} ${escHtml(f.name)}</div>
+                <div class="finding-item-meta">👤 ${escHtml(f.finder ?? '')} · ${f.city ?? ''}</div>
+                <div class="finding-item-meta">📅 ${f.found_at} · 📏 ${f.depth_cm} cm</div>
                 ${f.description ? `<div class="finding-item-meta mt-1">${escHtml(f.description.substring(0,60))}${f.description.length>60?'…':''}</div>` : ''}
             `;
             el.addEventListener('click', () => {
-                map.setView([f.lat, f.lng], 17);
+                const zoomTarget = f.is_mine ? 17 : 14;
+                map.setView([f.lat, f.lng], zoomTarget);
                 myFindings[i]?.marker?.openPopup();
                 highlightItem(el);
                 if (!panelOpen) togglePanel();
@@ -382,9 +399,11 @@ function flyToArea(item) {
 function buildFindingPopup(f) {
     return `
         <div style="font-size:0.82rem;min-width:160px">
-            <div style="font-weight:700;font-size:0.9rem;margin-bottom:4px">🪙 ${escHtml(f.name)}</div>
+            <div style="font-weight:700;font-size:0.9rem;margin-bottom:4px">${f.is_mine ? '🪙' : '🔵'} ${escHtml(f.name)}</div>
+            <div style="color:#9ca3af;font-size:0.72rem">👤 ${escHtml(f.finder ?? '')}</div>
             <div style="color:#f59e0b;font-weight:600">📏 ${f.depth_cm} cm głębokości</div>
             <div style="color:#9ca3af;font-size:0.72rem">📅 ${f.found_at} · ${f.city ?? ''}</div>
+            ${!f.is_mine ? `<div style="color:#6b7280;font-size:0.68rem;margin-top:2px">📌 Przybliżona lokalizacja</div>` : ''}
             ${f.description ? `<div style="margin-top:4px;color:#d1d5db">${escHtml(f.description.substring(0,80))}${f.description.length>80?'…':''}</div>` : ''}
             ${f.photo_url ? `<img src="${f.photo_url}" style="width:100%;border-radius:6px;margin-top:6px;object-fit:cover;max-height:120px">` : ''}
         </div>`;
@@ -401,7 +420,7 @@ const ZOOM_LEVEL_TEXT = [
     [0,  7,  '🗺️ Województwa'],
     [8,  11, '🏙️ Powiaty / Gminy'],
     [12, 13, '🏘️ Miejscowości'],
-    [14, 19, '📍 Twoje znaleziska'],
+    [14, 19, '📍 Znaleziska'],
 ];
 
 function updateZoomInfo() {
