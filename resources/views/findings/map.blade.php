@@ -314,7 +314,7 @@ function formatBubbleName(level, name, size) {
 
 // --- Ładowanie danych ---
 let loadTimer = null;
-let overrideBounds = null;
+let countyBbox  = null; // bbox gminy zapamiętany po kliknięciu
 
 function scheduleFetch() {
     clearTimeout(loadTimer);
@@ -322,12 +322,16 @@ function scheduleFetch() {
 }
 
 function fetchClusters() {
-    const zoom   = map.getZoom();
+    const zoom = map.getZoom();
+
+    // Opuszczenie poziomu gminy — czyścimy zapamiętany bbox
+    if (zoom <= 11) { countyBbox = null; }
+
     let sw_lat, sw_lng, ne_lat, ne_lng;
 
-    if (overrideBounds) {
-        ({ sw_lat, sw_lng, ne_lat, ne_lng } = overrideBounds);
-        overrideBounds = null;
+    if (zoom >= 14 && countyBbox) {
+        // Na poziomie znalezisk — zawsze pokazuj z całej gminy
+        ({ sw_lat, sw_lng, ne_lat, ne_lng } = countyBbox);
     } else {
         const bounds = map.getBounds();
         sw_lat = bounds.getSouth().toFixed(6);
@@ -369,8 +373,8 @@ function renderData(items, zoom) {
                     county:      13,
                     city:        15,
                 }[item.level] ?? map.getZoom() + 2;
-                if (item.sw_lat !== undefined) {
-                    overrideBounds = {
+                if (item.level === 'county' && item.sw_lat !== undefined) {
+                    countyBbox = {
                         sw_lat: (+item.sw_lat).toFixed(6),
                         sw_lng: (+item.sw_lng).toFixed(6),
                         ne_lat: (+item.ne_lat).toFixed(6),
@@ -459,8 +463,8 @@ function updatePanel(items, zoom) {
             `;
             el.addEventListener('click', () => {
                 const nextZoom = { voivodeship: 9, county: 13, city: 15 }[c.level] ?? map.getZoom() + 2;
-                if (c.sw_lat !== undefined) {
-                    overrideBounds = {
+                if (c.level === 'county' && c.sw_lat !== undefined) {
+                    countyBbox = {
                         sw_lat: (+c.sw_lat).toFixed(6),
                         sw_lng: (+c.sw_lng).toFixed(6),
                         ne_lat: (+c.ne_lat).toFixed(6),
