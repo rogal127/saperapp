@@ -17,7 +17,7 @@ class ProfileController extends Controller
         $response = Http::withToken($this->apiToken($request))
             ->get(config('services.api.url') . '/me');
 
-        $user = $response->successful() ? $response->json() : [];
+        $user = $response->successful() ? ($response->json('data') ?? $response->json()) : [];
 
         return view('profile.index', compact('user'));
     }
