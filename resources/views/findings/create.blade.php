@@ -384,7 +384,13 @@
             e.preventDefault();
             showStep(1);
             alert('Zaznacz lokalizację na mapie!');
+            return;
         }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Dodawanie...';
+        btn.classList.add('opacity-60');
     });
 </script>
 @endpush
