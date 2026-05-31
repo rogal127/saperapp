@@ -325,7 +325,7 @@ function fetchClusters() {
     const zoom = map.getZoom();
 
     // Opuszczenie poziomu gminy — czyścimy zapamiętany bbox
-    if (zoom <= 11) { countyBbox = null; }
+    if (zoom <= 9) { countyBbox = null; }
 
     let sw_lat, sw_lng, ne_lat, ne_lng;
 
