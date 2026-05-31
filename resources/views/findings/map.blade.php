@@ -248,8 +248,8 @@
 
 @push('scripts')
 <script>
-const CLUSTERS_URL  = '{{ route('findings.api') }}';
-const MESSAGE_BASE  = '{{ url('/api/findings') }}';
+const CLUSTERS_URL  = "{{ route('findings.api') }}";
+const MESSAGE_BASE  = "{{ url('/api/findings') }}";
 const CSRF_TOKEN    = '{{ csrf_token() }}';
 
 // Opisy poziomów
@@ -594,7 +594,7 @@ fetchClusters();
 
 // Odznaka nieprzeczytanych w navie
 (function () {
-    fetch('{{ route('messages.unread') }}')
+    fetch("{{ route('messages.unread') }}")
         .then(r => r.json())
         .then(data => {
             if (data.count > 0) {

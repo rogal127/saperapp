@@ -25,17 +25,21 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'first_name'    => ['sometimes', 'string', 'max:100'],
-            'last_name'     => ['sometimes', 'string', 'max:100'],
-            'phone'         => ['sometimes', 'nullable', 'string', 'max:20'],
-            'location_region' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:200'],
         ]);
 
+        $parts     = explode(' ', trim($request->name), 2);
+        $firstName = $parts[0];
+        $lastName  = $parts[1] ?? '';
+
         $response = Http::withToken($this->apiToken($request))
-            ->put(config('services.api.url') . '/profile', $request->only('first_name', 'last_name', 'phone', 'location_region'));
+            ->put(config('services.api.url') . '/profile', [
+                'first_name' => $firstName,
+                'last_name'  => $lastName,
+            ]);
 
         if ($response->failed()) {
-            return back()->withErrors($response->json('errors') ?? ['first_name' => 'Błąd zapisu.'])->withInput();
+            return back()->withErrors(['name' => 'Błąd zapisu.'])->withInput();
         }
 
         return back()->with('success', 'Profil zaktualizowany!');
