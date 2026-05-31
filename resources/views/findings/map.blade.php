@@ -358,12 +358,16 @@ function renderData(items, zoom) {
             const m = L.marker([item.lat, item.lng], { icon: bubbleIcon(item.count, item.level, item.name) })
                 .addTo(map);
             m.on('click', () => {
-                const nextZoom = {
-                    voivodeship: 9,
-                    county:      13,
-                    city:        15,
-                }[item.level] ?? map.getZoom() + 2;
-                map.setView([item.lat, item.lng], nextZoom);
+                if (item.sw_lat !== undefined && item.ne_lat !== undefined) {
+                    map.fitBounds([[item.sw_lat, item.sw_lng], [item.ne_lat, item.ne_lng]], { padding: [60, 60] });
+                } else {
+                    const nextZoom = {
+                        voivodeship: 9,
+                        county:      13,
+                        city:        15,
+                    }[item.level] ?? map.getZoom() + 2;
+                    map.setView([item.lat, item.lng], nextZoom);
+                }
             });
             markers.push(m);
         } else if (item.type === 'finding') {
@@ -444,8 +448,12 @@ function updatePanel(items, zoom) {
                 <div class="finding-item-depth">${c.count} znalezisk</div>
             `;
             el.addEventListener('click', () => {
-                const nextZoom = { voivodeship: 9, county: 13, city: 15 }[c.level] ?? map.getZoom() + 2;
-                map.setView([c.lat, c.lng], nextZoom);
+                if (c.sw_lat !== undefined && c.ne_lat !== undefined) {
+                    map.fitBounds([[c.sw_lat, c.sw_lng], [c.ne_lat, c.ne_lng]], { padding: [60, 60] });
+                } else {
+                    const nextZoom = { voivodeship: 9, county: 13, city: 15 }[c.level] ?? map.getZoom() + 2;
+                    map.setView([c.lat, c.lng], nextZoom);
+                }
                 if (!panelOpen) togglePanel();
             });
             list.appendChild(el);
