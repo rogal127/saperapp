@@ -426,13 +426,7 @@ function updatePanel(items, zoom) {
             `;
             el.addEventListener('click', () => {
                 highlightItem(el);
-                if (f.is_mine) {
-                    map.setView([f.lat, f.lng], 17);
-                    f._marker?.openPopup();
-                    if (!panelOpen) togglePanel();
-                } else {
-                    openFindingModal(f);
-                }
+                openFindingModal(f);
             });
             list.appendChild(el);
         });
