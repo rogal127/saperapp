@@ -94,16 +94,6 @@
         box-shadow: 0 2px 8px rgba(0,0,0,0.5);
     }
 
-    /* Pinezka cudzego znaleziska */
-    .other-pin {
-        width: 24px; height: 24px;
-        background: #60a5fa;
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
-        border: 3px solid #fff;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-    }
-
     .popup-dark .leaflet-popup-content-wrapper {
         background: #2a2a3e; color: #e2e8f0;
         border: 1px solid #404060; border-radius: 0.875rem;
@@ -114,6 +104,48 @@
     #panel-level { font-size: 0.65rem; color: #f59e0b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
     #findings-count { font-size: 0.75rem; color: #9ca3af; }
     #empty-state { text-align: center; padding: 2rem 1rem; color: #6b7280; font-size: 0.8rem; }
+
+    /* Modal znaleziska */
+    #finding-modal {
+        display: none; position: fixed; inset: 0; z-index: 2000;
+        background: rgba(0,0,0,0.75); align-items: flex-end;
+        justify-content: center;
+    }
+    #finding-modal.open { display: flex; }
+    #modal-sheet {
+        background: #1a1a2e; border-radius: 1.25rem 1.25rem 0 0;
+        border: 1px solid #2a2a3e; width: 100%; max-width: 480px;
+        max-height: 90vh; overflow-y: auto;
+        animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp {
+        from { transform: translateY(40px); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+    }
+    #modal-photo img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 1.25rem 1.25rem 0 0; }
+    .modal-body { padding: 1rem; }
+    .modal-title { font-weight: 700; font-size: 1rem; color: #fff; }
+    .modal-close { color: #9ca3af; font-size: 1.4rem; background: none; border: none; cursor: pointer; line-height: 1; }
+    .modal-meta-row { font-size: 0.75rem; color: #9ca3af; margin-top: 3px; }
+    .modal-depth { font-size: 0.82rem; color: #f59e0b; font-weight: 600; margin-top: 4px; }
+    .modal-desc { font-size: 0.8rem; color: #d1d5db; margin-top: 0.5rem; }
+    .modal-location-note { font-size: 0.68rem; color: #6b7280; margin-top: 0.5rem; }
+    .modal-divider { border: none; border-top: 1px solid #2a2a3e; margin: 0.875rem 0; }
+    .modal-textarea {
+        width: 100%; background: #2a2a3e; border: 1px solid #404060;
+        border-radius: 0.75rem; color: #fff; padding: 0.75rem;
+        font-size: 0.82rem; resize: none; outline: none;
+        box-sizing: border-box; font-family: inherit;
+    }
+    .modal-textarea:focus { border-color: #f59e0b; }
+    .modal-send-btn {
+        margin-top: 0.75rem; width: 100%; padding: 0.8rem;
+        background: #f59e0b; color: #1a1a2e; font-weight: 700;
+        border: none; border-radius: 0.75rem; cursor: pointer;
+        font-size: 0.9rem; transition: opacity 0.15s;
+    }
+    .modal-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #modal-status { text-align: center; margin-top: 0.5rem; font-size: 0.78rem; min-height: 1.1em; }
 </style>
 @endpush
 
@@ -151,6 +183,33 @@
         </div>
     </div>
 
+    {{-- Modal szczegółów znaleziska --}}
+    <div id="finding-modal" onclick="handleModalBackdrop(event)">
+        <div id="modal-sheet">
+            <div id="modal-photo" style="display:none">
+                <img id="modal-img" alt="">
+            </div>
+            <div class="modal-body">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.5rem">
+                    <div class="modal-title" id="modal-name"></div>
+                    <button class="modal-close" onclick="closeModal()">✕</button>
+                </div>
+                <div class="modal-meta-row" id="modal-finder"></div>
+                <div class="modal-depth" id="modal-depth"></div>
+                <div class="modal-meta-row" id="modal-meta"></div>
+                <div class="modal-desc" id="modal-desc"></div>
+                <div class="modal-location-note">📌 Dokładna lokalizacja znaleziska jest chroniona</div>
+                <hr class="modal-divider">
+                <textarea id="modal-msg" class="modal-textarea" rows="3"
+                    placeholder="Napisz wiadomość do znalazcy…"></textarea>
+                <button id="modal-send" class="modal-send-btn" onclick="sendModalMessage()">
+                    Wyślij wiadomość
+                </button>
+                <div id="modal-status"></div>
+            </div>
+        </div>
+    </div>
+
     {{-- Nawigacja --}}
     <div class="nav-bar safe-bottom">
         <a href="{{ route('home') }}" class="nav-item">
@@ -169,7 +228,9 @@
 
 @push('scripts')
 <script>
-const CLUSTERS_URL = '{{ route('findings.api') }}';
+const CLUSTERS_URL  = '{{ route('findings.api') }}';
+const MESSAGE_BASE  = '{{ url('/api/findings') }}';
+const CSRF_TOKEN    = '{{ csrf_token() }}';
 
 // Opisy poziomów
 const LEVEL_LABELS = {
@@ -186,9 +247,9 @@ const LEVEL_CLASS = {
     city:        'cb-city',
 };
 
-let markers = [];
-let panelOpen = false;
-let myFindings = [];
+let markers    = [];
+let panelOpen  = false;
+let allFindings = []; // wszystkie znaleziska z aktualnego widoku
 
 // --- Mapa ---
 const map = L.map('browse-map', {
@@ -198,16 +259,10 @@ const map = L.map('browse-map', {
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
-// --- Ikony ---
+// --- Ikona (tylko własne znaleziska mają pinezki) ---
 const myPinIcon = L.divIcon({
     html: '<div class="my-pin"></div>',
     iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -30],
-    className: '',
-});
-
-const otherPinIcon = L.divIcon({
-    html: '<div class="other-pin"></div>',
-    iconSize: [24, 24], iconAnchor: [12, 24], popupAnchor: [0, -26],
     className: '',
 });
 
@@ -269,7 +324,7 @@ function clearMarkers() {
 
 function renderData(items, zoom) {
     clearMarkers();
-    myFindings = [];
+    allFindings = [];
 
     if (!items || items.length === 0) {
         updatePanel([], zoom);
@@ -290,12 +345,15 @@ function renderData(items, zoom) {
             });
             markers.push(m);
         } else if (item.type === 'finding') {
-            const icon = item.is_mine ? myPinIcon : otherPinIcon;
-            const m = L.marker([item.lat, item.lng], { icon })
-                .bindPopup(buildFindingPopup(item), { className: 'popup-dark', maxWidth: 220 })
-                .addTo(map);
-            markers.push(m);
-            myFindings.push({ ...item, marker: m });
+            if (item.is_mine) {
+                // Własne znalezisko — pinezka z dokładną lokalizacją
+                const m = L.marker([item.lat, item.lng], { icon: myPinIcon })
+                    .bindPopup(buildMyPopup(item), { className: 'popup-dark', maxWidth: 220 })
+                    .addTo(map);
+                markers.push(m);
+                item._marker = m;
+            }
+            allFindings.push(item);
         }
     });
 
@@ -324,21 +382,24 @@ function updatePanel(items, zoom) {
     // Na wysokim zoomie (≥14): lista wszystkich znalezisk
     if (zoom >= 14 && findings.length > 0) {
         list.innerHTML = '';
-        findings.forEach((f, i) => {
+        findings.forEach(f => {
             const el = document.createElement('div');
             el.className = 'finding-item';
             el.innerHTML = `
                 <div class="finding-item-name">${f.is_mine ? '🪙' : '🔵'} ${escHtml(f.name)}</div>
-                <div class="finding-item-meta">👤 ${escHtml(f.finder ?? '')} · ${f.city ?? ''}</div>
+                <div class="finding-item-meta">👤 ${escHtml(f.finder ?? '')}${f.city ? ' · ' + escHtml(f.city) : ''}</div>
                 <div class="finding-item-meta">📅 ${f.found_at} · 📏 ${f.depth_cm} cm</div>
-                ${f.description ? `<div class="finding-item-meta mt-1">${escHtml(f.description.substring(0,60))}${f.description.length>60?'…':''}</div>` : ''}
+                ${f.description ? `<div class="finding-item-meta" style="margin-top:4px">${escHtml(f.description.substring(0,60))}${f.description.length>60?'…':''}</div>` : ''}
             `;
             el.addEventListener('click', () => {
-                const zoomTarget = f.is_mine ? 17 : 14;
-                map.setView([f.lat, f.lng], zoomTarget);
-                myFindings[i]?.marker?.openPopup();
                 highlightItem(el);
-                if (!panelOpen) togglePanel();
+                if (f.is_mine) {
+                    map.setView([f.lat, f.lng], 17);
+                    f._marker?.openPopup();
+                    if (!panelOpen) togglePanel();
+                } else {
+                    openFindingModal(f);
+                }
             });
             list.appendChild(el);
         });
@@ -368,42 +429,12 @@ function updatePanel(items, zoom) {
     list.innerHTML = '<div id="empty-state">Brak znalezisk w tym widoku</div>';
 }
 
-const NEXT_ZOOM = { voivodeship: 9, county: 13, city: 15 };
-
-function flyToArea(item) {
-    const nextZoom = NEXT_ZOOM[item.level] ?? map.getZoom() + 2;
-
-    // Dla miast mamy city_lat/city_lng w danych — używaj ich bezpośrednio
-    if (item.level === 'city') {
-        map.setView([item.lat, item.lng], nextZoom);
-        return;
-    }
-
-    // Dla województw i gmin: geocoduj nazwę → centrum obszaru administracyjnego
-    const query = item.level === 'voivodeship'
-        ? item.name                          // "Województwo Mazowieckie"
-        : item.name + ', Polska';            // "powiat krakowski, Polska"
-
-    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=pl&format=json&limit=1`)
-        .then(r => r.json())
-        .then(results => {
-            if (results && results[0]) {
-                map.setView([parseFloat(results[0].lat), parseFloat(results[0].lon)], nextZoom);
-            } else {
-                map.setView([item.lat, item.lng], nextZoom);
-            }
-        })
-        .catch(() => map.setView([item.lat, item.lng], nextZoom));
-}
-
-function buildFindingPopup(f) {
+function buildMyPopup(f) {
     return `
         <div style="font-size:0.82rem;min-width:160px">
-            <div style="font-weight:700;font-size:0.9rem;margin-bottom:4px">${f.is_mine ? '🪙' : '🔵'} ${escHtml(f.name)}</div>
-            <div style="color:#9ca3af;font-size:0.72rem">👤 ${escHtml(f.finder ?? '')}</div>
+            <div style="font-weight:700;font-size:0.9rem;margin-bottom:4px">🪙 ${escHtml(f.name)}</div>
             <div style="color:#f59e0b;font-weight:600">📏 ${f.depth_cm} cm głębokości</div>
-            <div style="color:#9ca3af;font-size:0.72rem">📅 ${f.found_at} · ${f.city ?? ''}</div>
-            ${!f.is_mine ? `<div style="color:#6b7280;font-size:0.68rem;margin-top:2px">📌 Przybliżona lokalizacja</div>` : ''}
+            <div style="color:#9ca3af;font-size:0.72rem">📅 ${f.found_at}${f.city ? ' · ' + escHtml(f.city) : ''}</div>
             ${f.description ? `<div style="margin-top:4px;color:#d1d5db">${escHtml(f.description.substring(0,80))}${f.description.length>80?'…':''}</div>` : ''}
             ${f.photo_url ? `<img src="${f.photo_url}" style="width:100%;border-radius:6px;margin-top:6px;object-fit:cover;max-height:120px">` : ''}
         </div>`;
@@ -413,6 +444,80 @@ function highlightItem(el) {
     document.querySelectorAll('.finding-item').forEach(e => e.classList.remove('active'));
     el.classList.add('active');
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// --- Modal znaleziska ---
+let activeModalFindingId = null;
+
+function openFindingModal(f) {
+    activeModalFindingId = f.id;
+
+    const photoEl = document.getElementById('modal-photo');
+    if (f.photo_url) {
+        document.getElementById('modal-img').src = f.photo_url;
+        photoEl.style.display = 'block';
+    } else {
+        photoEl.style.display = 'none';
+    }
+
+    document.getElementById('modal-name').textContent   = f.name;
+    document.getElementById('modal-finder').textContent = '👤 ' + (f.finder ?? '');
+    document.getElementById('modal-depth').textContent  = '📏 ' + f.depth_cm + ' cm głębokości';
+    document.getElementById('modal-meta').textContent   = '📅 ' + f.found_at + (f.city ? ' · ' + f.city : '');
+    document.getElementById('modal-desc').textContent   = f.description ?? '';
+    document.getElementById('modal-msg').value          = '';
+    document.getElementById('modal-status').textContent = '';
+    document.getElementById('modal-status').style.color = '';
+    document.getElementById('modal-send').disabled      = false;
+
+    document.getElementById('finding-modal').classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('finding-modal').classList.remove('open');
+    activeModalFindingId = null;
+}
+
+function handleModalBackdrop(e) {
+    if (e.target === document.getElementById('finding-modal')) closeModal();
+}
+
+function sendModalMessage() {
+    const body = document.getElementById('modal-msg').value.trim();
+    if (!body || !activeModalFindingId) return;
+
+    const btn    = document.getElementById('modal-send');
+    const status = document.getElementById('modal-status');
+    btn.disabled         = true;
+    status.textContent   = 'Wysyłanie…';
+    status.style.color   = '#9ca3af';
+
+    fetch(`${MESSAGE_BASE}/${activeModalFindingId}/message`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': CSRF_TOKEN,
+        },
+        body: JSON.stringify({ body }),
+    })
+    .then(r => r.json().then(data => ({ ok: r.ok, data })))
+    .then(({ ok, data }) => {
+        if (ok) {
+            status.textContent = '✓ Wiadomość wysłana!';
+            status.style.color = '#34d399';
+            document.getElementById('modal-msg').value = '';
+            setTimeout(closeModal, 1500);
+        } else {
+            status.textContent = data.message ?? 'Nie udało się wysłać.';
+            status.style.color = '#f87171';
+            btn.disabled = false;
+        }
+    })
+    .catch(() => {
+        status.textContent = 'Błąd połączenia.';
+        status.style.color = '#f87171';
+        btn.disabled = false;
+    });
 }
 
 // --- Zoom info pill ---
