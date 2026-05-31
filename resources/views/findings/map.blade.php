@@ -314,6 +314,7 @@ function formatBubbleName(level, name, size) {
 
 // --- Ładowanie danych ---
 let loadTimer = null;
+let overrideBounds = null;
 
 function scheduleFetch() {
     clearTimeout(loadTimer);
@@ -322,15 +323,20 @@ function scheduleFetch() {
 
 function fetchClusters() {
     const zoom   = map.getZoom();
-    const bounds = map.getBounds();
+    let sw_lat, sw_lng, ne_lat, ne_lng;
 
-    const params = new URLSearchParams({
-        zoom,
-        sw_lat: bounds.getSouth().toFixed(6),
-        sw_lng: bounds.getWest().toFixed(6),
-        ne_lat: bounds.getNorth().toFixed(6),
-        ne_lng: bounds.getEast().toFixed(6),
-    });
+    if (overrideBounds) {
+        ({ sw_lat, sw_lng, ne_lat, ne_lng } = overrideBounds);
+        overrideBounds = null;
+    } else {
+        const bounds = map.getBounds();
+        sw_lat = bounds.getSouth().toFixed(6);
+        sw_lng = bounds.getWest().toFixed(6);
+        ne_lat = bounds.getNorth().toFixed(6);
+        ne_lng = bounds.getEast().toFixed(6);
+    }
+
+    const params = new URLSearchParams({ zoom, sw_lat, sw_lng, ne_lat, ne_lng });
 
     fetch(`${CLUSTERS_URL}?${params}`)
         .then(r => r.json())
@@ -360,9 +366,17 @@ function renderData(items, zoom) {
             m.on('click', () => {
                 const nextZoom = {
                     voivodeship: 9,
-                    county:      12,
+                    county:      13,
                     city:        15,
                 }[item.level] ?? map.getZoom() + 2;
+                if (item.sw_lat !== undefined) {
+                    overrideBounds = {
+                        sw_lat: (+item.sw_lat).toFixed(6),
+                        sw_lng: (+item.sw_lng).toFixed(6),
+                        ne_lat: (+item.ne_lat).toFixed(6),
+                        ne_lng: (+item.ne_lng).toFixed(6),
+                    };
+                }
                 map.setView([item.lat, item.lng], nextZoom);
             });
             markers.push(m);
@@ -444,7 +458,15 @@ function updatePanel(items, zoom) {
                 <div class="finding-item-depth">${c.count} znalezisk</div>
             `;
             el.addEventListener('click', () => {
-                const nextZoom = { voivodeship: 9, county: 12, city: 15 }[c.level] ?? map.getZoom() + 2;
+                const nextZoom = { voivodeship: 9, county: 13, city: 15 }[c.level] ?? map.getZoom() + 2;
+                if (c.sw_lat !== undefined) {
+                    overrideBounds = {
+                        sw_lat: (+c.sw_lat).toFixed(6),
+                        sw_lng: (+c.sw_lng).toFixed(6),
+                        ne_lat: (+c.ne_lat).toFixed(6),
+                        ne_lng: (+c.ne_lng).toFixed(6),
+                    };
+                }
                 map.setView([c.lat, c.lng], nextZoom);
                 if (!panelOpen) togglePanel();
             });
