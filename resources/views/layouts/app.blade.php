@@ -92,5 +92,23 @@
         @yield('content')
     </div>
     @stack('scripts')
+    <script>
+    (function () {
+        fetch("{{ route('messages.unread') }}")
+            .then(r => r.json())
+            .then(data => {
+                if (data.count > 0) {
+                    const link = document.getElementById('nav-messages');
+                    if (!link) { return; }
+                    link.style.position = 'relative';
+                    const badge = document.createElement('span');
+                    badge.style.cssText = 'position:absolute;top:6px;right:calc(50% - 18px);background:#f59e0b;color:#1a1a2e;border-radius:999px;font-size:0.55rem;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;';
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    link.appendChild(badge);
+                }
+            })
+            .catch(() => {});
+    })();
+    </script>
 </body>
 </html>
