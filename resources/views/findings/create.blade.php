@@ -199,7 +199,7 @@
                         <label class="flex flex-col items-center justify-center gap-2 card border-2 border-dashed border-gray-600 cursor-pointer active:border-amber-500 transition-colors py-6" id="photoLabel">
                             <span class="text-3xl">📷</span>
                             <span class="text-sm text-gray-400">Dotknij, aby dodać zdjęcie</span>
-                            <input type="file" name="photo" accept="image/*" capture="environment" class="hidden" id="photoInput">
+                            <input type="file" name="photo" accept="image/*" class="hidden" id="photoInput">
                         </label>
                     </div>
                     <div id="photoPreviewArea" class="hidden relative rounded-xl overflow-hidden border-2 border-amber-500">
