@@ -137,7 +137,7 @@
         from { transform: translateY(40px); opacity: 0; }
         to   { transform: translateY(0);    opacity: 1; }
     }
-    #modal-photo img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 1.25rem 1.25rem 0 0; }
+    #modal-photo img { width: 100%; max-height: 60vh; object-fit: contain; border-radius: 1.25rem 1.25rem 0 0; background: #0d0d1a; }
     .modal-body { padding: 1rem; }
     .modal-title { font-weight: 700; font-size: 1rem; color: #fff; }
     .modal-close { color: #9ca3af; font-size: 1.4rem; background: none; border: none; cursor: pointer; line-height: 1; }
