@@ -378,8 +378,32 @@
         photoPickerArea.classList.remove('hidden');
     });
 
-    // Form validation
-    document.getElementById('findingForm').addEventListener('submit', function (e) {
+    function resizeImageFile(file, maxPx, quality) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                let { width, height } = img;
+                if (width > maxPx || height > maxPx) {
+                    if (width >= height) { height = Math.round(height * maxPx / width); width = maxPx; }
+                    else { width = Math.round(width * maxPx / height); height = maxPx; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                canvas.toBlob((blob) => {
+                    const resized = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+                    resolve(resized);
+                }, 'image/jpeg', quality);
+            };
+            img.src = url;
+        });
+    }
+
+    // Form validation + client-side image resize before upload
+    document.getElementById('findingForm').addEventListener('submit', async function (e) {
         if (!document.getElementById('lat').value) {
             e.preventDefault();
             showStep(1);
@@ -388,9 +412,27 @@
         }
 
         const btn = document.getElementById('submitBtn');
+        const file = photoInput.files[0];
+
+        if (file) {
+            e.preventDefault();
+            btn.disabled = true;
+            btn.textContent = 'Przetwarzanie zdjęcia...';
+            btn.classList.add('opacity-60');
+
+            const resized = await resizeImageFile(file, 1920, 0.82);
+            const dt = new DataTransfer();
+            dt.items.add(resized);
+            photoInput.files = dt.files;
+        }
+
         btn.disabled = true;
         btn.textContent = 'Dodawanie...';
         btn.classList.add('opacity-60');
+
+        if (file) {
+            this.submit();
+        }
     });
 </script>
 @endpush
