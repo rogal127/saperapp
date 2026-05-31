@@ -63,6 +63,22 @@ class FindingController extends Controller
         return redirect()->route('home')->with('success', 'Znalezisko dodane!');
     }
 
+    public function show(Request $request, int $id)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url') . "/findings/{$id}");
+
+        if ($response->status() === 404) {
+            abort(404);
+        }
+
+        if ($response->failed()) {
+            abort(502);
+        }
+
+        return view('findings.show', ['finding' => $response->json()]);
+    }
+
     public function map()
     {
         return view('findings.map');

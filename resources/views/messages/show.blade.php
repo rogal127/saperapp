@@ -72,6 +72,14 @@
         @forelse($messages as $msg)
         @php $isMine = (string)($msg['sender_id'] ?? '') === (string)$myId; @endphp
         <div style="display:flex;flex-direction:column;align-items:{{ $isMine ? 'flex-end' : 'flex-start' }}">
+            @if(!empty($msg['finding']))
+            <a href="{{ route('findings.show', $msg['finding']['id']) }}"
+               style="display:flex;align-items:center;gap:0.5rem;background:#2a2a3e;border:1px solid #f59e0b33;border-radius:0.875rem;padding:0.5rem 0.75rem;margin-bottom:0.25rem;text-decoration:none;max-width:78%">
+                <span style="font-size:1rem">🪙</span>
+                <span style="font-size:0.75rem;font-weight:700;color:#f59e0b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $msg['finding']['name'] }}</span>
+                <span style="font-size:0.7rem;color:#6b7280;flex-shrink:0">›</span>
+            </a>
+            @endif
             <div class="bubble {{ $isMine ? 'bubble-mine' : 'bubble-other' }}">
                 {{ $msg['body'] ?? '' }}
             </div>

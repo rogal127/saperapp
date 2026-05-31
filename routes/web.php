@@ -16,6 +16,7 @@ Route::middleware('api.auth')->group(function () {
     Route::post('/findings', [FindingController::class, 'store'])->name('findings.store');
     Route::get('/map', [FindingController::class, 'map'])->name('findings.map');
     Route::get('/api/findings', [FindingController::class, 'mapSearch'])->name('findings.api');
+    Route::get('/findings/{id}', [FindingController::class, 'show'])->name('findings.show');
     Route::post('/api/findings/{finding}/message', [FindingController::class, 'sendMessage'])->name('findings.message');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
