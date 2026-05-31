@@ -370,7 +370,7 @@ function renderData(items, zoom) {
             m.on('click', () => {
                 const nextZoom = {
                     voivodeship: 9,
-                    county:      13,
+                    county:      10,
                     city:        15,
                 }[item.level] ?? map.getZoom() + 2;
                 if (item.level === 'county' && item.sw_lat !== undefined) {
