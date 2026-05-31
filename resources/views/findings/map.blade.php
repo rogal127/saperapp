@@ -29,6 +29,16 @@
         display: flex; flex-direction: column;
         align-items: center; justify-content: center; gap: 4px;
         cursor: pointer; z-index: 801; touch-action: manipulation;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    #panel-toggle.has-findings {
+        border-color: #f59e0b;
+        box-shadow: -3px 0 16px rgba(245,158,11,0.35);
+        animation: togglePulse 1.8s ease-in-out infinite;
+    }
+    @keyframes togglePulse {
+        0%, 100% { box-shadow: -3px 0 16px rgba(245,158,11,0.25); }
+        50%       { box-shadow: -3px 0 24px rgba(245,158,11,0.55); }
     }
     #toggle-count { font-size: 0.62rem; color: #f59e0b; font-weight: 700; text-align: center; }
     #findings-list { flex: 1; overflow-y: auto; padding: 0.5rem; }
@@ -247,9 +257,10 @@ const LEVEL_CLASS = {
     city:        'cb-city',
 };
 
-let markers    = [];
-let panelOpen  = false;
+let markers     = [];
+let panelOpen   = false;
 let allFindings = []; // wszystkie znaleziska z aktualnego widoku
+let lastLevel   = null; // poprzedni poziom (do wykrywania przejść)
 
 // --- Mapa ---
 const map = L.map('browse-map', {
@@ -377,10 +388,21 @@ function updatePanel(items, zoom) {
             ? `${totalCount} ${totalCount === 1 ? 'znalezisko' : 'znalezisk'} w widoku`
             : 'Brak znalezisk w widoku';
 
-    const list = document.getElementById('findings-list');
+    const list    = document.getElementById('findings-list');
+    const toggle  = document.getElementById('panel-toggle');
+    const isFindingView = zoom >= 14 && findings.length > 0;
+
+    // Pulsujący toggle gdy panel schowany i są znaleziska
+    toggle.classList.toggle('has-findings', isFindingView && !panelOpen);
+
+    // Auto-otwórz panel przy pierwszym przejściu do widoku znalezisk
+    if (isFindingView && lastLevel !== 'finding' && !panelOpen) {
+        togglePanel();
+    }
+    lastLevel = isFindingView ? 'finding' : (level ?? null);
 
     // Na wysokim zoomie (≥14): lista wszystkich znalezisk
-    if (zoom >= 14 && findings.length > 0) {
+    if (isFindingView) {
         list.innerHTML = '';
         findings.forEach(f => {
             const el = document.createElement('div');
@@ -553,6 +575,9 @@ function togglePanel() {
     panelOpen = !panelOpen;
     document.getElementById('panel').classList.toggle('panel-open', panelOpen);
     document.getElementById('toggle-arrow').textContent = panelOpen ? '›' : '‹';
+    // Pulsowanie tylko gdy panel schowany i są znaleziska
+    const isFindingView = map.getZoom() >= 14 && allFindings.length > 0;
+    document.getElementById('panel-toggle').classList.toggle('has-findings', isFindingView && !panelOpen);
 }
 
 function escHtml(str) {
