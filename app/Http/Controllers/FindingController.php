@@ -12,19 +12,24 @@ class FindingController extends Controller
         return $request->session()->get('api_token', '');
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('findings.create');
+        return view('findings.create', [
+            'initialPinId' => $request->query('pin_id'),
+        ]);
     }
 
     public function store(Request $request)
     {
+        $hasPinId = $request->filled('pin_id');
+
         $request->validate([
+            'pin_id' => ['nullable', 'integer'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
-            'latitude' => ['required', 'numeric', 'between:-90,90'],
-            'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'city'     => ['nullable', 'string', 'max:255'],
+            'latitude' => [$hasPinId ? 'nullable' : 'required', 'numeric', 'between:-90,90'],
+            'longitude' => [$hasPinId ? 'nullable' : 'required', 'numeric', 'between:-180,180'],
+            'city' => ['nullable', 'string', 'max:255'],
             'city_lat' => ['nullable', 'numeric', 'between:-90,90'],
             'city_lng' => ['nullable', 'numeric', 'between:-180,180'],
             'voivodeship' => ['nullable', 'string', 'max:255'],
@@ -43,18 +48,25 @@ class FindingController extends Controller
             );
         }
 
-        $response = $pending->post(config('services.api.url') . '/findings', [
+        $payload = [
             'name' => $request->name,
             'description' => $request->description,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'city'        => $request->city,
-            'city_lat'    => $request->city_lat,
-            'city_lng'    => $request->city_lng,
-            'voivodeship' => $request->voivodeship,
-            'county' => $request->county,
             'depth_cm' => $request->depth_cm,
-        ]);
+        ];
+
+        if ($hasPinId) {
+            $payload['pin_id'] = $request->pin_id;
+        } else {
+            $payload['latitude'] = $request->latitude;
+            $payload['longitude'] = $request->longitude;
+            $payload['city'] = $request->city;
+            $payload['city_lat'] = $request->city_lat;
+            $payload['city_lng'] = $request->city_lng;
+            $payload['voivodeship'] = $request->voivodeship;
+            $payload['county'] = $request->county;
+        }
+
+        $response = $pending->post(config('services.api.url').'/findings', $payload);
 
         if ($response->failed()) {
             return back()->withErrors($response->json('errors') ?? ['name' => 'Błąd zapisu.'])->withInput();
@@ -66,7 +78,7 @@ class FindingController extends Controller
     public function show(Request $request, int $id)
     {
         $response = Http::withToken($this->apiToken($request))
-            ->get(config('services.api.url') . "/findings/{$id}");
+            ->get(config('services.api.url')."/findings/{$id}");
 
         if ($response->status() === 404) {
             abort(404);
@@ -91,7 +103,7 @@ class FindingController extends Controller
         ]);
 
         $response = Http::withToken($this->apiToken($request))
-            ->post(config('services.api.url') . "/findings/{$findingId}/message", [
+            ->post(config('services.api.url')."/findings/{$findingId}/message", [
                 'body' => $request->body,
             ]);
 
@@ -109,7 +121,7 @@ class FindingController extends Controller
     public function mapSearch(Request $request)
     {
         $request->validate([
-            'zoom'   => ['required', 'integer', 'min:0', 'max:19'],
+            'zoom' => ['required', 'integer', 'min:0', 'max:19'],
             'sw_lat' => ['required', 'numeric'],
             'sw_lng' => ['required', 'numeric'],
             'ne_lat' => ['required', 'numeric'],
@@ -117,10 +129,34 @@ class FindingController extends Controller
         ]);
 
         $response = Http::withToken($this->apiToken($request))
-            ->get(config('services.api.url') . '/map/clusters', $request->only('zoom', 'sw_lat', 'sw_lng', 'ne_lat', 'ne_lng'));
+            ->get(config('services.api.url').'/map/clusters', $request->only('zoom', 'sw_lat', 'sw_lng', 'ne_lat', 'ne_lng'));
 
         if ($response->failed()) {
             return response()->json(['error' => 'Błąd API'], 502);
+        }
+
+        return response()->json($response->json());
+    }
+
+    public function pins(Request $request)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url').'/pins');
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Błąd API'], 502);
+        }
+
+        return response()->json($response->json());
+    }
+
+    public function pinFindings(Request $request, int $pinId)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url')."/pins/{$pinId}/findings");
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Błąd API'], $response->status());
         }
 
         return response()->json($response->json());

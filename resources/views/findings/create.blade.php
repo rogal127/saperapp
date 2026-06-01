@@ -121,6 +121,7 @@
                 @csrf
 
                 {{-- Hidden location fields --}}
+                <input type="hidden" name="pin_id" id="pin_id" value="{{ old('pin_id') }}">
                 <input type="hidden" name="latitude" id="lat" value="{{ old('latitude') }}">
                 <input type="hidden" name="longitude" id="lng" value="{{ old('longitude') }}">
                 <input type="hidden" name="city" id="city" value="{{ old('city') }}">
@@ -237,6 +238,7 @@
 
 @push('scripts')
 <script>
+    const PINS_URL = "{{ route('pins.index') }}";
     const initialLat = {{ old('latitude', 52.0) }};
     const initialLng = {{ old('longitude', 19.0) }};
     const initialZoom = {{ old('latitude') ? 14 : 6 }};
@@ -252,31 +254,147 @@
         maxZoom: 19,
     }).addTo(map);
 
-    let marker = null;
+    const existingPinIcon = L.divIcon({
+        html: '<div style="width:22px;height:22px;background:#f59e0b;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.5)"></div>',
+        iconSize: [22, 22], iconAnchor: [11, 22], className: '',
+    });
+    const selectedPinIcon = L.divIcon({
+        html: '<div style="width:26px;height:26px;background:#34d399;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 14px rgba(52,211,153,0.7)"></div>',
+        iconSize: [26, 26], iconAnchor: [13, 26], className: '',
+    });
+    const newPinIcon = L.icon({
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41], iconAnchor: [12, 41],
+    });
+
+    let newMarker = null;     // marker dla nowej lokalizacji (klik w puste miejsce)
+    let selectedPinId = null; // id wybranej istniejącej pinezki
     let locationReady = false;
+    const pinMarkers = {};    // pinId → L.marker
+
+    // --- Ładowanie własnych pinezek ---
+    fetch(PINS_URL)
+        .then(r => r.json())
+        .then(pins => {
+            if (!Array.isArray(pins.data)) { return; }
+            pins.data.forEach(pin => {
+                if (!pin.latitude || !pin.longitude) { return; }
+                const m = L.marker([pin.latitude, pin.longitude], { icon: existingPinIcon })
+                    .addTo(map)
+                    .bindTooltip(
+                        `📍 ${pin.city ?? 'Pin'}<br><span style="color:#f59e0b;font-size:0.8em">${pin.findings_count ?? 0} znalezisk</span>`,
+                        { direction: 'top', offset: [0, -20], className: 'leaflet-tooltip-dark' }
+                    );
+                m.on('click', (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    selectExistingPin(pin, m);
+                });
+                pinMarkers[pin.id] = m;
+            });
+        })
+        .catch(() => {});
+
+    function selectExistingPin(pin, marker) {
+        // Resetuj poprzednio wybrany
+        if (selectedPinId && pinMarkers[selectedPinId]) {
+            pinMarkers[selectedPinId].setIcon(existingPinIcon);
+        }
+        if (newMarker) {
+            map.removeLayer(newMarker);
+            newMarker = null;
+            clearNewPinInputs();
+        }
+
+        marker.setIcon(selectedPinIcon);
+        selectedPinId = pin.id;
+
+        document.getElementById('pin_id').value = pin.id;
+        document.getElementById('lat').value = '';
+        document.getElementById('lng').value = '';
+        document.getElementById('coordsLabel').textContent = `📍 Istniejąca pinezka: ${pin.city ?? pin.latitude + ', ' + pin.longitude}`;
+
+        const cityLabel = document.getElementById('cityLabel');
+        cityLabel.textContent = pin.city ? `🏘️ ${pin.city}${pin.voivodeship ? ', ' + pin.voivodeship : ''} — dodaj do tej pinezki` : '📍 Dodaj kolejne znalezisko do tej pinezki';
+        cityLabel.classList.remove('hidden');
+
+        const loc = pin.city ?? `${parseFloat(pin.latitude).toFixed(4)}, ${parseFloat(pin.longitude).toFixed(4)}`;
+        document.getElementById('locationSummary').textContent = `${loc} (istniejąca pinezka)`;
+
+        locationReady = true;
+        document.getElementById('nextBtn').removeAttribute('disabled');
+        document.getElementById('nextBtn').classList.remove('opacity-40');
+    }
+
+    function clearNewPinInputs() {
+        document.getElementById('lat').value = '';
+        document.getElementById('lng').value = '';
+        document.getElementById('city').value = '';
+        document.getElementById('city_lat').value = '';
+        document.getElementById('city_lng').value = '';
+        document.getElementById('voivodeship').value = '';
+        document.getElementById('county').value = '';
+    }
 
     @if(old('latitude') && old('longitude'))
-        placeMarker({{ old('latitude') }}, {{ old('longitude') }});
+        placeNewMarker({{ old('latitude') }}, {{ old('longitude') }});
     @endif
     @if(old('city'))
         const _oldCity = @json(old('city'));
         document.getElementById('cityLabel').textContent = '🏘️ ' + _oldCity;
         document.getElementById('cityLabel').classList.remove('hidden');
         document.getElementById('locationSummary').textContent = _oldCity;
-        // On validation error, go straight to step 2
         showStep(2);
     @endif
 
-    function placeMarker(lat, lng) {
-        if (marker) map.removeLayer(marker);
-        marker = L.marker([lat, lng], {
-            icon: L.icon({
-                iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-                iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-                iconSize: [25, 41], iconAnchor: [12, 41],
+    @if(!empty($initialPinId))
+    // Pinezka z URL — od razu krok 2, bez potrzeby wyboru lokalizacji
+    (function () {
+        const pinId = {{ (int) $initialPinId }};
+        document.getElementById('pin_id').value = pinId;
+        locationReady = true;
+
+        // Pokaż placeholder w podsumowaniu lokalizacji podczas ładowania
+        document.getElementById('locationSummary').textContent = 'Ładowanie…';
+
+        fetch(PINS_URL)
+            .then(r => r.json())
+            .then(data => {
+                const pins = data.data ?? [];
+                const pin  = pins.find(p => p.id === pinId);
+                if (pin) {
+                    const loc = pin.city
+                        ? `${pin.city}${pin.voivodeship ? ', ' + pin.voivodeship : ''}`
+                        : `${parseFloat(pin.latitude).toFixed(4)}, ${parseFloat(pin.longitude).toFixed(4)}`;
+                    document.getElementById('locationSummary').textContent = loc + ' (istniejąca pinezka)';
+                    document.getElementById('cityLabel').textContent = pin.city
+                        ? `🏘️ ${pin.city}${pin.voivodeship ? ', ' + pin.voivodeship : ''} — dodaj kolejne znalezisko`
+                        : '📍 Dodaj kolejne znalezisko do tej pinezki';
+                    document.getElementById('cityLabel').classList.remove('hidden');
+                } else {
+                    document.getElementById('locationSummary').textContent = 'Istniejąca pinezka';
+                }
             })
-        }).addTo(map);
+            .catch(() => {
+                document.getElementById('locationSummary').textContent = 'Istniejąca pinezka';
+            });
+
+        showStep(2);
+    })();
+    @endif
+
+    function placeNewMarker(lat, lng) {
+        // Odznacz wybraną pinezkę
+        if (selectedPinId && pinMarkers[selectedPinId]) {
+            pinMarkers[selectedPinId].setIcon(existingPinIcon);
+        }
+        selectedPinId = null;
+        document.getElementById('pin_id').value = '';
+
+        if (newMarker) { map.removeLayer(newMarker); }
+        newMarker = L.marker([lat, lng], { icon: newPinIcon }).addTo(map);
+
         document.getElementById('lat').value = lat.toFixed(7);
         document.getElementById('lng').value = lng.toFixed(7);
         document.getElementById('coordsLabel').textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
@@ -319,7 +437,7 @@
             voivodeshipInput.value = voivodeship;
             countyInput.value      = county;
 
-            const label = city ? `🏘️ ${city}${voivodeship ? ', ' + voivodeship : ''}` : '❓ Nie udało się wykryć miejscowości';
+            const label = city ? `🏘️ ${city}${voivodeship ? ', ' + voivodeship : ''} — nowa pinezka` : '❓ Nie udało się wykryć miejscowości';
             cityLabel.textContent = label;
             locationSummary.textContent = city
                 ? `${city}${voivodeship ? ', ' + voivodeship : ''} (${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)})`
@@ -331,31 +449,29 @@
         });
     }
 
-    map.on('click', e => placeMarker(e.latlng.lat, e.latlng.lng));
+    map.on('click', e => placeNewMarker(e.latlng.lat, e.latlng.lng));
 
     document.getElementById('locateBtn').addEventListener('click', () => {
-        if (!navigator.geolocation) return;
+        if (!navigator.geolocation) { return; }
         navigator.geolocation.getCurrentPosition(pos => {
             const { latitude, longitude } = pos.coords;
             map.setView([latitude, longitude], 15);
-            placeMarker(latitude, longitude);
+            placeNewMarker(latitude, longitude);
         }, () => {
             alert('Nie udało się pobrać lokalizacji.');
         });
     });
 
-    // Step navigation
     function showStep(n) {
         document.getElementById('step1').classList.toggle('active', n === 1);
         document.getElementById('step2').classList.toggle('active', n === 2);
         if (n === 1) {
-            // Trigger map resize after step becomes visible
             setTimeout(() => map.invalidateSize(), 50);
         }
     }
 
     document.getElementById('nextBtn').addEventListener('click', () => {
-        if (!locationReady) return;
+        if (!locationReady) { return; }
         showStep(2);
     });
 
@@ -411,16 +527,18 @@
         });
     }
 
-    // Form validation + client-side image resize before upload
     document.getElementById('findingForm').addEventListener('submit', async function (e) {
-        if (!document.getElementById('lat').value) {
+        const pinId = document.getElementById('pin_id').value;
+        const lat   = document.getElementById('lat').value;
+
+        if (!pinId && !lat) {
             e.preventDefault();
             showStep(1);
-            alert('Zaznacz lokalizację na mapie!');
+            alert('Zaznacz lokalizację na mapie lub wybierz istniejącą pinezkę!');
             return;
         }
 
-        const btn = document.getElementById('submitBtn');
+        const btn  = document.getElementById('submitBtn');
         const file = photoInput.files[0];
 
         if (file) {

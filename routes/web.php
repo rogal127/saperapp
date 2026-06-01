@@ -19,6 +19,9 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/findings/{id}', [FindingController::class, 'show'])->name('findings.show');
     Route::post('/api/findings/{finding}/message', [FindingController::class, 'sendMessage'])->name('findings.message');
 
+    Route::get('/api/pins', [FindingController::class, 'pins'])->name('pins.index');
+    Route::get('/api/pins/{pinId}/findings', [FindingController::class, 'pinFindings'])->name('pins.findings');
+
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->name('profile.avatar');

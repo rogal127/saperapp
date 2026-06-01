@@ -99,7 +99,13 @@
     .cb-county      { background: #60a5fa; }
     .cb-city        { background: #34d399; }
 
-    /* Pinezka własnego znaleziska */
+    /* Pinezka własna */
+    .my-pin-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: flex-start;
+        justify-content: flex-start;
+    }
     .my-pin {
         width: 28px; height: 28px;
         background: #f59e0b;
@@ -107,6 +113,27 @@
         transform: rotate(-45deg);
         border: 3px solid #fff;
         box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .pin-count-badge {
+        position: absolute; top: -6px; right: -10px;
+        background: #ef4444; color: #fff;
+        font-size: 0.6rem; font-weight: 800;
+        border-radius: 999px;
+        min-width: 16px; height: 16px;
+        padding: 0 4px;
+        display: flex; align-items: center; justify-content: center;
+        border: 1.5px solid #1a1a2e;
+        line-height: 1;
+        z-index: 1;
+    }
+    /* Pinezka cudza */
+    .other-pin {
+        width: 22px; height: 22px;
+        background: #60a5fa;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 2px solid #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
 
     .popup-dark .leaflet-popup-content-wrapper {
@@ -120,14 +147,14 @@
     #findings-count { font-size: 0.75rem; color: #9ca3af; }
     #empty-state { text-align: center; padding: 2rem 1rem; color: #6b7280; font-size: 0.8rem; }
 
-    /* Modal znaleziska */
-    #finding-modal {
+    /* Modals */
+    #pin-modal, #message-modal {
         display: none; position: fixed; inset: 0; z-index: 2000;
         background: rgba(0,0,0,0.75); align-items: flex-end;
         justify-content: center;
     }
-    #finding-modal.open { display: flex; }
-    #modal-sheet {
+    #pin-modal.open, #message-modal.open { display: flex; }
+    #modal-sheet, #message-sheet {
         background: #1a1a2e; border-radius: 1.25rem 1.25rem 0 0;
         border: 1px solid #2a2a3e; width: 100%; max-width: 480px;
         max-height: 90vh; overflow-y: auto;
@@ -137,15 +164,11 @@
         from { transform: translateY(40px); opacity: 0; }
         to   { transform: translateY(0);    opacity: 1; }
     }
-    #modal-photo img { width: 100%; max-height: 60vh; object-fit: contain; border-radius: 1.25rem 1.25rem 0 0; background: #0d0d1a; }
     .modal-body { padding: 1rem; }
     .modal-title { font-weight: 700; font-size: 1rem; color: #fff; }
     .modal-close { color: #9ca3af; font-size: 1.4rem; background: none; border: none; cursor: pointer; line-height: 1; }
     .modal-meta-row { font-size: 0.75rem; color: #9ca3af; margin-top: 3px; }
-    .modal-depth { font-size: 0.82rem; color: #f59e0b; font-weight: 600; margin-top: 4px; }
-    .modal-desc { font-size: 0.8rem; color: #d1d5db; margin-top: 0.5rem; }
-    .modal-location-note { font-size: 0.68rem; color: #6b7280; margin-top: 0.5rem; }
-    .modal-divider { border: none; border-top: 1px solid #2a2a3e; margin: 0.875rem 0; }
+    .modal-location-note { font-size: 0.68rem; color: #6b7280; margin-top: 0.75rem; }
     .modal-textarea {
         width: 100%; background: #2a2a3e; border: 1px solid #404060;
         border-radius: 0.75rem; color: #fff; padding: 0.75rem;
@@ -161,6 +184,23 @@
     }
     .modal-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     #modal-status { text-align: center; margin-top: 0.5rem; font-size: 0.78rem; min-height: 1.1em; }
+
+    /* Lista znalezisk w modalu pinezki */
+    .pin-finding-card {
+        background: #2a2a3e; border-radius: 0.875rem;
+        padding: 0.75rem; margin-bottom: 0.5rem;
+        border: 1px solid #404060;
+    }
+    .pin-finding-name { font-weight: 700; font-size: 0.85rem; color: #fff; }
+    .pin-finding-meta { font-size: 0.72rem; color: #9ca3af; margin-top: 2px; }
+    .pin-finding-depth { font-size: 0.75rem; color: #f59e0b; font-weight: 600; margin-top: 3px; }
+    .pin-finding-desc { font-size: 0.75rem; color: #d1d5db; margin-top: 4px; }
+    .pin-finding-photo { width: 100%; max-height: 180px; object-fit: cover; border-radius: 0.5rem; margin-top: 0.5rem; }
+    .pin-msg-btn {
+        margin-top: 0.5rem; width: 100%; padding: 0.5rem 0.75rem;
+        background: transparent; border: 1px solid #f59e0b; color: #f59e0b;
+        border-radius: 0.625rem; cursor: pointer; font-size: 0.78rem; font-weight: 600;
+    }
 </style>
 @endpush
 
@@ -198,31 +238,41 @@
         </div>
     </div>
 
-    {{-- Modal szczegółów znaleziska --}}
-    <div id="finding-modal" onclick="handleModalBackdrop(event)">
+    {{-- Modal pinezki --}}
+    <div id="pin-modal" onclick="handleModalBackdrop(event)">
         <div id="modal-sheet">
-            <div id="modal-photo" style="display:none">
-                <img id="modal-img" alt="">
-            </div>
             <div class="modal-body">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.5rem">
-                    <div class="modal-title" id="modal-name"></div>
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem">
+                    <div>
+                        <div class="modal-title" id="modal-pin-location"></div>
+                        <div class="modal-meta-row" id="modal-pin-finder"></div>
+                    </div>
                     <button class="modal-close" onclick="closeModal()">✕</button>
                 </div>
-                <div class="modal-meta-row" id="modal-finder"></div>
-                <div class="modal-depth" id="modal-depth"></div>
-                <div class="modal-meta-row" id="modal-meta"></div>
-                <div class="modal-desc" id="modal-desc"></div>
-                <div class="modal-location-note">📌 Dokładna lokalizacja znaleziska jest chroniona</div>
-                <div id="modal-message-section">
-                    <hr class="modal-divider">
-                    <textarea id="modal-msg" class="modal-textarea" rows="3"
-                        placeholder="Napisz wiadomość do znalazcy…"></textarea>
-                    <button id="modal-send" class="modal-send-btn" onclick="sendModalMessage()">
-                        Wyślij wiadomość
-                    </button>
-                    <div id="modal-status"></div>
+                <div id="modal-add-btn-wrap" style="display:none;margin-bottom:0.75rem">
+                    <a id="modal-add-btn" href="#" class="modal-send-btn" style="display:block;text-align:center;text-decoration:none">
+                        ➕ Dodaj znalezisko do tej pinezki
+                    </a>
                 </div>
+                <div id="modal-findings-list">
+                    <div id="modal-loading" style="text-align:center;color:#9ca3af;padding:1rem;font-size:0.82rem">Ładowanie…</div>
+                </div>
+                <div class="modal-location-note">📌 Dokładna lokalizacja znaleziska jest chroniona</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal wiadomości do znalazcy --}}
+    <div id="message-modal" onclick="handleMessageBackdrop(event)">
+        <div id="message-sheet">
+            <div class="modal-body">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+                    <div class="modal-title" id="msg-modal-title">Napisz wiadomość</div>
+                    <button class="modal-close" onclick="closeMessageModal()">✕</button>
+                </div>
+                <textarea id="modal-msg" class="modal-textarea" rows="3" placeholder="Napisz wiadomość do znalazcy…"></textarea>
+                <button id="modal-send" class="modal-send-btn" onclick="sendModalMessage()">Wyślij wiadomość</button>
+                <div id="modal-status"></div>
             </div>
         </div>
     </div>
@@ -249,31 +299,30 @@
 @push('scripts')
 <script>
 const CLUSTERS_URL  = "{{ route('findings.api') }}";
+const PINS_API_BASE = "{{ url('/api/pins') }}";
 const MESSAGE_BASE  = "{{ url('/api/findings') }}";
+const CREATE_URL    = "{{ route('findings.create') }}";
 const CSRF_TOKEN    = '{{ csrf_token() }}';
 
-// Opisy poziomów
 const LEVEL_LABELS = {
     voivodeship: 'Województwa',
     county:      'Powiaty / Gminy',
     city:        'Miejscowości',
-    finding:     'Znaleziska',
+    pin:         'Znaleziska',
 };
 
-// Kolory bąbelków
 const LEVEL_CLASS = {
     voivodeship: 'cb-voivodeship',
     county:      'cb-county',
     city:        'cb-city',
 };
 
-let markers          = [];
-let panelOpen        = false;
-let allFindings      = []; // wszystkie znaleziska z aktualnego widoku
-let lastLevel        = null; // poprzedni poziom (do wykrywania przejść)
-let panelTotalCount  = 0;   // aktualna liczba elementów w panelu
+let markers         = [];
+let panelOpen       = false;
+let allPins         = [];
+let lastLevel       = null;
+let panelTotalCount = 0;
 
-// --- Mapa ---
 const map = L.map('browse-map', {
     center: [52.0, 19.0], zoom: 6,
     zoomControl: false, attributionControl: false,
@@ -281,10 +330,18 @@ const map = L.map('browse-map', {
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
-// --- Ikona (tylko własne znaleziska mają pinezki) ---
-const myPinIcon = L.divIcon({
-    html: '<div class="my-pin"></div>',
-    iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -30],
+function myPinIcon(count) {
+    const badge = count > 1 ? `<span class="pin-count-badge">${count}</span>` : '';
+    return L.divIcon({
+        html: `<div class="my-pin-wrap"><div class="my-pin"></div>${badge}</div>`,
+        iconSize: [36, 28], iconAnchor: [14, 28], popupAnchor: [0, -30],
+        className: '',
+    });
+}
+
+const otherPinIcon = L.divIcon({
+    html: '<div class="other-pin"></div>',
+    iconSize: [22, 22], iconAnchor: [11, 22], popupAnchor: [0, -24],
     className: '',
 });
 
@@ -292,16 +349,12 @@ function bubbleIcon(count, level, name) {
     const size = Math.max(52, Math.min(90, 52 + Math.log(count + 1) * 13));
     const cls  = LEVEL_CLASS[level] ?? 'cb-city';
     const shortName = formatBubbleName(level, name, size);
-    const html = `
-        <div class="cluster-bubble ${cls}" style="width:${size}px;height:${size}px">
-            <span class="cb-count">${count}</span>
-            <span class="cb-label">${shortName}</span>
-        </div>`;
+    const html = `<div class="cluster-bubble ${cls}" style="width:${size}px;height:${size}px"><span class="cb-count">${count}</span><span class="cb-label">${shortName}</span></div>`;
     return L.divIcon({ html, iconSize: [size, size], iconAnchor: [size/2, size/2], className: '' });
 }
 
 function formatBubbleName(level, name, size) {
-    if (!name || name === 'Nieznane') return '?';
+    if (!name || name === 'Nieznane') { return '?'; }
     const maxChars = Math.floor(size / 5.5);
     let label = name;
     if (level === 'voivodeship') {
@@ -312,9 +365,8 @@ function formatBubbleName(level, name, size) {
     return label.length > maxChars ? label.substring(0, maxChars - 1) + '…' : label;
 }
 
-// --- Ładowanie danych ---
 let loadTimer = null;
-let countyBbox  = null; // bbox gminy zapamiętany po kliknięciu
+let countyBbox = null;
 
 function scheduleFetch() {
     clearTimeout(loadTimer);
@@ -323,14 +375,10 @@ function scheduleFetch() {
 
 function fetchClusters() {
     const zoom = map.getZoom();
-
-    // Opuszczenie poziomu gminy — czyścimy zapamiętany bbox
     if (zoom <= 9) { countyBbox = null; }
 
     let sw_lat, sw_lng, ne_lat, ne_lng;
-
     if (zoom === 12 && countyBbox) {
-        // Na poziomie znalezisk — zawsze pokazuj z całej gminy
         ({ sw_lat, sw_lng, ne_lat, ne_lng } = countyBbox);
     } else {
         const bounds = map.getBounds();
@@ -341,14 +389,12 @@ function fetchClusters() {
     }
 
     const params = new URLSearchParams({ zoom, sw_lat, sw_lng, ne_lat, ne_lng });
-
     fetch(`${CLUSTERS_URL}?${params}`)
         .then(r => r.json())
         .then(data => renderData(data, zoom))
         .catch(() => {});
 }
 
-// --- Renderowanie markerów i panelu ---
 function clearMarkers() {
     markers.forEach(m => map.removeLayer(m));
     markers = [];
@@ -356,7 +402,7 @@ function clearMarkers() {
 
 function renderData(items, zoom) {
     clearMarkers();
-    allFindings = [];
+    allPins = [];
 
     if (!items || items.length === 0) {
         updatePanel([], zoom);
@@ -365,14 +411,13 @@ function renderData(items, zoom) {
 
     items.forEach(item => {
         if (item.type === 'cluster') {
-            const m = L.marker([item.lat, item.lng], { icon: bubbleIcon(item.count, item.level, item.name) })
-                .addTo(map);
+            const m = L.marker([item.lat, item.lng], { icon: bubbleIcon(item.count, item.level, item.name) }).addTo(map);
             m.on('click', () => {
-                const nextZoom = {
-                    voivodeship: 9,
-                    county:      10,
-                    city:        15,
-                }[item.level] ?? map.getZoom() + 2;
+                if (item.browsable) {
+                    openCityFindingsModal(item);
+                    return;
+                }
+                const nextZoom = { voivodeship: 9, county: 10, city: 15 }[item.level] ?? map.getZoom() + 2;
                 if (item.level === 'county' && item.sw_lat !== undefined) {
                     countyBbox = {
                         sw_lat: (+item.sw_lat).toFixed(6),
@@ -384,15 +429,12 @@ function renderData(items, zoom) {
                 map.setView([item.lat, item.lng], nextZoom);
             });
             markers.push(m);
-        } else if (item.type === 'finding') {
-            if (item.is_mine) {
-                // Własne znalezisko — pinezka z dokładną lokalizacją
-                const m = L.marker([item.lat, item.lng], { icon: myPinIcon }).addTo(map);
-                m.on('click', () => openFindingModal(item));
-                markers.push(m);
-                item._marker = m;
-            }
-            allFindings.push(item);
+        } else if (item.type === 'pin') {
+            const icon = item.is_mine ? myPinIcon(item.findings_count) : otherPinIcon;
+            const m = L.marker([item.lat, item.lng], { icon }).addTo(map);
+            m.on('click', () => openPinModal(item));
+            markers.push(m);
+            allPins.push(item);
         }
     });
 
@@ -401,60 +443,68 @@ function renderData(items, zoom) {
 
 function updatePanel(items, zoom) {
     const clusters = items.filter(i => i.type === 'cluster');
-    const findings = items.filter(i => i.type === 'finding');
-    const level    = clusters[0]?.level ?? (findings.length ? 'finding' : null);
+    const pins     = items.filter(i => i.type === 'pin');
+    const level    = clusters[0]?.level ?? (pins.length ? 'pin' : null);
 
-    document.getElementById('panel-level').textContent =
-        LEVEL_LABELS[level] ?? 'Dane mapy';
+    document.getElementById('panel-level').textContent = LEVEL_LABELS[level] ?? 'Dane mapy';
+    document.getElementById('toggle-count').textContent = items.length > 0 ? items.length : '—';
 
-    document.getElementById('toggle-count').textContent =
-        items.length > 0 ? items.length : '—';
+    const totalFindings = clusters.reduce((s, c) => s + c.count, 0)
+        + pins.reduce((s, p) => s + (p.findings_count ?? 1), 0);
+    panelTotalCount = totalFindings;
+    document.getElementById('findings-count').textContent = totalFindings > 0
+        ? `${totalFindings} ${totalFindings === 1 ? 'znalezisko' : 'znalezisk'} w widoku`
+        : 'Brak znalezisk w widoku';
 
-    const totalCount = clusters.reduce((s, c) => s + c.count, 0) + findings.length;
-    panelTotalCount  = totalCount;
-    document.getElementById('findings-count').textContent =
-        totalCount > 0
-            ? `${totalCount} ${totalCount === 1 ? 'znalezisko' : 'znalezisk'} w widoku`
-            : 'Brak znalezisk w widoku';
+    const list       = document.getElementById('findings-list');
+    const toggle     = document.getElementById('panel-toggle');
+    const isHighZoom = zoom >= 14;
+    const browsableClusters = clusters.filter(c => c.browsable);
 
-    const list    = document.getElementById('findings-list');
-    const toggle  = document.getElementById('panel-toggle');
-    const isFindingView = zoom >= 14 && findings.length > 0;
+    toggle.classList.toggle('has-findings', totalFindings > 0 && !panelOpen);
 
-    // Pulsujący toggle gdy panel schowany i są jakiekolwiek dane
-    toggle.classList.toggle('has-findings', totalCount > 0 && !panelOpen);
+    if (isHighZoom && lastLevel !== 'pin' && !panelOpen && totalFindings > 0) { togglePanel(); }
+    lastLevel = isHighZoom ? 'pin' : (level ?? null);
 
-    // Auto-otwórz panel przy pierwszym przejściu do widoku znalezisk
-    if (isFindingView && lastLevel !== 'finding' && !panelOpen) {
-        togglePanel();
-    }
-    lastLevel = isFindingView ? 'finding' : (level ?? null);
-
-    // Na wysokim zoomie (≥14): lista wszystkich znalezisk
-    if (isFindingView) {
+    // Zoom ≥ 14: własne piny i cudze klastry miejskie w jednej liście panelu
+    if (isHighZoom && (pins.length > 0 || browsableClusters.length > 0)) {
         list.innerHTML = '';
-        findings.forEach(f => {
+
+        pins.forEach(p => {
             const el = document.createElement('div');
             el.className = 'finding-item';
             el.innerHTML = `
-                <div class="finding-item-name">${f.is_mine ? '🪙' : '🔵'} ${escHtml(f.name)}</div>
-                <div class="finding-item-meta">👤 ${escHtml(f.finder ?? '')}${f.city ? ' · ' + escHtml(f.city) : ''}</div>
-                <div class="finding-item-meta">📅 ${f.found_at} · 📏 ${f.depth_cm} cm</div>
-                ${f.description ? `<div class="finding-item-meta" style="margin-top:4px">${escHtml(f.description.substring(0,60))}${f.description.length>60?'…':''}</div>` : ''}
+                <div class="finding-item-name">🪙 ${escHtml(p.city ?? 'Pinezka')}
+                    <span style="color:#f59e0b;font-weight:800;font-size:0.75rem;margin-left:4px">${p.findings_count ?? 1} znalezisk</span>
+                </div>
+                <div class="finding-item-meta">👤 Twoja pinezka</div>
             `;
-            el.addEventListener('click', () => {
-                highlightItem(el);
-                openFindingModal(f);
-            });
+            el.addEventListener('click', () => { highlightItem(el); openPinModal(p); });
             list.appendChild(el);
         });
+
+        browsableClusters.forEach(c => {
+            const el = document.createElement('div');
+            el.className = 'finding-item';
+            el.innerHTML = `
+                <div class="finding-item-name">🔵 ${escHtml(c.name)}
+                    <span style="color:#60a5fa;font-weight:800;font-size:0.75rem;margin-left:4px">${c.count} znalezisk</span>
+                </div>
+                <div class="finding-item-meta">Kliknij, aby przejrzeć znaleziska</div>
+            `;
+            el.addEventListener('click', () => { highlightItem(el); openCityFindingsModal(c); });
+            list.appendChild(el);
+        });
+
+        if (!list.children.length) {
+            list.innerHTML = '<div id="empty-state">Brak znalezisk w tym widoku</div>';
+        }
         return;
     }
 
-    // Na niskim zoomie: lista klastrów (top 10 wg count)
     if (clusters.length > 0) {
         list.innerHTML = '';
-        [...clusters].sort((a,b) => b.count - a.count).slice(0, 10).forEach(c => {
+        [...clusters].sort((a, b) => b.count - a.count).slice(0, 10).forEach(c => {
             const el = document.createElement('div');
             el.className = 'finding-item';
             el.innerHTML = `
@@ -465,14 +515,12 @@ function updatePanel(items, zoom) {
                 const nextZoom = { voivodeship: 9, county: 10, city: 15 }[c.level] ?? map.getZoom() + 2;
                 if (c.level === 'county' && c.sw_lat !== undefined) {
                     countyBbox = {
-                        sw_lat: (+c.sw_lat).toFixed(6),
-                        sw_lng: (+c.sw_lng).toFixed(6),
-                        ne_lat: (+c.ne_lat).toFixed(6),
-                        ne_lng: (+c.ne_lng).toFixed(6),
+                        sw_lat: (+c.sw_lat).toFixed(6), sw_lng: (+c.sw_lng).toFixed(6),
+                        ne_lat: (+c.ne_lat).toFixed(6), ne_lng: (+c.ne_lng).toFixed(6),
                     };
                 }
                 map.setView([c.lat, c.lng], nextZoom);
-                if (!panelOpen) togglePanel();
+                if (!panelOpen) { togglePanel(); }
             });
             list.appendChild(el);
         });
@@ -482,76 +530,141 @@ function updatePanel(items, zoom) {
     list.innerHTML = '<div id="empty-state">Brak znalezisk w tym widoku</div>';
 }
 
-
 function highlightItem(el) {
     document.querySelectorAll('.finding-item').forEach(e => e.classList.remove('active'));
     el.classList.add('active');
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-// --- Modal znaleziska ---
-let activeModalFindingId = null;
+// --- Modal znalezisk miasta (cudzy klaster przy zoom ≥ 14) ---
+function openCityFindingsModal(cluster) {
+    const list    = document.getElementById('modal-findings-list');
+    const addWrap = document.getElementById('modal-add-btn-wrap');
 
-function openFindingModal(f) {
-    activeModalFindingId = f.id;
+    document.getElementById('modal-pin-location').textContent = `🔵 ${cluster.name}`;
+    document.getElementById('modal-pin-finder').textContent   = `${cluster.count} znalezisk · inne konta`;
+    addWrap.style.display = 'none';
 
-    const photoEl = document.getElementById('modal-photo');
-    if (f.photo_url) {
-        document.getElementById('modal-img').src = f.photo_url;
-        photoEl.style.display = 'block';
+    list.innerHTML = '';
+    const findings = cluster.findings ?? [];
+
+    if (!findings.length) {
+        list.innerHTML = '<div style="text-align:center;color:#6b7280;padding:1rem;font-size:0.82rem">Brak znalezisk.</div>';
     } else {
-        photoEl.style.display = 'none';
+        findings.forEach(f => {
+            const card = document.createElement('div');
+            card.className = 'pin-finding-card';
+            card.innerHTML = `
+                <div class="pin-finding-name">🪙 ${escHtml(f.name)}</div>
+                <div class="pin-finding-depth">📏 ${f.depth_cm} cm głębokości</div>
+                <div class="pin-finding-meta">📅 ${f.found_at} · 👤 ${f.finder_id
+                    ? `<a href="/users/${f.finder_id}" style="color:#f59e0b;font-weight:600;text-decoration:none;">${escHtml(f.finder ?? '')}</a>`
+                    : escHtml(f.finder ?? '')
+                }</div>
+                ${f.description ? `<div class="pin-finding-desc">${escHtml(f.description.substring(0, 120))}${f.description.length > 120 ? '…' : ''}</div>` : ''}
+                ${f.photo_url ? `<img class="pin-finding-photo" src="${escHtml(f.photo_url)}" alt="">` : ''}
+                <button class="pin-msg-btn" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>
+            `;
+            list.appendChild(card);
+        });
     }
 
-    document.getElementById('modal-name').textContent = f.name;
-    if (f.is_mine) {
-        document.getElementById('modal-finder').innerHTML = '👤 Twoje znalezisko';
+    document.getElementById('pin-modal').classList.add('open');
+}
+
+// --- Modal pinezki ---
+let activeMessageFindingId = null;
+
+function openPinModal(pin) {
+    const list   = document.getElementById('modal-findings-list');
+    const addWrap = document.getElementById('modal-add-btn-wrap');
+    const addBtn  = document.getElementById('modal-add-btn');
+
+    document.getElementById('modal-pin-location').textContent = pin.city ? `📍 ${pin.city}` : '📍 Pinezka';
+    document.getElementById('modal-pin-finder').innerHTML = pin.is_mine
+        ? '👤 Twoja pinezka'
+        : (pin.finder_id
+            ? `👤 <a href="/users/${pin.finder_id}" style="color:#f59e0b;font-weight:600;text-decoration:none;">${escHtml(pin.finder ?? '')}</a>`
+            : '👤 ' + escHtml(pin.finder ?? ''));
+
+    if (pin.is_mine) {
+        addBtn.href = `${CREATE_URL}?pin_id=${pin.id}`;
+        addWrap.style.display = 'block';
     } else {
-        const name = escHtml(f.finder ?? '');
-        document.getElementById('modal-finder').innerHTML = f.finder_id
-            ? `👤 <a href="/users/${f.finder_id}" style="color:#f59e0b;font-weight:600;text-decoration:none;">${name}</a>`
-            : '👤 ' + name;
-    }
-    document.getElementById('modal-depth').textContent  = '📏 ' + f.depth_cm + ' cm głębokości';
-    document.getElementById('modal-meta').textContent   = '📅 ' + f.found_at + (f.city ? ' · ' + f.city : '');
-    document.getElementById('modal-desc').textContent   = f.description ?? '';
-    const msgSection = document.getElementById('modal-message-section');
-    msgSection.style.display = f.is_mine ? 'none' : 'block';
-    if (!f.is_mine) {
-        document.getElementById('modal-msg').value          = '';
-        document.getElementById('modal-status').textContent = '';
-        document.getElementById('modal-status').style.color = '';
-        document.getElementById('modal-send').disabled      = false;
+        addWrap.style.display = 'none';
     }
 
-    document.getElementById('finding-modal').classList.add('open');
+    list.innerHTML = '<div id="modal-loading" style="text-align:center;color:#9ca3af;padding:1rem;font-size:0.82rem">Ładowanie…</div>';
+    document.getElementById('pin-modal').classList.add('open');
+
+    fetch(`${PINS_API_BASE}/${pin.id}/findings`)
+        .then(r => r.json())
+        .then(data => {
+            const findings = data.data ?? [];
+            if (!findings.length) {
+                list.innerHTML = '<div style="text-align:center;color:#6b7280;padding:1rem;font-size:0.82rem">Brak znalezisk przy tej pinezce.</div>';
+                return;
+            }
+            list.innerHTML = '';
+            findings.forEach(f => {
+                const card = document.createElement('div');
+                card.className = 'pin-finding-card';
+                card.innerHTML = `
+                    <div class="pin-finding-name">🪙 ${escHtml(f.name)}</div>
+                    <div class="pin-finding-depth">📏 ${f.depth_cm} cm głębokości</div>
+                    <div class="pin-finding-meta">📅 ${f.found_at}</div>
+                    ${f.description ? `<div class="pin-finding-desc">${escHtml(f.description.substring(0,120))}${f.description.length > 120 ? '…' : ''}</div>` : ''}
+                    ${f.photo_url ? `<img class="pin-finding-photo" src="${escHtml(f.photo_url)}" alt="">` : ''}
+                    ${!pin.is_mine ? `<button class="pin-msg-btn" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>` : ''}
+                `;
+                list.appendChild(card);
+            });
+        })
+        .catch(() => {
+            list.innerHTML = '<div style="text-align:center;color:#f87171;padding:1rem;font-size:0.82rem">Błąd ładowania znalezisk.</div>';
+        });
 }
 
 function closeModal() {
-    document.getElementById('finding-modal').classList.remove('open');
-    activeModalFindingId = null;
+    document.getElementById('pin-modal').classList.remove('open');
 }
 
 function handleModalBackdrop(e) {
-    if (e.target === document.getElementById('finding-modal')) closeModal();
+    if (e.target === document.getElementById('pin-modal')) { closeModal(); }
+}
+
+function openMessageModal(findingId, findingName) {
+    activeMessageFindingId = findingId;
+    document.getElementById('msg-modal-title').textContent = `Wiadomość o: ${findingName}`;
+    document.getElementById('modal-msg').value = '';
+    document.getElementById('modal-status').textContent = '';
+    document.getElementById('modal-status').style.color = '';
+    document.getElementById('modal-send').disabled = false;
+    document.getElementById('message-modal').classList.add('open');
+}
+
+function closeMessageModal() {
+    document.getElementById('message-modal').classList.remove('open');
+    activeMessageFindingId = null;
+}
+
+function handleMessageBackdrop(e) {
+    if (e.target === document.getElementById('message-modal')) { closeMessageModal(); }
 }
 
 function sendModalMessage() {
     const body = document.getElementById('modal-msg').value.trim();
-    if (!body || !activeModalFindingId) return;
+    if (!body || !activeMessageFindingId) { return; }
 
     const btn    = document.getElementById('modal-send');
     const status = document.getElementById('modal-status');
-    btn.disabled         = true;
-    status.textContent   = 'Wysyłanie…';
-    status.style.color   = '#9ca3af';
+    btn.disabled       = true;
+    status.textContent = 'Wysyłanie…';
+    status.style.color = '#9ca3af';
 
-    fetch(`${MESSAGE_BASE}/${activeModalFindingId}/message`, {
+    fetch(`${MESSAGE_BASE}/${activeMessageFindingId}/message`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': CSRF_TOKEN,
-        },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
         body: JSON.stringify({ body }),
     })
     .then(r => r.json().then(data => ({ ok: r.ok, data })))
@@ -560,7 +673,7 @@ function sendModalMessage() {
             status.textContent = '✓ Wiadomość wysłana!';
             status.style.color = '#34d399';
             document.getElementById('modal-msg').value = '';
-            setTimeout(closeModal, 1500);
+            setTimeout(closeMessageModal, 1500);
         } else {
             status.textContent = data.message ?? 'Nie udało się wysłać.';
             status.style.color = '#f87171';
