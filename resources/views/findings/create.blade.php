@@ -222,17 +222,13 @@
                 </div>
 
                 {{-- WKZ Consent --}}
-                <div id="wkzConsentSection" class="hidden">
+                <div id="wkzConsentSection">
                     <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
                         📋 Zgoda WKZ <span class="text-gray-500 font-normal">(opcjonalna)</span>
                     </label>
-                    <select name="wkz_consent_id" id="wkzConsentSelect" class="input-field">
-                        <option value="">— Nie przypisuj zgody —</option>
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1 ml-1">
-                        Zarządzaj zgodami w
-                        <a href="{{ route('profile.show') }}#wkz-consents" class="text-amber-400">profilu</a>.
-                    </p>
+                    <div id="wkzConsentBody">
+                        <p class="text-xs text-gray-500 ml-1">Ładowanie…</p>
+                    </div>
                 </div>
 
                 {{-- Submit --}}
@@ -257,11 +253,22 @@
     const OLD_WKZ_CONSENT_ID = @json((int) old('wkz_consent_id', 0) ?: null);
 
     (function loadWkzConsents() {
+        const body = document.getElementById('wkzConsentBody');
         fetch(WKZ_CONSENTS_URL)
             .then(r => r.json())
             .then(consents => {
-                if (!Array.isArray(consents) || consents.length === 0) { return; }
-                const select = document.getElementById('wkzConsentSelect');
+                if (!Array.isArray(consents) || consents.length === 0) {
+                    body.innerHTML = `<p class="text-xs text-gray-500 ml-1">Nie masz jeszcze żadnych zgód. <a href="{{ route('profile.show') }}#wkz-consents" class="text-amber-400">Dodaj zgodę w profilu</a>.</p>`;
+                    return;
+                }
+                const select = document.createElement('select');
+                select.name = 'wkz_consent_id';
+                select.id = 'wkzConsentSelect';
+                select.className = 'input-field';
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.textContent = '— Nie przypisuj zgody —';
+                select.appendChild(defaultOpt);
                 consents.forEach(c => {
                     const opt = document.createElement('option');
                     opt.value = c.id;
@@ -269,9 +276,16 @@
                     if (OLD_WKZ_CONSENT_ID === c.id) { opt.selected = true; }
                     select.appendChild(opt);
                 });
-                document.getElementById('wkzConsentSection').classList.remove('hidden');
+                body.innerHTML = '';
+                body.appendChild(select);
+                const hint = document.createElement('p');
+                hint.className = 'text-xs text-gray-500 mt-1 ml-1';
+                hint.innerHTML = `Zarządzaj zgodami w <a href="{{ route('profile.show') }}#wkz-consents" class="text-amber-400">profilu</a>.`;
+                body.appendChild(hint);
             })
-            .catch(() => {});
+            .catch(() => {
+                body.innerHTML = '<p class="text-xs text-gray-500 ml-1">Nie udało się załadować zgód.</p>';
+            });
     })();
     const initialLat = {{ old('latitude', 52.0) }};
     const initialLng = {{ old('longitude', 19.0) }};
