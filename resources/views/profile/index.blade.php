@@ -148,19 +148,21 @@
             <div class="section-title">Raporty WKZ</div>
             <div class="flex flex-col gap-2">
                 @foreach($wkzConsents as $consent)
-                    <div class="card flex items-center gap-3">
-                        <span class="text-lg">📄</span>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-white truncate">{{ $consent['name'] }}</p>
-                            <p class="text-xs text-gray-500">{{ $consent['findings_count'] ?? 0 }} znalezisk</p>
+                    <div class="card flex flex-col gap-2">
+                        <div class="flex items-center gap-3">
+                            <span class="text-lg">📄</span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-white truncate">{{ $consent['name'] }}</p>
+                                <p class="text-xs text-gray-500">{{ $consent['findings_count'] ?? 0 }} znalezisk</p>
+                            </div>
                         </div>
                         @if(($consent['findings_count'] ?? 0) > 0)
                             <a href="{{ route('profile.wkz-consents.report', $consent['id']) }}"
-                               class="btn-primary text-xs px-3 py-1.5 whitespace-nowrap">
-                                ⬇ PDF
+                               class="btn-primary text-sm text-center">
+                                ⬇ Pobierz raport PDF
                             </a>
                         @else
-                            <span class="text-xs text-gray-600 whitespace-nowrap">Brak znalezisk</span>
+                            <p class="text-xs text-gray-600">Brak znalezisk — dodaj znaleziska do tej zgody, aby wygenerować raport.</p>
                         @endif
                     </div>
                 @endforeach
