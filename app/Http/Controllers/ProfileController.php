@@ -14,12 +14,55 @@ class ProfileController extends Controller
 
     public function show(Request $request)
     {
+        $token = $this->apiToken($request);
+        $base = config('services.api.url');
+
+        $userResponse = Http::withToken($token)->get("{$base}/me");
+        $consentsResponse = Http::withToken($token)->get("{$base}/wkz-consents");
+
+        $user = $userResponse->successful() ? ($userResponse->json('data') ?? $userResponse->json()) : [];
+        $wkzConsents = $consentsResponse->successful() ? $consentsResponse->json() : [];
+
+        return view('profile.index', compact('user', 'wkzConsents'));
+    }
+
+    public function storeWkzConsent(Request $request)
+    {
+        $request->validate(['name' => ['required', 'string', 'max:255']]);
+
         $response = Http::withToken($this->apiToken($request))
-            ->get(config('services.api.url') . '/me');
+            ->post(config('services.api.url').'/wkz-consents', [
+                'name' => $request->name,
+            ]);
 
-        $user = $response->successful() ? ($response->json('data') ?? $response->json()) : [];
+        if ($response->failed()) {
+            return back()->withErrors(['wkz_name' => 'Nie udało się dodać zgody.'])->withInput();
+        }
 
-        return view('profile.index', compact('user'));
+        return back()->with('success', 'Zgoda dodana!')->withFragment('wkz-consents');
+    }
+
+    public function destroyWkzConsent(Request $request, int $id)
+    {
+        Http::withToken($this->apiToken($request))
+            ->delete(config('services.api.url')."/wkz-consents/{$id}");
+
+        return back()->with('success', 'Zgoda usunięta.')->withFragment('wkz-consents');
+    }
+
+    public function wkzConsentReport(Request $request, int $id)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url')."/wkz-consents/{$id}/report");
+
+        if ($response->failed()) {
+            return back()->withErrors(['report' => 'Nie udało się wygenerować raportu.']);
+        }
+
+        return response($response->body(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => $response->header('Content-Disposition') ?? 'attachment; filename="raport-wkz.pdf"',
+        ]);
     }
 
     public function update(Request $request)
@@ -29,7 +72,7 @@ class ProfileController extends Controller
         ]);
 
         $response = Http::withToken($this->apiToken($request))
-            ->put(config('services.api.url') . '/me', [
+            ->put(config('services.api.url').'/me', [
                 'name' => $request->name,
             ]);
 
@@ -52,7 +95,7 @@ class ProfileController extends Controller
                 file_get_contents($request->file('avatar')->getRealPath()),
                 $request->file('avatar')->getClientOriginalName()
             )
-            ->post(config('services.api.url') . '/me/avatar');
+            ->post(config('services.api.url').'/me/avatar');
 
         if ($response->failed()) {
             return back()->withErrors(['avatar' => 'Nie udało się przesłać zdjęcia.']);

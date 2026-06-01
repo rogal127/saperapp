@@ -221,6 +221,20 @@
                     </div>
                 </div>
 
+                {{-- WKZ Consent --}}
+                <div id="wkzConsentSection" class="hidden">
+                    <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
+                        📋 Zgoda WKZ <span class="text-gray-500 font-normal">(opcjonalna)</span>
+                    </label>
+                    <select name="wkz_consent_id" id="wkzConsentSelect" class="input-field">
+                        <option value="">— Nie przypisuj zgody —</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1 ml-1">
+                        Zarządzaj zgodami w
+                        <a href="{{ route('profile.show') }}#wkz-consents" class="text-amber-400">profilu</a>.
+                    </p>
+                </div>
+
                 {{-- Submit --}}
                 <button type="submit" class="btn-primary" id="submitBtn">
                     Dodaj znalezisko
@@ -239,6 +253,26 @@
 @push('scripts')
 <script>
     const PINS_URL = "{{ route('pins.index') }}";
+    const WKZ_CONSENTS_URL = "{{ route('wkz-consents.index') }}";
+    const OLD_WKZ_CONSENT_ID = @json((int) old('wkz_consent_id', 0) ?: null);
+
+    (function loadWkzConsents() {
+        fetch(WKZ_CONSENTS_URL)
+            .then(r => r.json())
+            .then(consents => {
+                if (!Array.isArray(consents) || consents.length === 0) { return; }
+                const select = document.getElementById('wkzConsentSelect');
+                consents.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    if (OLD_WKZ_CONSENT_ID === c.id) { opt.selected = true; }
+                    select.appendChild(opt);
+                });
+                document.getElementById('wkzConsentSection').classList.remove('hidden');
+            })
+            .catch(() => {});
+    })();
     const initialLat = {{ old('latitude', 52.0) }};
     const initialLng = {{ old('longitude', 19.0) }};
     const initialZoom = {{ old('latitude') ? 14 : 6 }};

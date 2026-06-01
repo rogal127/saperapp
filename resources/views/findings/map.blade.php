@@ -201,6 +201,14 @@
         background: transparent; border: 1px solid #f59e0b; color: #f59e0b;
         border-radius: 0.625rem; cursor: pointer; font-size: 0.78rem; font-weight: 600;
     }
+    .finding-actions { display: flex; gap: 0.4rem; margin-left: auto; flex-shrink: 0; }
+    .finding-action-btn {
+        width: 32px; height: 32px; border-radius: 0.5rem; border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+    }
+    .finding-action-btn.edit { background: #3b3b58; color: #a5b4fc; }
+    .finding-action-btn.delete { background: #3b1f1f; color: #f87171; }
+    .pin-finding-header { display: flex; align-items: flex-start; gap: 0.5rem; }
 </style>
 @endpush
 
@@ -303,6 +311,27 @@ const PINS_API_BASE = "{{ url('/api/pins') }}";
 const MESSAGE_BASE  = "{{ url('/api/findings') }}";
 const CREATE_URL    = "{{ route('findings.create') }}";
 const CSRF_TOKEN    = '{{ csrf_token() }}';
+
+async function deleteFinding(id, btn) {
+    if (!confirm('Usunąć to znalezisko? Tej operacji nie można cofnąć.')) { return; }
+    btn.disabled = true;
+    btn.textContent = '⏳';
+    try {
+        const res = await fetch(`/findings/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+        });
+        if (!res.ok) { throw new Error(); }
+        const card = btn.closest('[data-finding-id]');
+        card.style.transition = 'opacity 0.2s';
+        card.style.opacity = '0';
+        setTimeout(() => card.remove(), 200);
+    } catch {
+        btn.disabled = false;
+        btn.textContent = '🗑️';
+        alert('Nie udało się usunąć znaleziska.');
+    }
+}
 
 const LEVEL_LABELS = {
     voivodeship: 'Województwa',
@@ -609,10 +638,20 @@ function openPinModal(pin) {
             findings.forEach(f => {
                 const card = document.createElement('div');
                 card.className = 'pin-finding-card';
+                card.dataset.findingId = f.id;
                 card.innerHTML = `
-                    <div class="pin-finding-name">🪙 ${escHtml(f.name)}</div>
-                    <div class="pin-finding-depth">📏 ${f.depth_cm} cm głębokości</div>
-                    <div class="pin-finding-meta">📅 ${f.found_at}</div>
+                    <div class="pin-finding-header">
+                        <div class="flex-1 min-w-0">
+                            <div class="pin-finding-name">🪙 ${escHtml(f.name)}</div>
+                            <div class="pin-finding-depth">📏 ${f.depth_cm} cm głębokości</div>
+                            <div class="pin-finding-meta">📅 ${f.found_at}</div>
+                        </div>
+                        ${pin.is_mine ? `
+                        <div class="finding-actions">
+                            <a href="/findings/${f.id}/edit" class="finding-action-btn edit" title="Edytuj">✏️</a>
+                            <button class="finding-action-btn delete" onclick="deleteFinding(${f.id}, this)" title="Usuń">🗑️</button>
+                        </div>` : ''}
+                    </div>
                     ${f.description ? `<div class="pin-finding-desc">${escHtml(f.description.substring(0,120))}${f.description.length > 120 ? '…' : ''}</div>` : ''}
                     ${f.photo_url ? `<img class="pin-finding-photo" src="${escHtml(f.photo_url)}" alt="">` : ''}
                     ${!pin.is_mine ? `<button class="pin-msg-btn" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>` : ''}

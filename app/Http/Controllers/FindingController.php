@@ -19,6 +19,18 @@ class FindingController extends Controller
         ]);
     }
 
+    public function wkzConsents(Request $request)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url').'/wkz-consents');
+
+        if ($response->failed()) {
+            return response()->json([]);
+        }
+
+        return response()->json($response->json());
+    }
+
     public function store(Request $request)
     {
         $hasPinId = $request->filled('pin_id');
@@ -35,6 +47,7 @@ class FindingController extends Controller
             'voivodeship' => ['nullable', 'string', 'max:255'],
             'county' => ['nullable', 'string', 'max:255'],
             'depth_cm' => ['required', 'integer', 'min:0', 'max:9999'],
+            'wkz_consent_id' => ['nullable', 'integer'],
             'photo' => ['nullable', 'image', 'max:10240'],
         ]);
 
@@ -52,6 +65,7 @@ class FindingController extends Controller
             'name' => $request->name,
             'description' => $request->description,
             'depth_cm' => $request->depth_cm,
+            'wkz_consent_id' => $request->wkz_consent_id ?: null,
         ];
 
         if ($hasPinId) {
@@ -160,5 +174,89 @@ class FindingController extends Controller
         }
 
         return response()->json($response->json());
+    }
+
+    public function edit(Request $request, int $id)
+    {
+        $token = $this->apiToken($request);
+        $base = config('services.api.url');
+
+        $findingResponse = Http::withToken($token)->get("{$base}/findings/{$id}");
+
+        if ($findingResponse->status() === 403 || $findingResponse->status() === 404) {
+            abort($findingResponse->status());
+        }
+        if ($findingResponse->failed()) {
+            abort(502);
+        }
+
+        $consentsResponse = Http::withToken($token)->get("{$base}/wkz-consents");
+        $wkzConsents = $consentsResponse->successful() ? $consentsResponse->json() : [];
+
+        $finding = $findingResponse->json('data') ?? $findingResponse->json();
+
+        return view('findings.edit', [
+            'finding' => $finding,
+            'wkzConsents' => $wkzConsents,
+        ]);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'depth_cm' => ['required', 'integer', 'min:0', 'max:9999'],
+            'wkz_consent_id' => ['nullable', 'integer'],
+            'photo' => ['nullable', 'image', 'max:10240'],
+        ]);
+
+        $pending = Http::withToken($this->apiToken($request));
+
+        if ($request->hasFile('photo')) {
+            $pending = $pending->attach(
+                'photo',
+                file_get_contents($request->file('photo')->getRealPath()),
+                $request->file('photo')->getClientOriginalName()
+            );
+        }
+
+        // PHP nie czyta multipart body przy PUT — używamy POST z _method=PUT (method spoofing)
+        $response = $pending->post(config('services.api.url')."/findings/{$id}", [
+            '_method' => 'PUT',
+            'name' => $request->name,
+            'description' => $request->description,
+            'depth_cm' => $request->depth_cm,
+            'wkz_consent_id' => $request->wkz_consent_id ?: '',
+        ]);
+
+        if ($response->status() === 403) {
+            abort(403);
+        }
+
+        if ($response->failed()) {
+            return back()->withErrors($response->json('errors') ?? ['name' => 'Błąd zapisu.'])->withInput();
+        }
+
+        return redirect()->route('findings.map')->with('success', 'Znalezisko zaktualizowane!');
+    }
+
+    public function destroy(Request $request, int $id)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->delete(config('services.api.url')."/findings/{$id}");
+
+        if (request()->expectsJson()) {
+            if ($response->status() === 403) {
+                return response()->json(['message' => 'Brak uprawnień.'], 403);
+            }
+            if ($response->failed()) {
+                return response()->json(['message' => 'Błąd usuwania.'], 502);
+            }
+
+            return response()->json(['message' => 'Usunięto.']);
+        }
+
+        return redirect()->route('findings.map')->with('success', 'Znalezisko usunięte.');
     }
 }

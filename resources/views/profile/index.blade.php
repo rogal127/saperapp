@@ -95,8 +95,81 @@
             </div>
         </form>
 
+        {{-- Zgody WKZ --}}
+        <div class="mt-6" id="wkz-consents">
+            <div class="section-title">Zgody WKZ</div>
+
+            @if($errors->has('wkz_name'))
+                <div class="mb-3 px-4 py-2 bg-red-900/50 border border-red-700 rounded-xl text-red-300 text-xs">
+                    {{ $errors->first('wkz_name') }}
+                </div>
+            @endif
+
+            <form action="{{ route('profile.wkz-consents.store') }}" method="POST" class="flex flex-col gap-2 mb-3">
+                @csrf
+                <input
+                    type="text"
+                    name="name"
+                    value="{{ old('name') }}"
+                    placeholder="Nazwa zgody (np. nr decyzji, teren…)"
+                    class="input-field"
+                    required
+                >
+                <button type="submit" class="btn-primary">+ Dodaj</button>
+            </form>
+
+            @if(empty($wkzConsents))
+                <p class="text-xs text-gray-500 text-center py-3">Brak dodanych zgód.</p>
+            @else
+                <div class="flex flex-col gap-2">
+                    @foreach($wkzConsents as $consent)
+                        <div class="card flex items-center gap-3">
+                            <span class="text-lg">📋</span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-white truncate">{{ $consent['name'] }}</p>
+                                <p class="text-xs text-gray-500">{{ $consent['findings_count'] ?? 0 }} znalezisk</p>
+                            </div>
+                            <form action="{{ route('profile.wkz-consents.destroy', $consent['id']) }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-red-400 text-lg leading-none px-1"
+                                    onclick="return confirm('Usunąć zgodę? Znaleziska nie zostaną usunięte.')"
+                                    title="Usuń">×</button>
+                            </form>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+
+        {{-- Raporty WKZ --}}
+        @if(!empty($wkzConsents))
+        <div class="mt-6">
+            <div class="section-title">Raporty WKZ</div>
+            <div class="flex flex-col gap-2">
+                @foreach($wkzConsents as $consent)
+                    <div class="card flex items-center gap-3">
+                        <span class="text-lg">📄</span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-white truncate">{{ $consent['name'] }}</p>
+                            <p class="text-xs text-gray-500">{{ $consent['findings_count'] ?? 0 }} znalezisk</p>
+                        </div>
+                        @if(($consent['findings_count'] ?? 0) > 0)
+                            <a href="{{ route('profile.wkz-consents.report', $consent['id']) }}"
+                               class="btn-primary text-xs px-3 py-1.5 whitespace-nowrap">
+                                ⬇ PDF
+                            </a>
+                        @else
+                            <span class="text-xs text-gray-600 whitespace-nowrap">Brak znalezisk</span>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
         {{-- Wylogowanie --}}
-        <div class="mt-4 mb-6">
+        <div class="mt-6 mb-6">
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
                 <button type="submit" class="btn-secondary">Wyloguj się</button>

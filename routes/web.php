@@ -16,15 +16,22 @@ Route::middleware('api.auth')->group(function () {
     Route::post('/findings', [FindingController::class, 'store'])->name('findings.store');
     Route::get('/map', [FindingController::class, 'map'])->name('findings.map');
     Route::get('/api/findings', [FindingController::class, 'mapSearch'])->name('findings.api');
+    Route::get('/findings/{id}/edit', [FindingController::class, 'edit'])->name('findings.edit');
+    Route::put('/findings/{id}', [FindingController::class, 'update'])->name('findings.update');
+    Route::delete('/findings/{id}', [FindingController::class, 'destroy'])->name('findings.destroy');
     Route::get('/findings/{id}', [FindingController::class, 'show'])->name('findings.show');
     Route::post('/api/findings/{finding}/message', [FindingController::class, 'sendMessage'])->name('findings.message');
 
     Route::get('/api/pins', [FindingController::class, 'pins'])->name('pins.index');
     Route::get('/api/pins/{pinId}/findings', [FindingController::class, 'pinFindings'])->name('pins.findings');
+    Route::get('/api/wkz-consents', [FindingController::class, 'wkzConsents'])->name('wkz-consents.index');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->name('profile.avatar');
+    Route::post('/profile/wkz-consents', [ProfileController::class, 'storeWkzConsent'])->name('profile.wkz-consents.store');
+    Route::delete('/profile/wkz-consents/{id}', [ProfileController::class, 'destroyWkzConsent'])->name('profile.wkz-consents.destroy');
+    Route::get('/profile/wkz-consents/{id}/report', [ProfileController::class, 'wkzConsentReport'])->name('profile.wkz-consents.report');
 
     Route::post('/messages/with/{userId}', [ConversationController::class, 'startWith'])->name('messages.start-with');
     Route::get('/messages', [ConversationController::class, 'index'])->name('messages.index');
