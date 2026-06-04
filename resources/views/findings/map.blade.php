@@ -18,6 +18,12 @@
         transform: translateX(100%);
         transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
     }
+    @media (min-width: 768px) {
+        #panel { max-width: 420px; }
+    }
+    @media (min-width: 1280px) {
+        #panel { max-width: 520px; }
+    }
     #panel.panel-open { transform: translateX(0); }
     #panel-toggle {
         position: absolute; left: -52px; top: 50%;
@@ -159,6 +165,9 @@
         border: 1px solid #2a2a3e; width: 100%; max-width: 480px;
         max-height: 90vh; overflow-y: auto;
         animation: slideUp 0.25s ease;
+    }
+    @media (min-width: 768px) {
+        #modal-sheet, #message-sheet { max-width: 640px; }
     }
     @keyframes slideUp {
         from { transform: translateY(40px); opacity: 0; }
