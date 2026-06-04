@@ -169,6 +169,9 @@
     @media (min-width: 768px) {
         #modal-sheet, #message-sheet { max-width: 640px; }
     }
+    @media (min-width: 1280px) {
+        #modal-sheet, #message-sheet { max-width: 820px; }
+    }
     @keyframes slideUp {
         from { transform: translateY(40px); opacity: 0; }
         to   { transform: translateY(0);    opacity: 1; }
