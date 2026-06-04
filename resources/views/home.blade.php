@@ -61,7 +61,7 @@
                 </div>
                 <div class="flex-1">
                     <h3 class="font-bold text-white text-lg">Przeglądaj mapę</h3>
-                    <p class="text-sm text-gray-400">Filtruj znaleziska w promieniu</p>
+                    <p class="text-sm text-gray-400">Przeglądaj znaleziska z możliwością filtrowania według lokalizacji i kategorii</p>
                 </div>
                 <span class="text-gray-500 text-xl">›</span>
             </div>
