@@ -45,6 +45,8 @@ Route::middleware('api.auth')->group(function () {
     Route::post('/logout', LogoutController::class)->name('logout');
 });
 
+Route::get('/map/tiles/orto/{z}/{y}/{x}', [FindingController::class, 'ortoTile'])->name('map.orto-tile');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->name('login');
     Route::post('/login', [LoginController::class, 'store']);

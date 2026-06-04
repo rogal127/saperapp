@@ -65,8 +65,9 @@
     .finding-item-depth { font-size: 0.75rem; color: #f59e0b; margin-top: 4px; font-weight: 600; }
 
     /* Kontrolki */
-    #locate-btn {
-        position: absolute; bottom: 90px; right: 12px;
+    #locate-btn, #layer-btn {
+        position: absolute;
+        right: 12px;
         z-index: 800;
         background: rgba(26,26,46,0.92);
         border: 1px solid #323248; border-radius: 0.875rem;
@@ -75,7 +76,9 @@
         cursor: pointer; touch-action: manipulation;
         display: flex; align-items: center; gap: 0.4rem;
     }
-    #locate-btn:active { opacity: 0.7; }
+    #locate-btn { bottom: 90px; }
+    #layer-btn  { bottom: 140px; }
+    #locate-btn:active, #layer-btn:active { opacity: 0.7; }
 
     /* Pasek info o poziomie zoom */
     #zoom-info {
@@ -245,6 +248,7 @@
         <div id="zoom-info">🗺️ Przybliż, aby zobaczyć szczegóły</div>
 
         <button id="locate-btn">🎯 Moja pozycja</button>
+        <button id="layer-btn" onclick="toggleLayer()">🛰️ Ortofoto</button>
 
         {{-- Panel boczny --}}
         <div id="panel">
@@ -368,12 +372,34 @@ let allPins         = [];
 let lastLevel       = null;
 let panelTotalCount = 0;
 
+const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+const orthoLayer = L.tileLayer(
+    '{{ url("/map/tiles/orto") }}/{z}/{y}/{x}',
+    { maxZoom: 19 }
+);
+let currentLayer = 'osm';
+
 const map = L.map('browse-map', {
     center: [52.0, 19.0], zoom: 6,
     zoomControl: false, attributionControl: false,
+    layers: [osmLayer],
 });
 L.control.zoom({ position: 'bottomright' }).addTo(map);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+function toggleLayer() {
+    const btn = document.getElementById('layer-btn');
+    if (currentLayer === 'osm') {
+        map.removeLayer(osmLayer);
+        orthoLayer.addTo(map);
+        currentLayer = 'ortho';
+        btn.textContent = '🗺️ Mapa';
+    } else {
+        map.removeLayer(orthoLayer);
+        osmLayer.addTo(map);
+        currentLayer = 'osm';
+        btn.textContent = '🛰️ Ortofoto';
+    }
+}
 
 function myPinIcon(count) {
     const badge = count > 1 ? `<span class="pin-count-badge">${count}</span>` : '';

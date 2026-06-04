@@ -285,4 +285,22 @@ class FindingController extends Controller
 
         return redirect()->route('findings.map')->with('success', 'Znalezisko usunięte.');
     }
+
+    public function ortoTile(int $z, int $y, int $x)
+    {
+        $url = 'https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMTS/StandardResolution'
+            .'?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTOFOTOMAPA&STYLE=default'
+            .'&FORMAT=image%2Fjpeg&TileMatrixSet=EPSG:3857'
+            ."&TileMatrix=EPSG:3857:{$z}&TileRow={$y}&TileCol={$x}";
+
+        $response = Http::timeout(10)->get($url);
+
+        if ($response->failed()) {
+            abort(502);
+        }
+
+        return response($response->body(), 200)
+            ->header('Content-Type', 'image/jpeg')
+            ->header('Cache-Control', 'public, max-age=86400');
+    }
 }
