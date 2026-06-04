@@ -91,7 +91,22 @@
     <div class="screen">
         @yield('content')
     </div>
+    <!-- Lightbox -->
+    <div id="lightbox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.93);align-items:center;justify-content:center;" onclick="closeLightbox()">
+        <img id="lightbox-img" style="max-width:100%;max-height:100%;object-fit:contain;padding:8px;" alt="">
+        <button style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:16px;background:rgba(255,255,255,0.18);border:none;color:#fff;border-radius:50%;width:40px;height:40px;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="closeLightbox()">✕</button>
+    </div>
     @stack('scripts')
+    <script>
+    function openLightbox(src) {
+        document.getElementById('lightbox-img').src = src;
+        document.getElementById('lightbox').style.display = 'flex';
+    }
+    function closeLightbox() {
+        document.getElementById('lightbox').style.display = 'none';
+        document.getElementById('lightbox-img').src = '';
+    }
+    </script>
     <script>
     (function () {
         fetch("{{ route('messages.unread') }}")

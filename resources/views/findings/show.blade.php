@@ -15,7 +15,7 @@
         {{-- Zdjęcie --}}
         @if(!empty($finding['photo_url']))
         <div style="background:#0d0d1a">
-            <img src="{{ $finding['photo_url'] }}" alt="" style="width:100%;max-height:55vh;object-fit:contain">
+            <img src="{{ $finding['photo_url'] }}" alt="" style="width:100%;max-height:55vh;object-fit:contain;cursor:pointer" onclick="openLightbox(this.src)">
         </div>
         @endif
 

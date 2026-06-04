@@ -195,7 +195,7 @@
     .pin-finding-meta { font-size: 0.72rem; color: #9ca3af; margin-top: 2px; }
     .pin-finding-depth { font-size: 0.75rem; color: #f59e0b; font-weight: 600; margin-top: 3px; }
     .pin-finding-desc { font-size: 0.75rem; color: #d1d5db; margin-top: 4px; }
-    .pin-finding-photo { width: 100%; max-height: 180px; object-fit: cover; border-radius: 0.5rem; margin-top: 0.5rem; }
+    .pin-finding-photo { width: 100%; max-height: 220px; object-fit: contain; border-radius: 0.5rem; margin-top: 0.5rem; background: #1a1a2e; cursor: pointer; }
     .pin-msg-btn {
         margin-top: 0.5rem; width: 100%; padding: 0.5rem 0.75rem;
         background: transparent; border: 1px solid #f59e0b; color: #f59e0b;
@@ -591,7 +591,7 @@ function openCityFindingsModal(cluster) {
                     : escHtml(f.finder ?? '')
                 }</div>
                 ${f.description ? `<div class="pin-finding-desc">${escHtml(f.description.substring(0, 120))}${f.description.length > 120 ? '…' : ''}</div>` : ''}
-                ${f.photo_url ? `<img class="pin-finding-photo" src="${escHtml(f.photo_url)}" alt="">` : ''}
+                ${f.photo_url ? `<img class="pin-finding-photo" src="${escHtml(f.photo_url)}" alt="" onclick="openLightbox('${escHtml(f.photo_url)}')">` : ''}
                 <button class="pin-msg-btn" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>
             `;
             list.appendChild(card);
@@ -653,7 +653,7 @@ function openPinModal(pin) {
                         </div>` : ''}
                     </div>
                     ${f.description ? `<div class="pin-finding-desc">${escHtml(f.description.substring(0,120))}${f.description.length > 120 ? '…' : ''}</div>` : ''}
-                    ${f.photo_url ? `<img class="pin-finding-photo" src="${escHtml(f.photo_url)}" alt="">` : ''}
+                    ${f.photo_url ? `<img class="pin-finding-photo" src="${escHtml(f.photo_url)}" alt="" onclick="openLightbox('${escHtml(f.photo_url)}')">` : ''}
                     ${!pin.is_mine ? `<button class="pin-msg-btn" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>` : ''}
                 `;
                 list.appendChild(card);

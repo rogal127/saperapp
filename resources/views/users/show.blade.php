@@ -76,7 +76,7 @@
     .finding-card:last-child { border-bottom: none; }
     .finding-thumb {
         width: 40px; height: 40px; border-radius: 0.5rem;
-        object-fit: cover; flex-shrink: 0; background: #323248;
+        object-fit: contain; flex-shrink: 0; background: #323248;
     }
     .finding-thumb-placeholder {
         width: 40px; height: 40px; border-radius: 0.5rem; flex-shrink: 0;
