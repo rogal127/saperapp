@@ -96,6 +96,30 @@
                 <p class="text-xs text-gray-500 mt-1 ml-1">Tylko Ty widzisz tę treść.</p>
             </div>
 
+            {{-- Category --}}
+            @if(!empty($findingCategories))
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
+                    🏷️ Kategoria <span class="text-gray-500 font-normal">(opcjonalna)</span>
+                </label>
+                <select name="finding_category_id" class="input-field">
+                    <option value="">— Bez kategorii —</option>
+                    @foreach($findingCategories as $cat)
+                        <option value="{{ $cat['id'] }}"
+                            {{ old('finding_category_id', $finding['category']['id'] ?? '') == $cat['id'] ? 'selected' : '' }}>
+                            {{ $cat['name'] }}
+                        </option>
+                        @foreach($cat['children'] ?? [] as $child)
+                            <option value="{{ $child['id'] }}"
+                                {{ old('finding_category_id', $finding['category']['id'] ?? '') == $child['id'] ? 'selected' : '' }}>
+                                &nbsp;&nbsp;↳ {{ $child['name'] }}
+                            </option>
+                        @endforeach
+                    @endforeach
+                </select>
+            </div>
+            @endif
+
             {{-- WKZ Consent --}}
             @if(!empty($wkzConsents))
             <div>

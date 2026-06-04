@@ -31,6 +31,18 @@ class FindingController extends Controller
         return response()->json($response->json());
     }
 
+    public function findingCategories(Request $request)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url').'/finding-categories');
+
+        if ($response->failed()) {
+            return response()->json([]);
+        }
+
+        return response()->json($response->json());
+    }
+
     public function store(Request $request)
     {
         $hasPinId = $request->filled('pin_id');
@@ -48,6 +60,7 @@ class FindingController extends Controller
             'county' => ['nullable', 'string', 'max:255'],
             'depth_cm' => ['required', 'integer', 'min:0', 'max:9999'],
             'wkz_consent_id' => ['nullable', 'integer'],
+            'finding_category_id' => ['nullable', 'integer'],
             'photo' => ['nullable', 'image', 'max:10240'],
         ]);
 
@@ -66,6 +79,7 @@ class FindingController extends Controller
             'description' => $request->description,
             'depth_cm' => $request->depth_cm,
             'wkz_consent_id' => $request->wkz_consent_id ?: null,
+            'finding_category_id' => $request->finding_category_id ?: null,
         ];
 
         if ($hasPinId) {
@@ -193,11 +207,15 @@ class FindingController extends Controller
         $consentsResponse = Http::withToken($token)->get("{$base}/wkz-consents");
         $wkzConsents = $consentsResponse->successful() ? $consentsResponse->json() : [];
 
+        $categoriesResponse = Http::withToken($token)->get("{$base}/finding-categories");
+        $findingCategories = $categoriesResponse->successful() ? $categoriesResponse->json() : [];
+
         $finding = $findingResponse->json('data') ?? $findingResponse->json();
 
         return view('findings.edit', [
             'finding' => $finding,
             'wkzConsents' => $wkzConsents,
+            'findingCategories' => $findingCategories,
         ]);
     }
 
@@ -206,8 +224,10 @@ class FindingController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'private_notes' => ['nullable', 'string', 'max:2000'],
             'depth_cm' => ['required', 'integer', 'min:0', 'max:9999'],
             'wkz_consent_id' => ['nullable', 'integer'],
+            'finding_category_id' => ['nullable', 'integer'],
             'photo' => ['nullable', 'image', 'max:10240'],
         ]);
 
@@ -226,8 +246,10 @@ class FindingController extends Controller
             '_method' => 'PUT',
             'name' => $request->name,
             'description' => $request->description,
+            'private_notes' => $request->private_notes ?? '',
             'depth_cm' => $request->depth_cm,
             'wkz_consent_id' => $request->wkz_consent_id ?: '',
+            'finding_category_id' => $request->finding_category_id ?: '',
         ]);
 
         if ($response->status() === 403) {

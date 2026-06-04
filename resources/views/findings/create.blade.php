@@ -235,6 +235,16 @@
                     </div>
                 </div>
 
+                {{-- Category --}}
+                <div id="categorySection">
+                    <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
+                        🏷️ Kategoria <span class="text-gray-500 font-normal">(opcjonalna)</span>
+                    </label>
+                    <div id="categoryBody">
+                        <p class="text-xs text-gray-500 ml-1">Ładowanie…</p>
+                    </div>
+                </div>
+
                 {{-- WKZ Consent --}}
                 <div id="wkzConsentSection">
                     <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
@@ -264,7 +274,47 @@
 <script>
     const PINS_URL = "{{ route('pins.index') }}";
     const WKZ_CONSENTS_URL = "{{ route('wkz-consents.index') }}";
+    const CATEGORIES_URL = "{{ route('finding-categories.index') }}";
     const OLD_WKZ_CONSENT_ID = @json((int) old('wkz_consent_id', 0) ?: null);
+    const OLD_CATEGORY_ID = @json((int) old('finding_category_id', 0) ?: null);
+
+    (function loadCategories() {
+        const body = document.getElementById('categoryBody');
+        fetch(CATEGORIES_URL)
+            .then(r => r.json())
+            .then(categories => {
+                if (!Array.isArray(categories) || categories.length === 0) {
+                    body.innerHTML = '<p class="text-xs text-gray-500 ml-1">Brak kategorii.</p>';
+                    return;
+                }
+                const select = document.createElement('select');
+                select.name = 'finding_category_id';
+                select.className = 'input-field';
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.textContent = '— Bez kategorii —';
+                select.appendChild(defaultOpt);
+                categories.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat.id;
+                    opt.textContent = cat.name;
+                    if (OLD_CATEGORY_ID === cat.id) { opt.selected = true; }
+                    select.appendChild(opt);
+                    (cat.children ?? []).forEach(child => {
+                        const childOpt = document.createElement('option');
+                        childOpt.value = child.id;
+                        childOpt.textContent = '   ↳ ' + child.name;
+                        if (OLD_CATEGORY_ID === child.id) { childOpt.selected = true; }
+                        select.appendChild(childOpt);
+                    });
+                });
+                body.innerHTML = '';
+                body.appendChild(select);
+            })
+            .catch(() => {
+                body.innerHTML = '<p class="text-xs text-gray-500 ml-1">Nie udało się załadować kategorii.</p>';
+            });
+    })();
 
     (function loadWkzConsents() {
         const body = document.getElementById('wkzConsentBody');

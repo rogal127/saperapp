@@ -25,6 +25,7 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/api/pins', [FindingController::class, 'pins'])->name('pins.index');
     Route::get('/api/pins/{pinId}/findings', [FindingController::class, 'pinFindings'])->name('pins.findings');
     Route::get('/api/wkz-consents', [FindingController::class, 'wkzConsents'])->name('wkz-consents.index');
+    Route::get('/api/finding-categories', [FindingController::class, 'findingCategories'])->name('finding-categories.index');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
