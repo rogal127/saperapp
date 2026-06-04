@@ -190,7 +190,11 @@
         background: #2a2a3e; border-radius: 0.875rem;
         padding: 0.75rem; margin-bottom: 0.5rem;
         border: 1px solid #404060;
+        border-left: 3px solid transparent;
     }
+    .pin-finding-card[data-type="archaeological_monument"] { border-left-color: #ef4444; }
+    .pin-finding-card[data-type="monument"]                { border-left-color: #facc15; }
+    .pin-finding-card[data-type="non_monument"]            { border-left-color: #22c55e; }
     .pin-finding-name { font-weight: 700; font-size: 0.85rem; color: #fff; }
     .pin-finding-meta { font-size: 0.72rem; color: #9ca3af; margin-top: 2px; }
     .pin-finding-depth { font-size: 0.75rem; color: #f59e0b; font-weight: 600; margin-top: 3px; }
@@ -583,6 +587,7 @@ function openCityFindingsModal(cluster) {
         findings.forEach(f => {
             const card = document.createElement('div');
             card.className = 'pin-finding-card';
+            if (f.type) { card.dataset.type = f.type; }
             card.innerHTML = `
                 <div class="pin-finding-name">🪙 ${escHtml(f.name)}</div>
                 <div class="pin-finding-depth">📏 ${f.depth_cm} cm głębokości</div>
@@ -639,6 +644,7 @@ function openPinModal(pin) {
                 const card = document.createElement('div');
                 card.className = 'pin-finding-card';
                 card.dataset.findingId = f.id;
+                if (f.type) { card.dataset.type = f.type; }
                 card.innerHTML = `
                     <div class="pin-finding-header">
                         <div class="flex-1 min-w-0">
