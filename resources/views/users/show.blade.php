@@ -70,10 +70,14 @@
     /* Znalezisko */
     .finding-card {
         display: flex; gap: 0.625rem; align-items: flex-start;
-        padding: 0.625rem 1rem 0.625rem 1.75rem;
+        padding: 0.625rem 1rem 0.625rem 0.75rem;
         border-bottom: 1px solid #252535;
+        border-left: 3px solid transparent;
     }
     .finding-card:last-child { border-bottom: none; }
+    .finding-card[data-type="archaeological_monument"] { border-left-color: #ef4444; }
+    .finding-card[data-type="monument"] { border-left-color: #facc15; }
+    .finding-card[data-type="non_monument"] { border-left-color: #22c55e; }
     .finding-thumb {
         width: 40px; height: 40px; border-radius: 0.5rem;
         object-fit: contain; flex-shrink: 0; background: #323248;
@@ -173,7 +177,7 @@
                                     </div>
                                     <div class="acc-city-body">
                                         @foreach($findings as $finding)
-                                        <div class="finding-card">
+                                        <div class="finding-card" data-type="{{ $finding['type'] ?? '' }}">
                                             @if(!empty($finding['photo_url']))
                                                 <img src="{{ $finding['photo_url'] }}" alt="" class="finding-thumb">
                                             @else

@@ -235,6 +235,33 @@
                     </div>
                 </div>
 
+                {{-- Finding type --}}
+                <div>
+                    <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
+                        🏛️ Typ znaleziska <span class="text-gray-500 font-normal">(opcjonalny)</span>
+                    </label>
+                    <div class="flex flex-col gap-2" id="findingTypeGroup">
+                        <label class="finding-type-btn flex items-center gap-3 card cursor-pointer border-2 transition-all {{ old('type') === 'archaeological_monument' ? 'border-red-500 bg-red-500/10' : 'border-transparent' }}"
+                            data-active-border="border-red-500" data-active-bg="bg-red-500/10">
+                            <input type="radio" name="type" value="archaeological_monument" class="hidden" {{ old('type') === 'archaeological_monument' ? 'checked' : '' }}>
+                            <span class="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-red-500"></span>
+                            <span class="text-sm font-medium text-gray-200">Zabytek archeologiczny</span>
+                        </label>
+                        <label class="finding-type-btn flex items-center gap-3 card cursor-pointer border-2 transition-all {{ old('type') === 'monument' ? 'border-yellow-400 bg-yellow-400/10' : 'border-transparent' }}"
+                            data-active-border="border-yellow-400" data-active-bg="bg-yellow-400/10">
+                            <input type="radio" name="type" value="monument" class="hidden" {{ old('type') === 'monument' ? 'checked' : '' }}>
+                            <span class="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-yellow-400"></span>
+                            <span class="text-sm font-medium text-gray-200">Zabytek</span>
+                        </label>
+                        <label class="finding-type-btn flex items-center gap-3 card cursor-pointer border-2 transition-all {{ old('type') === 'non_monument' ? 'border-green-500 bg-green-500/10' : 'border-transparent' }}"
+                            data-active-border="border-green-500" data-active-bg="bg-green-500/10">
+                            <input type="radio" name="type" value="non_monument" class="hidden" {{ old('type') === 'non_monument' ? 'checked' : '' }}>
+                            <span class="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-green-500"></span>
+                            <span class="text-sm font-medium text-gray-200">Przedmiot niezabytkowy</span>
+                        </label>
+                    </div>
+                </div>
+
                 {{-- Category --}}
                 <div id="categorySection">
                     <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
@@ -272,6 +299,18 @@
 
 @push('scripts')
 <script>
+    // Finding type selector
+    document.querySelectorAll('#findingTypeGroup .finding-type-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#findingTypeGroup .finding-type-btn').forEach(b => {
+                b.classList.remove(b.dataset.activeBorder, b.dataset.activeBg);
+                b.classList.add('border-transparent');
+            });
+            btn.classList.remove('border-transparent');
+            btn.classList.add(btn.dataset.activeBorder, btn.dataset.activeBg);
+        });
+    });
+
     const PINS_URL = "{{ route('pins.index') }}";
     const WKZ_CONSENTS_URL = "{{ route('wkz-consents.index') }}";
     const CATEGORIES_URL = "{{ route('finding-categories.index') }}";

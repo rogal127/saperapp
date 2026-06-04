@@ -40,6 +40,24 @@
                 </a>
             @endif
 
+            {{-- Type badge --}}
+            @if(!empty($finding['type']))
+            @php
+                $typeBadge = match($finding['type']) {
+                    'archaeological_monument' => ['label' => 'Zabytek archeologiczny', 'style' => 'background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)'],
+                    'monument'                => ['label' => 'Zabytek',                'style' => 'background:rgba(250,204,21,0.15);color:#fde047;border:1px solid rgba(250,204,21,0.3)'],
+                    'non_monument'            => ['label' => 'Przedmiot niezabytkowy', 'style' => 'background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3)'],
+                    default => null,
+                };
+            @endphp
+            @if($typeBadge)
+            <div style="display:inline-flex;align-items:center;gap:0.375rem;{{ $typeBadge['style'] }};border-radius:0.75rem;padding:0.3rem 0.75rem;font-size:0.75rem;font-weight:600;width:fit-content">
+                <span style="width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0"></span>
+                {{ $typeBadge['label'] }}
+            </div>
+            @endif
+            @endif
+
             {{-- Meta --}}
             <div class="flex flex-col gap-1">
                 <div class="text-sm text-gray-400">📏 {{ $finding['depth_cm'] }} cm głębokości</div>

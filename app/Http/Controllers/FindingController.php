@@ -61,6 +61,7 @@ class FindingController extends Controller
             'depth_cm' => ['required', 'integer', 'min:0', 'max:9999'],
             'wkz_consent_id' => ['nullable', 'integer'],
             'finding_category_id' => ['nullable', 'integer'],
+            'type' => ['nullable', 'string', 'in:archaeological_monument,monument,non_monument'],
             'photo' => ['nullable', 'image', 'max:10240'],
         ]);
 
@@ -80,6 +81,7 @@ class FindingController extends Controller
             'depth_cm' => $request->depth_cm,
             'wkz_consent_id' => $request->wkz_consent_id ?: null,
             'finding_category_id' => $request->finding_category_id ?: null,
+            'type' => $request->type ?: null,
         ];
 
         if ($hasPinId) {
@@ -228,6 +230,7 @@ class FindingController extends Controller
             'depth_cm' => ['required', 'integer', 'min:0', 'max:9999'],
             'wkz_consent_id' => ['nullable', 'integer'],
             'finding_category_id' => ['nullable', 'integer'],
+            'type' => ['nullable', 'string', 'in:archaeological_monument,monument,non_monument'],
             'photo' => ['nullable', 'image', 'max:10240'],
         ]);
 
@@ -250,6 +253,7 @@ class FindingController extends Controller
             'depth_cm' => $request->depth_cm,
             'wkz_consent_id' => $request->wkz_consent_id ?: '',
             'finding_category_id' => $request->finding_category_id ?: '',
+            'type' => $request->type ?: '',
         ]);
 
         if ($response->status() === 403) {
