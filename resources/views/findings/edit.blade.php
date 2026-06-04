@@ -82,6 +82,20 @@
                 >{{ old('description', $finding['description'] ?? '') }}</textarea>
             </div>
 
+            {{-- Private notes --}}
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
+                    🔐 Notatki prywatne <span class="text-gray-500 font-normal">(opcjonalne)</span>
+                </label>
+                <textarea
+                    name="private_notes"
+                    placeholder="Notatki widoczne tylko dla Ciebie — współrzędne, szczegóły znaleziska, plany..."
+                    rows="3"
+                    class="input-field resize-none"
+                >{{ old('private_notes', $finding['private_notes'] ?? '') }}</textarea>
+                <p class="text-xs text-gray-500 mt-1 ml-1">Tylko Ty widzisz tę treść.</p>
+            </div>
+
             {{-- WKZ Consent --}}
             @if(!empty($wkzConsents))
             <div>
