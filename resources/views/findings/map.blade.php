@@ -374,7 +374,9 @@ let panelTotalCount = 0;
 
 const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
 const orthoLayer = L.tileLayer(
-    '{{ url("/map/tiles/orto") }}/{z}/{y}/{x}',
+    'https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMTS/StandardResolution'
+    + '?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTOFOTOMAPA&STYLE=default'
+    + '&FORMAT=image%2Fjpeg&TileMatrixSet=EPSG:3857&TileMatrix=EPSG:3857:{z}&TileRow={y}&TileCol={x}',
     { maxZoom: 19 }
 );
 let currentLayer = 'osm';
