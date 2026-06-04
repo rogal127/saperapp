@@ -73,7 +73,9 @@
         padding: 0.625rem 1rem 0.625rem 0.75rem;
         border-bottom: 1px solid #252535;
         border-left: 3px solid transparent;
+        cursor: pointer; transition: background 0.12s;
     }
+    .finding-card:hover { background: #252538; }
     .finding-card:last-child { border-bottom: none; }
     .finding-card[data-type="archaeological_monument"] { border-left-color: #ef4444; }
     .finding-card[data-type="monument"] { border-left-color: #facc15; }
@@ -90,6 +92,51 @@
     .finding-card-name { font-size: 0.8rem; font-weight: 700; color: #fff; }
     .finding-card-meta { font-size: 0.68rem; color: #9ca3af; margin-top: 2px; }
     .finding-card-depth { font-size: 0.72rem; color: #f59e0b; font-weight: 600; margin-top: 2px; }
+
+    /* Modal znaleziska */
+    #finding-modal {
+        display: none; position: fixed; inset: 0; z-index: 2000;
+        background: rgba(0,0,0,0.75); align-items: flex-end; justify-content: center;
+    }
+    #finding-modal.open { display: flex; }
+    #finding-sheet {
+        background: #1a1a2e; border-radius: 1.25rem 1.25rem 0 0;
+        border: 1px solid #2a2a3e; width: 100%; max-width: 480px;
+        max-height: 90vh; overflow-y: auto;
+        animation: slideUp 0.25s ease;
+    }
+    @media (min-width: 768px) { #finding-sheet { max-width: 640px; } }
+    @media (min-width: 1280px) { #finding-sheet { max-width: 820px; } }
+    @keyframes slideUp {
+        from { transform: translateY(40px); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+    }
+    .fmodal-body { padding: 1rem; }
+    .fmodal-name { font-weight: 700; font-size: 1rem; color: #fff; }
+    .fmodal-meta { font-size: 0.75rem; color: #9ca3af; margin-top: 3px; }
+    .fmodal-depth { font-size: 0.8rem; color: #f59e0b; font-weight: 600; margin-top: 4px; }
+    .fmodal-desc { font-size: 0.8rem; color: #d1d5db; margin-top: 8px; }
+    .fmodal-photo { width: 100%; max-height: 320px; object-fit: contain; border-radius: 0.75rem; margin-top: 0.75rem; background: #252538; }
+    .fmodal-close { color: #9ca3af; font-size: 1.4rem; background: none; border: none; cursor: pointer; line-height: 1; }
+    .fmodal-msg-btn {
+        margin-top: 0.875rem; width: 100%; padding: 0.8rem;
+        background: transparent; border: 1px solid #f59e0b; color: #f59e0b;
+        border-radius: 0.75rem; cursor: pointer; font-size: 0.85rem; font-weight: 700;
+    }
+    .fmodal-send-btn {
+        margin-top: 0.75rem; width: 100%; padding: 0.8rem;
+        background: #f59e0b; color: #1a1a2e; font-weight: 700;
+        border: none; border-radius: 0.75rem; cursor: pointer; font-size: 0.9rem;
+    }
+    .fmodal-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .fmodal-textarea {
+        width: 100%; background: #2a2a3e; border: 1px solid #404060;
+        border-radius: 0.75rem; color: #fff; padding: 0.75rem;
+        font-size: 0.82rem; resize: none; outline: none;
+        box-sizing: border-box; font-family: inherit; margin-top: 0.75rem;
+    }
+    .fmodal-textarea:focus { border-color: #f59e0b; }
+    #fmodal-status { text-align: center; margin-top: 0.5rem; font-size: 0.78rem; min-height: 1.1em; }
 </style>
 @endpush
 
@@ -177,7 +224,15 @@
                                     </div>
                                     <div class="acc-city-body">
                                         @foreach($findings as $finding)
-                                        <div class="finding-card" data-type="{{ $finding['type'] ?? '' }}">
+                                        <div class="finding-card"
+                                            data-type="{{ $finding['type'] ?? '' }}"
+                                            data-id="{{ $finding['id'] ?? '' }}"
+                                            data-name="{{ $finding['name'] ?? '' }}"
+                                            data-depth="{{ $finding['depth_cm'] ?? 0 }}"
+                                            data-date="{{ $finding['found_at'] ?? '' }}"
+                                            data-desc="{{ $finding['description'] ?? '' }}"
+                                            data-photo="{{ $finding['photo_url'] ?? '' }}"
+                                            onclick="openFindingModal(this)">
                                             @if(!empty($finding['photo_url']))
                                                 <img src="{{ $finding['photo_url'] }}" alt="" class="finding-thumb">
                                             @else
@@ -207,6 +262,36 @@
 
     </div>
 
+    {{-- Modal znaleziska --}}
+    <div id="finding-modal" onclick="handleFindingBackdrop(event)">
+        <div id="finding-sheet">
+            <div class="fmodal-body">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem">
+                    <div>
+                        <div class="fmodal-name" id="fmodal-name"></div>
+                        <div class="fmodal-depth" id="fmodal-depth"></div>
+                        <div class="fmodal-meta" id="fmodal-date"></div>
+                    </div>
+                    <button class="fmodal-close" onclick="closeFindingModal()">✕</button>
+                </div>
+                <div class="fmodal-desc" id="fmodal-desc"></div>
+                <img id="fmodal-photo" class="fmodal-photo" src="" alt="" style="display:none">
+                @auth
+                @if(auth()->id() !== ($profile['id'] ?? null))
+                <div id="fmodal-msg-section">
+                    <button class="fmodal-msg-btn" id="fmodal-msg-toggle" onclick="toggleMsgForm()">💬 Napisz wiadomość</button>
+                    <div id="fmodal-msg-form" style="display:none">
+                        <textarea id="fmodal-textarea" class="fmodal-textarea" rows="3" placeholder="Napisz wiadomość do znalazcy…"></textarea>
+                        <button class="fmodal-send-btn" id="fmodal-send" onclick="sendFindingMessage()">Wyślij wiadomość</button>
+                        <div id="fmodal-status"></div>
+                    </div>
+                </div>
+                @endif
+                @endauth
+            </div>
+        </div>
+    </div>
+
     {{-- Nawigacja --}}
     <div class="nav-bar safe-bottom">
         <a href="{{ route('profile.show') }}" class="nav-item">
@@ -228,6 +313,9 @@
 
 @push('scripts')
 <script>
+const CSRF_TOKEN    = '{{ csrf_token() }}';
+const MESSAGE_BASE  = "{{ url('/api/findings') }}";
+
 function toggleAcc(header) {
     const body = header.nextElementSibling;
     const arrow = header.querySelector('.acc-arrow, .acc-cou-arrow, .acc-city-arrow');
@@ -235,5 +323,84 @@ function toggleAcc(header) {
     if (arrow) arrow.classList.toggle('open', isOpen);
 }
 
+let activeFindingId = null;
+
+function openFindingModal(card) {
+    activeFindingId = card.dataset.id || null;
+
+    document.getElementById('fmodal-name').textContent  = '🪙 ' + (card.dataset.name || '');
+    document.getElementById('fmodal-depth').textContent = '📏 ' + (card.dataset.depth || '0') + ' cm głębokości';
+    document.getElementById('fmodal-date').textContent  = '📅 ' + (card.dataset.date || '');
+
+    const desc = card.dataset.desc || '';
+    const descEl = document.getElementById('fmodal-desc');
+    descEl.textContent = desc;
+    descEl.style.display = desc ? 'block' : 'none';
+
+    const photo = card.dataset.photo || '';
+    const photoEl = document.getElementById('fmodal-photo');
+    if (photo) { photoEl.src = photo; photoEl.style.display = 'block'; }
+    else        { photoEl.src = '';   photoEl.style.display = 'none'; }
+
+    const msgForm = document.getElementById('fmodal-msg-form');
+    if (msgForm) {
+        msgForm.style.display = 'none';
+        document.getElementById('fmodal-textarea').value = '';
+        document.getElementById('fmodal-status').textContent = '';
+        const sendBtn = document.getElementById('fmodal-send');
+        if (sendBtn) { sendBtn.disabled = false; }
+    }
+
+    document.getElementById('finding-modal').classList.add('open');
+}
+
+function closeFindingModal() {
+    document.getElementById('finding-modal').classList.remove('open');
+    activeFindingId = null;
+}
+
+function handleFindingBackdrop(e) {
+    if (e.target === document.getElementById('finding-modal')) { closeFindingModal(); }
+}
+
+function toggleMsgForm() {
+    const form = document.getElementById('fmodal-msg-form');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function sendFindingMessage() {
+    const body = document.getElementById('fmodal-textarea').value.trim();
+    if (!body || !activeFindingId) { return; }
+
+    const btn    = document.getElementById('fmodal-send');
+    const status = document.getElementById('fmodal-status');
+    btn.disabled       = true;
+    status.textContent = 'Wysyłanie…';
+    status.style.color = '#9ca3af';
+
+    fetch(`${MESSAGE_BASE}/${activeFindingId}/message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+        body: JSON.stringify({ body }),
+    })
+    .then(r => r.json().then(data => ({ ok: r.ok, data })))
+    .then(({ ok, data }) => {
+        if (ok) {
+            status.textContent = '✓ Wiadomość wysłana!';
+            status.style.color = '#34d399';
+            document.getElementById('fmodal-textarea').value = '';
+            setTimeout(closeFindingModal, 1500);
+        } else {
+            status.textContent = data.message ?? 'Nie udało się wysłać.';
+            status.style.color = '#f87171';
+            btn.disabled = false;
+        }
+    })
+    .catch(() => {
+        status.textContent = 'Błąd połączenia.';
+        status.style.color = '#f87171';
+        btn.disabled = false;
+    });
+}
 </script>
 @endpush
