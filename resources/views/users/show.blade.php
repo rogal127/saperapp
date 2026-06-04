@@ -275,7 +275,7 @@
                     <button class="fmodal-close" onclick="closeFindingModal()">✕</button>
                 </div>
                 <div class="fmodal-desc" id="fmodal-desc"></div>
-                <img id="fmodal-photo" class="fmodal-photo" src="" alt="" style="display:none">
+                <img id="fmodal-photo" class="fmodal-photo" src="" alt="" style="display:none;cursor:zoom-in" onclick="openLightbox(this.src)">
                 @auth
                 @if(auth()->id() !== ($profile['id'] ?? null))
                 <div id="fmodal-msg-section">
