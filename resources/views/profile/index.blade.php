@@ -91,6 +91,27 @@
                     <input type="email" value="{{ $user['email'] ?? '' }}"
                         class="input-field opacity-50" disabled>
                 </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Kim jesteś?</label>
+                    <div class="flex gap-3">
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="role" value="poszukiwacz" class="sr-only peer"
+                                {{ old('role', $user['role'] ?? 'poszukiwacz') === 'poszukiwacz' ? 'checked' : '' }}>
+                            <div class="peer-checked:border-amber-400 peer-checked:bg-amber-400/10 border-2 border-surface-card rounded-xl p-3 text-center transition-colors">
+                                <div class="text-2xl mb-1">🔍</div>
+                                <div class="text-xs font-semibold text-white">Poszukiwacz</div>
+                            </div>
+                        </label>
+                        <label class="flex-1 cursor-pointer">
+                            <input type="radio" name="role" value="naukowiec" class="sr-only peer"
+                                {{ old('role', $user['role'] ?? '') === 'naukowiec' ? 'checked' : '' }}>
+                            <div class="peer-checked:border-amber-400 peer-checked:bg-amber-400/10 border-2 border-surface-card rounded-xl p-3 text-center transition-colors">
+                                <div class="text-2xl mb-1">🔬</div>
+                                <div class="text-xs font-semibold text-white">Naukowiec</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
                 <button type="submit" class="btn-primary mt-1">Zapisz zmiany</button>
             </div>
         </form>

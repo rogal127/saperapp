@@ -17,7 +17,7 @@
         <div class="mb-8 text-center">
             <div class="text-6xl mb-4">⚒️</div>
             <h1 class="text-3xl font-bold text-white">Dołącz do nas</h1>
-            <p class="text-gray-400 mt-2">Utwórz konto detektorzysty</p>
+            <p class="text-gray-400 mt-2">Utwórz konto i zacznij dokumentować znaleziska</p>
         </div>
 
         <form method="POST" action="{{ route('register') }}" class="flex flex-col gap-4">
@@ -81,6 +81,32 @@
                     class="input-field"
                     autocomplete="new-password"
                 >
+            </div>
+
+            {{-- Role --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1.5 ml-1">Kim jesteś?</label>
+                <div class="flex gap-3">
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="role" value="poszukiwacz" class="sr-only peer"
+                            {{ old('role', 'poszukiwacz') === 'poszukiwacz' ? 'checked' : '' }}>
+                        <div class="peer-checked:border-amber-400 peer-checked:bg-amber-400/10 border-2 border-surface-card rounded-xl p-3 text-center transition-colors">
+                            <div class="text-2xl mb-1">🔍</div>
+                            <div class="text-sm font-semibold text-white">Poszukiwacz</div>
+                        </div>
+                    </label>
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="role" value="naukowiec" class="sr-only peer"
+                            {{ old('role') === 'naukowiec' ? 'checked' : '' }}>
+                        <div class="peer-checked:border-amber-400 peer-checked:bg-amber-400/10 border-2 border-surface-card rounded-xl p-3 text-center transition-colors">
+                            <div class="text-2xl mb-1">🔬</div>
+                            <div class="text-sm font-semibold text-white">Naukowiec</div>
+                        </div>
+                    </label>
+                </div>
+                @error('role')
+                    <p class="text-red-400 text-sm mt-1 ml-1">{{ $message }}</p>
+                @enderror
             </div>
 
             <button type="submit" class="btn-primary mt-2">

@@ -162,7 +162,7 @@
             @endif
             <div class="flex-1 min-w-0">
                 <div class="text-lg font-bold text-white truncate">{{ $profile['name'] ?? 'Użytkownik' }}</div>
-                <div class="text-xs text-gray-500 mt-0.5">Detektorysta</div>
+                <div class="text-xs text-gray-500 mt-0.5">{{ $profile['role_label'] ?? 'Poszukiwacz' }}</div>
             </div>
             <div class="flex flex-col items-end gap-2">
                 <div class="stat-badge">

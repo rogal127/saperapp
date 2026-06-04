@@ -69,11 +69,13 @@ class ProfileController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'role' => ['required', 'string', 'in:poszukiwacz,naukowiec'],
         ]);
 
         $response = Http::withToken($this->apiToken($request))
             ->put(config('services.api.url').'/me', [
                 'name' => $request->name,
+                'role' => $request->role,
             ]);
 
         if ($response->failed()) {
