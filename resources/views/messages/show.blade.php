@@ -64,7 +64,12 @@
                     {{ $initials }}
                 @endif
             </div>
-            <div class="font-bold text-white truncate">{{ $other['name'] ?? 'Użytkownik' }}</div>
+            <div>
+                <div class="font-bold text-white truncate">{{ $other['name'] ?? 'Użytkownik' }}</div>
+                @if(!empty($other['role_label']))
+                    <div class="text-xs text-gray-500 leading-tight">{{ $other['role_label'] }}</div>
+                @endif
+            </div>
         </a>
     </div>
 
