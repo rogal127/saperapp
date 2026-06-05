@@ -9,9 +9,9 @@
     }
     #map-picker.selected .leaflet-container { cursor: crosshair; }
     .leaflet-marker-icon { filter: hue-rotate(200deg) brightness(1.3); }
-    .locate-btn {
+    .locate-btn, .layer-btn {
         position: absolute;
-        bottom: 16px; right: 12px;
+        right: 12px;
         z-index: 1000;
         background: #2a2a3e;
         border: 1px solid #404060;
@@ -25,7 +25,9 @@
         touch-action: manipulation;
         box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     }
-    .locate-btn:active { opacity: 0.7; }
+    .locate-btn { bottom: 16px; }
+    .layer-btn  { bottom: 66px; }
+    .locate-btn:active, .layer-btn:active { opacity: 0.7; }
     .step-screen { display: none; flex-direction: column; height: 100%; }
     .step-screen.active { display: flex; }
     .screen-scroll { overflow-y: auto; flex: 1; }
@@ -66,6 +68,9 @@
             <div id="map-picker" class="w-full h-full"></div>
             <button type="button" class="locate-btn" id="locateBtn">
                 🎯 Moja pozycja
+            </button>
+            <button type="button" class="layer-btn" id="layerBtn" onclick="toggleLayer()">
+                🛰️ Ortofoto
             </button>
         </div>
 
@@ -401,9 +406,30 @@
         attributionControl: false,
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-    }).addTo(map);
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+    const orthoLayer = L.tileLayer(
+        'https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMTS/StandardResolution'
+        + '?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTOFOTOMAPA&STYLE=default'
+        + '&FORMAT=image%2Fjpeg&TileMatrixSet=EPSG:3857&TileMatrix=EPSG:3857:{z}&TileRow={y}&TileCol={x}',
+        { maxZoom: 19 }
+    );
+    let currentLayer = 'osm';
+    osmLayer.addTo(map);
+
+    function toggleLayer() {
+        const btn = document.getElementById('layerBtn');
+        if (currentLayer === 'osm') {
+            map.removeLayer(osmLayer);
+            orthoLayer.addTo(map);
+            currentLayer = 'ortho';
+            btn.textContent = '🗺️ Mapa';
+        } else {
+            map.removeLayer(orthoLayer);
+            osmLayer.addTo(map);
+            currentLayer = 'osm';
+            btn.textContent = '🛰️ Ortofoto';
+        }
+    }
 
     const existingPinIcon = L.divIcon({
         html: '<div style="width:22px;height:22px;background:#f59e0b;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.5)"></div>',
