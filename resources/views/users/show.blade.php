@@ -169,12 +169,14 @@
                     <div class="stat-value">{{ $profile['findings_count'] ?? 0 }}</div>
                     <div class="stat-label">znalezisk</div>
                 </div>
+                @if(($profile['id'] ?? null) !== $currentUserId)
                 <form method="POST" action="{{ route('messages.start-with', $profile['id']) }}">
                     @csrf
                     <button type="submit" style="background:#f59e0b;color:#1a1a2e;font-weight:700;font-size:0.75rem;padding:0.4rem 0.875rem;border-radius:0.75rem;border:none;cursor:pointer;white-space:nowrap">
                         💬 Napisz
                     </button>
                 </form>
+                @endif
             </div>
         </div>
 
@@ -276,8 +278,7 @@
                 </div>
                 <div class="fmodal-desc" id="fmodal-desc"></div>
                 <img id="fmodal-photo" class="fmodal-photo" src="" alt="" style="display:none;cursor:zoom-in" onclick="openLightbox(this.src)">
-                @auth
-                @if(auth()->id() !== ($profile['id'] ?? null))
+                @if(($profile['id'] ?? null) !== $currentUserId)
                 <div id="fmodal-msg-section">
                     <button class="fmodal-msg-btn" id="fmodal-msg-toggle" onclick="toggleMsgForm()">💬 Napisz wiadomość</button>
                     <div id="fmodal-msg-form" style="display:none">
@@ -286,8 +287,22 @@
                         <div id="fmodal-status"></div>
                     </div>
                 </div>
+                @else
+                <div id="fmodal-owner-actions" style="display:flex;gap:0.5rem;margin-top:0.875rem">
+                    <a id="fmodal-edit-link" href="#"
+                        style="flex:1;display:block;text-align:center;padding:0.8rem;background:transparent;border:1px solid #60a5fa;color:#60a5fa;border-radius:0.75rem;font-size:0.85rem;font-weight:700;text-decoration:none">
+                        ✏️ Edytuj
+                    </a>
+                    <form id="fmodal-delete-form" method="POST" action="#" style="flex:1" onsubmit="return confirmDelete()">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                            style="width:100%;padding:0.8rem;background:transparent;border:1px solid #f87171;color:#f87171;border-radius:0.75rem;font-size:0.85rem;font-weight:700;cursor:pointer">
+                            🗑️ Usuń
+                        </button>
+                    </form>
+                </div>
                 @endif
-                @endauth
             </div>
         </div>
     </div>
@@ -315,6 +330,7 @@
 <script>
 const CSRF_TOKEN    = '{{ csrf_token() }}';
 const MESSAGE_BASE  = "{{ url('/api/findings') }}";
+const IS_OWN_PROFILE = {{ ($profile['id'] ?? null) === $currentUserId ? 'true' : 'false' }};
 
 function toggleAcc(header) {
     const body = header.nextElementSibling;
@@ -351,6 +367,13 @@ function openFindingModal(card) {
         if (sendBtn) { sendBtn.disabled = false; }
     }
 
+    if (IS_OWN_PROFILE && activeFindingId) {
+        const editLink = document.getElementById('fmodal-edit-link');
+        const deleteForm = document.getElementById('fmodal-delete-form');
+        if (editLink)   { editLink.href = `/findings/${activeFindingId}/edit`; }
+        if (deleteForm) { deleteForm.action = `/findings/${activeFindingId}`; }
+    }
+
     document.getElementById('finding-modal').classList.add('open');
 }
 
@@ -366,6 +389,10 @@ function handleFindingBackdrop(e) {
 function toggleMsgForm() {
     const form = document.getElementById('fmodal-msg-form');
     form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function confirmDelete() {
+    return confirm('Na pewno chcesz usunąć to znalezisko?');
 }
 
 function sendFindingMessage() {

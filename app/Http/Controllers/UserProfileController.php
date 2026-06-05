@@ -32,9 +32,13 @@ class UserProfileController extends Controller
         }
         ksort($grouped);
 
+        $currentUser = $request->session()->get('api_user', []);
+        $currentUserId = $currentUser['id'] ?? null;
+
         return view('users.show', [
-            'profile' => $profile,
-            'grouped' => $grouped,
+            'profile'       => $profile,
+            'grouped'       => $grouped,
+            'currentUserId' => $currentUserId,
         ]);
     }
 }
