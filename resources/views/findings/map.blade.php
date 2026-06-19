@@ -217,11 +217,12 @@
     .pin-finding-desc.collapsed {
         display: -webkit-box;
         -webkit-line-clamp: 3;
+        line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
     .pin-desc-toggle {
-        margin-top: 3px; background: none; border: none; padding: 0;
+        display: block; margin-top: 3px; margin-left: auto; background: none; border: none; padding: 0;
         color: #f59e0b; font-size: 0.75rem; font-weight: 600; cursor: pointer;
     }
     .pin-finding-photo { width: 100%; max-height: 220px; object-fit: contain; border-radius: 0.5rem; margin-top: 0.5rem; background: #1a1a2e; cursor: pointer; }
