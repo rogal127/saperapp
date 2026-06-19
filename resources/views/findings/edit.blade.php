@@ -166,33 +166,35 @@
             </div>
             @endif
 
-            {{-- Photo --}}
+            {{-- Photos --}}
             <div>
                 <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
-                    📷 Zdjęcie <span class="text-gray-500 font-normal">(opcjonalne)</span>
+                    📷 Zdjęcia <span class="text-gray-500 font-normal">(opcjonalne, do 8)</span>
                 </label>
 
-                @if(!empty($finding['photo_url']))
-                <div class="mb-3 relative rounded-xl overflow-hidden border-2 border-gray-600" id="currentPhotoWrap">
-                    <img src="{{ $finding['photo_url'] }}" alt="Aktualne zdjęcie" class="w-full object-cover max-h-48">
-                    <div class="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-lg">Aktualne zdjęcie</div>
-                </div>
-                @endif
+                @php $existingPhotos = $finding['photos'] ?? []; @endphp
 
-                <div id="photoPickerArea">
-                    <label class="flex flex-col items-center justify-center gap-2 card border-2 border-dashed border-gray-600 cursor-pointer active:border-amber-500 transition-colors py-6" id="photoLabel">
-                        <span class="text-3xl">📷</span>
-                        <span class="text-sm text-gray-400">Dotknij, aby zmienić zdjęcie</span>
-                        <input type="file" name="photo" accept="image/*" class="hidden" id="photoInput">
+                <div id="photoGallery" class="grid grid-cols-3 gap-2">
+                    @foreach($existingPhotos as $photo)
+                    <div class="existing-photo relative rounded-xl overflow-hidden border-2 border-gray-600 aspect-square" data-photo-id="{{ $photo['id'] }}">
+                        <img src="{{ $photo['url'] }}" alt="" class="w-full h-full object-cover">
+                        <button type="button"
+                            class="remove-existing absolute top-1 right-1 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-base leading-none">
+                            ×
+                        </button>
+                        <span class="main-badge hidden absolute bottom-1 left-1 bg-amber-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded">Główne</span>
+                    </div>
+                    @endforeach
+
+                    <label id="photoAddTile" class="flex flex-col items-center justify-center gap-1 card border-2 border-dashed border-gray-600 cursor-pointer active:border-amber-500 transition-colors aspect-square">
+                        <span class="text-2xl">📷</span>
+                        <span class="text-[10px] text-gray-400 text-center px-1">Dodaj zdjęcie</span>
+                        <input type="file" name="photos[]" accept="image/*" multiple class="hidden" id="photoInput">
                     </label>
                 </div>
-                <div id="photoPreviewArea" class="hidden relative rounded-xl overflow-hidden border-2 border-amber-500">
-                    <img id="photoPreview" src="" alt="Podgląd zdjęcia" class="w-full object-cover max-h-64">
-                    <button type="button" id="removePhotoBtn"
-                        class="absolute top-2 right-2 bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg leading-none">
-                        ×
-                    </button>
-                </div>
+                <p class="text-xs text-gray-500 mt-1 ml-1" id="photoHint">Dotknij ×, aby usunąć zdjęcie. Pierwsze będzie głównym.</p>
+
+                <div id="deleteIdsContainer" class="hidden"></div>
             </div>
 
             {{-- Submit --}}
@@ -222,33 +224,96 @@
         });
     });
 
+    const MAX_PHOTOS = 8;
     const photoInput = document.getElementById('photoInput');
-    const photoPickerArea = document.getElementById('photoPickerArea');
-    const photoPreviewArea = document.getElementById('photoPreviewArea');
-    const photoPreview = document.getElementById('photoPreview');
+    const photoGallery = document.getElementById('photoGallery');
+    const photoAddTile = document.getElementById('photoAddTile');
+    const photoHint = document.getElementById('photoHint');
+    const deleteIdsContainer = document.getElementById('deleteIdsContainer');
+    let selectedPhotos = []; // newly added File[]
+
+    function existingKeptCount() {
+        return photoGallery.querySelectorAll('.existing-photo:not([data-deleted="1"])').length;
+    }
+
+    function refreshState() {
+        // "Główne" badge on the first kept photo (existing first, then new).
+        photoGallery.querySelectorAll('.main-badge').forEach(b => b.classList.add('hidden'));
+        const firstKept = photoGallery.querySelector('.existing-photo:not([data-deleted="1"]) .main-badge, .photo-thumb .main-badge');
+        if (firstKept) { firstKept.classList.remove('hidden'); }
+
+        const total = existingKeptCount() + selectedPhotos.length;
+        const full = total >= MAX_PHOTOS;
+        photoAddTile.classList.toggle('hidden', full);
+        photoHint.textContent = full
+            ? 'Osiągnięto limit 8 zdjęć.'
+            : 'Dotknij ×, aby usunąć zdjęcie. Pierwsze będzie głównym.';
+    }
+
+    // Existing photos: toggle delete / undo
+    photoGallery.querySelectorAll('.existing-photo').forEach(el => {
+        const id = el.dataset.photoId;
+        const btn = el.querySelector('.remove-existing');
+        btn.addEventListener('click', () => {
+            const isDeleted = el.dataset.deleted === '1';
+            if (isDeleted) {
+                el.dataset.deleted = '';
+                el.classList.remove('opacity-40', 'grayscale');
+                btn.textContent = '×';
+                const hidden = deleteIdsContainer.querySelector(`input[value="${id}"]`);
+                if (hidden) { hidden.remove(); }
+            } else {
+                el.dataset.deleted = '1';
+                el.classList.add('opacity-40', 'grayscale');
+                btn.textContent = '↺';
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'delete_photo_ids[]';
+                hidden.value = id;
+                deleteIdsContainer.appendChild(hidden);
+            }
+            refreshState();
+        });
+    });
+
+    function renderNewPhotos() {
+        photoGallery.querySelectorAll('.photo-thumb').forEach(el => el.remove());
+        selectedPhotos.forEach((file, index) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'photo-thumb relative rounded-xl overflow-hidden border-2 border-amber-500 aspect-square';
+            const img = document.createElement('img');
+            img.className = 'w-full h-full object-cover';
+            img.src = URL.createObjectURL(file);
+            img.onload = () => URL.revokeObjectURL(img.src);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'absolute top-1 right-1 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-base leading-none';
+            btn.textContent = '×';
+            btn.addEventListener('click', () => {
+                selectedPhotos.splice(index, 1);
+                renderNewPhotos();
+            });
+            const badge = document.createElement('span');
+            badge.className = 'main-badge hidden absolute bottom-1 left-1 bg-amber-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded';
+            badge.textContent = 'Główne';
+            wrap.appendChild(img);
+            wrap.appendChild(btn);
+            wrap.appendChild(badge);
+            photoGallery.insertBefore(wrap, photoAddTile);
+        });
+        refreshState();
+    }
 
     photoInput.addEventListener('change', function () {
-        if (this.files && this.files[0]) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                photoPreview.src = e.target.result;
-                photoPickerArea.classList.add('hidden');
-                photoPreviewArea.classList.remove('hidden');
-                const currentWrap = document.getElementById('currentPhotoWrap');
-                if (currentWrap) { currentWrap.classList.add('hidden'); }
-            };
-            reader.readAsDataURL(this.files[0]);
+        for (const file of this.files) {
+            if (existingKeptCount() + selectedPhotos.length >= MAX_PHOTOS) { break; }
+            selectedPhotos.push(file);
         }
+        this.value = '';
+        renderNewPhotos();
     });
 
-    document.getElementById('removePhotoBtn').addEventListener('click', function () {
-        photoInput.value = '';
-        photoPreview.src = '';
-        photoPreviewArea.classList.add('hidden');
-        photoPickerArea.classList.remove('hidden');
-        const currentWrap = document.getElementById('currentPhotoWrap');
-        if (currentWrap) { currentWrap.classList.remove('hidden'); }
-    });
+    refreshState();
 
     function resizeImageFile(file, maxPx, quality) {
         return new Promise((resolve) => {
@@ -276,17 +341,18 @@
 
     document.getElementById('editForm').addEventListener('submit', async function (e) {
         const btn  = document.getElementById('submitBtn');
-        const file = photoInput.files[0];
 
-        if (file) {
+        if (selectedPhotos.length > 0) {
             e.preventDefault();
             btn.disabled = true;
-            btn.textContent = 'Przetwarzanie zdjęcia...';
+            btn.textContent = 'Przetwarzanie zdjęć...';
             btn.classList.add('opacity-60');
 
-            const resized = await resizeImageFile(file, 1920, 0.82);
             const dt = new DataTransfer();
-            dt.items.add(resized);
+            for (const file of selectedPhotos) {
+                const resized = await resizeImageFile(file, 1920, 0.82);
+                dt.items.add(resized);
+            }
             photoInput.files = dt.files;
         }
 
@@ -294,7 +360,7 @@
         btn.textContent = 'Zapisywanie...';
         btn.classList.add('opacity-60');
 
-        if (file) { this.submit(); }
+        if (selectedPhotos.length > 0) { this.submit(); }
     });
 </script>
 @endpush

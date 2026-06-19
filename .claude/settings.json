@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8000/)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8000/)",
+      "Bash(grep -rn \"photo_path\\\\|photo_url\\\\|'photo'\" app database tests routes)",
+      "Bash(cat database/factories/FindingFactory.php)",
+      "Bash(ls tests/Feature tests/Unit)",
+      "Bash(grep -rln \"photo\\\\|Finding\" tests)"
     ]
   }
 }

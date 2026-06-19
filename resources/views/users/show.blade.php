@@ -117,6 +117,9 @@
     .fmodal-depth { font-size: 0.8rem; color: #f59e0b; font-weight: 600; margin-top: 4px; }
     .fmodal-desc { font-size: 0.8rem; color: #d1d5db; margin-top: 8px; }
     .fmodal-photo { width: 100%; max-height: 320px; object-fit: contain; border-radius: 0.75rem; margin-top: 0.75rem; background: #252538; }
+    .fmodal-gallery { display: flex; gap: 6px; overflow-x: auto; scroll-snap-type: x mandatory; margin-top: 0.75rem; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .fmodal-gallery::-webkit-scrollbar { display: none; }
+    .fmodal-gallery .fmodal-photo { flex: 0 0 90%; scroll-snap-align: start; margin-top: 0; }
     .fmodal-close { color: #9ca3af; font-size: 1.4rem; background: none; border: none; cursor: pointer; line-height: 1; }
     .fmodal-msg-btn {
         margin-top: 0.875rem; width: 100%; padding: 0.8rem;
@@ -234,6 +237,7 @@
                                             data-date="{{ $finding['found_at'] ?? '' }}"
                                             data-desc="{{ $finding['description'] ?? '' }}"
                                             data-photo="{{ $finding['photo_url'] ?? '' }}"
+                                            data-photos="{{ json_encode($finding['photos'] ?? []) }}"
                                             onclick="openFindingModal(this)">
                                             @if(!empty($finding['photo_url']))
                                                 <img src="{{ $finding['photo_url'] }}" alt="" class="finding-thumb">
@@ -277,7 +281,7 @@
                     <button class="fmodal-close" onclick="closeFindingModal()">✕</button>
                 </div>
                 <div class="fmodal-desc" id="fmodal-desc"></div>
-                <img id="fmodal-photo" class="fmodal-photo" src="" alt="" style="display:none;cursor:zoom-in" onclick="openLightbox(this.src)">
+                <div id="fmodal-gallery" class="fmodal-gallery" style="display:none"></div>
                 @if(($profile['id'] ?? null) !== $currentUserId)
                 <div id="fmodal-msg-section">
                     <button class="fmodal-msg-btn" id="fmodal-msg-toggle" onclick="toggleMsgForm()">💬 Napisz wiadomość</button>
@@ -353,10 +357,27 @@ function openFindingModal(card) {
     descEl.textContent = desc;
     descEl.style.display = desc ? 'block' : 'none';
 
-    const photo = card.dataset.photo || '';
-    const photoEl = document.getElementById('fmodal-photo');
-    if (photo) { photoEl.src = photo; photoEl.style.display = 'block'; }
-    else        { photoEl.src = '';   photoEl.style.display = 'none'; }
+    let photos = [];
+    try { photos = JSON.parse(card.dataset.photos || '[]'); } catch (e) { photos = []; }
+    if (!photos.length && card.dataset.photo) { photos = [card.dataset.photo]; }
+
+    const galleryEl = document.getElementById('fmodal-gallery');
+    galleryEl.innerHTML = '';
+    if (photos.length) {
+        photos.forEach(url => {
+            const img = document.createElement('img');
+            img.className = 'fmodal-photo';
+            img.src = url;
+            img.alt = '';
+            img.style.cursor = 'zoom-in';
+            img.addEventListener('click', () => openLightbox(url));
+            galleryEl.appendChild(img);
+        });
+        galleryEl.classList.toggle('fmodal-gallery', photos.length > 1);
+        galleryEl.style.display = photos.length > 1 ? 'flex' : 'block';
+    } else {
+        galleryEl.style.display = 'none';
+    }
 
     const msgForm = document.getElementById('fmodal-msg-form');
     if (msgForm) {

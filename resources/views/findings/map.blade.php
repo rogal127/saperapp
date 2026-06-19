@@ -226,6 +226,9 @@
         color: #f59e0b; font-size: 0.75rem; font-weight: 600; cursor: pointer;
     }
     .pin-finding-photo { width: 100%; max-height: 220px; object-fit: contain; border-radius: 0.5rem; margin-top: 0.5rem; background: #1a1a2e; cursor: pointer; }
+    .pin-finding-gallery { display: flex; gap: 6px; overflow-x: auto; scroll-snap-type: x mandatory; margin-top: 0.5rem; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .pin-finding-gallery::-webkit-scrollbar { display: none; }
+    .pin-finding-gallery .pin-finding-photo { flex: 0 0 88%; scroll-snap-align: start; margin-top: 0; }
     .pin-msg-btn {
         margin-top: 0.5rem; width: 100%; padding: 0.5rem 0.75rem;
         background: transparent; border: 1px solid #f59e0b; color: #f59e0b;
@@ -647,7 +650,7 @@ function openCityFindingsModal(cluster) {
                     : escHtml(f.finder ?? '')
                 }</div>
                 ${descHtml(f.description)}
-                ${f.photo_url ? `<img class="pin-finding-photo" src="${escHtml(f.photo_url)}" alt="" onclick="openLightbox('${escHtml(f.photo_url)}')">` : ''}
+                ${photosHtml(f)}
                 <button class="pin-msg-btn" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>
             `;
             list.appendChild(card);
@@ -655,6 +658,19 @@ function openCityFindingsModal(cluster) {
     }
 
     document.getElementById('pin-modal').classList.add('open');
+}
+
+// --- Galeria zdjęć znaleziska (obsługuje tablicę url-i lub obiektów {url}) ---
+function photosHtml(f) {
+    const photos = (Array.isArray(f.photos) && f.photos.length)
+        ? f.photos.map(p => (typeof p === 'string' ? p : p.url))
+        : (f.photo_url ? [f.photo_url] : []);
+    if (!photos.length) { return ''; }
+    const imgs = photos.map(u => {
+        const e = escHtml(u);
+        return `<img class="pin-finding-photo" src="${e}" alt="" onclick="openLightbox('${e}')">`;
+    }).join('');
+    return photos.length === 1 ? imgs : `<div class="pin-finding-gallery">${imgs}</div>`;
 }
 
 // --- Opis znaleziska z przyciskiem "Więcej" ---
@@ -728,7 +744,7 @@ function openPinModal(pin) {
                         </div>` : ''}
                     </div>
                     ${descHtml(f.description)}
-                    ${f.photo_url ? `<img class="pin-finding-photo" src="${escHtml(f.photo_url)}" alt="" onclick="openLightbox('${escHtml(f.photo_url)}')">` : ''}
+                    ${photosHtml(f)}
                     ${!pin.is_mine ? `<button class="pin-msg-btn" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>` : ''}
                 `;
                 list.appendChild(card);

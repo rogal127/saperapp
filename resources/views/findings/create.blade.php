@@ -219,25 +219,19 @@
                     <p class="text-xs text-gray-500 mt-1 ml-1">Tylko Ty widzisz tę treść.</p>
                 </div>
 
-                {{-- Photo --}}
+                {{-- Photos --}}
                 <div>
                     <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
-                        📷 Zdjęcie <span class="text-gray-500 font-normal">(opcjonalne)</span>
+                        📷 Zdjęcia <span class="text-gray-500 font-normal">(opcjonalne, do 8)</span>
                     </label>
-                    <div id="photoPickerArea">
-                        <label class="flex flex-col items-center justify-center gap-2 card border-2 border-dashed border-gray-600 cursor-pointer active:border-amber-500 transition-colors py-6" id="photoLabel">
-                            <span class="text-3xl">📷</span>
-                            <span class="text-sm text-gray-400">Dotknij, aby dodać zdjęcie</span>
-                            <input type="file" name="photo" accept="image/*" class="hidden" id="photoInput">
+                    <div id="photoGallery" class="grid grid-cols-3 gap-2">
+                        <label id="photoAddTile" class="flex flex-col items-center justify-center gap-1 card border-2 border-dashed border-gray-600 cursor-pointer active:border-amber-500 transition-colors aspect-square">
+                            <span class="text-2xl">📷</span>
+                            <span class="text-[10px] text-gray-400 text-center px-1">Dodaj zdjęcie</span>
+                            <input type="file" name="photos[]" accept="image/*" multiple class="hidden" id="photoInput">
                         </label>
                     </div>
-                    <div id="photoPreviewArea" class="hidden relative rounded-xl overflow-hidden border-2 border-amber-500">
-                        <img id="photoPreview" src="" alt="Podgląd zdjęcia" class="w-full object-cover max-h-64">
-                        <button type="button" id="removePhotoBtn"
-                            class="absolute top-2 right-2 bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg leading-none">
-                            ×
-                        </button>
-                    </div>
+                    <p class="text-xs text-gray-500 mt-1 ml-1" id="photoHint">Możesz dodać kilka zdjęć — pierwsze będzie głównym.</p>
                 </div>
 
                 {{-- Finding type --}}
@@ -655,29 +649,56 @@
     document.getElementById('backBtn').addEventListener('click', () => showStep(1));
     document.getElementById('changeLocationBtn').addEventListener('click', () => showStep(1));
 
-    // Photo preview
+    // Photo gallery picker (multi)
+    const MAX_PHOTOS = 8;
     const photoInput = document.getElementById('photoInput');
-    const photoPickerArea = document.getElementById('photoPickerArea');
-    const photoPreviewArea = document.getElementById('photoPreviewArea');
-    const photoPreview = document.getElementById('photoPreview');
+    const photoGallery = document.getElementById('photoGallery');
+    const photoAddTile = document.getElementById('photoAddTile');
+    const photoHint = document.getElementById('photoHint');
+    let selectedPhotos = []; // File[]
+
+    function renderPhotoGallery() {
+        photoGallery.querySelectorAll('.photo-thumb').forEach(el => el.remove());
+        selectedPhotos.forEach((file, index) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'photo-thumb relative rounded-xl overflow-hidden border-2 border-amber-500 aspect-square';
+            const img = document.createElement('img');
+            img.className = 'w-full h-full object-cover';
+            img.src = URL.createObjectURL(file);
+            img.onload = () => URL.revokeObjectURL(img.src);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'absolute top-1 right-1 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-base leading-none';
+            btn.textContent = '×';
+            btn.addEventListener('click', () => {
+                selectedPhotos.splice(index, 1);
+                renderPhotoGallery();
+            });
+            if (index === 0) {
+                const badge = document.createElement('span');
+                badge.className = 'absolute bottom-1 left-1 bg-amber-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded';
+                badge.textContent = 'Główne';
+                wrap.appendChild(badge);
+            }
+            wrap.appendChild(img);
+            wrap.appendChild(btn);
+            photoGallery.insertBefore(wrap, photoAddTile);
+        });
+
+        const full = selectedPhotos.length >= MAX_PHOTOS;
+        photoAddTile.classList.toggle('hidden', full);
+        photoHint.textContent = full
+            ? 'Osiągnięto limit 8 zdjęć.'
+            : (selectedPhotos.length ? `Wybrano ${selectedPhotos.length} z ${MAX_PHOTOS}.` : 'Możesz dodać kilka zdjęć — pierwsze będzie głównym.');
+    }
 
     photoInput.addEventListener('change', function () {
-        if (this.files && this.files[0]) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                photoPreview.src = e.target.result;
-                photoPickerArea.classList.add('hidden');
-                photoPreviewArea.classList.remove('hidden');
-            };
-            reader.readAsDataURL(this.files[0]);
+        for (const file of this.files) {
+            if (selectedPhotos.length >= MAX_PHOTOS) { break; }
+            selectedPhotos.push(file);
         }
-    });
-
-    document.getElementById('removePhotoBtn').addEventListener('click', function () {
-        photoInput.value = '';
-        photoPreview.src = '';
-        photoPreviewArea.classList.add('hidden');
-        photoPickerArea.classList.remove('hidden');
+        this.value = '';
+        renderPhotoGallery();
     });
 
     function resizeImageFile(file, maxPx, quality) {
@@ -716,17 +737,18 @@
         }
 
         const btn  = document.getElementById('submitBtn');
-        const file = photoInput.files[0];
 
-        if (file) {
+        if (selectedPhotos.length > 0) {
             e.preventDefault();
             btn.disabled = true;
-            btn.textContent = 'Przetwarzanie zdjęcia...';
+            btn.textContent = 'Przetwarzanie zdjęć...';
             btn.classList.add('opacity-60');
 
-            const resized = await resizeImageFile(file, 1920, 0.82);
             const dt = new DataTransfer();
-            dt.items.add(resized);
+            for (const file of selectedPhotos) {
+                const resized = await resizeImageFile(file, 1920, 0.82);
+                dt.items.add(resized);
+            }
             photoInput.files = dt.files;
         }
 
@@ -734,7 +756,7 @@
         btn.textContent = 'Dodawanie...';
         btn.classList.add('opacity-60');
 
-        if (file) {
+        if (selectedPhotos.length > 0) {
             this.submit();
         }
     });

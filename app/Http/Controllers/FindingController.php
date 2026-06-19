@@ -62,16 +62,17 @@ class FindingController extends Controller
             'wkz_consent_id' => ['nullable', 'integer'],
             'finding_category_id' => ['nullable', 'integer'],
             'type' => ['nullable', 'string', 'in:archaeological_monument,monument,non_monument'],
-            'photo' => ['nullable', 'image', 'max:10240'],
+            'photos' => ['nullable', 'array', 'max:8'],
+            'photos.*' => ['image', 'max:10240'],
         ]);
 
         $pending = Http::withToken($this->apiToken($request));
 
-        if ($request->hasFile('photo')) {
+        foreach ($request->file('photos', []) as $index => $photo) {
             $pending = $pending->attach(
-                'photo',
-                file_get_contents($request->file('photo')->getRealPath()),
-                $request->file('photo')->getClientOriginalName()
+                "photos[{$index}]",
+                file_get_contents($photo->getRealPath()),
+                $photo->getClientOriginalName()
             );
         }
 
@@ -231,21 +232,24 @@ class FindingController extends Controller
             'wkz_consent_id' => ['nullable', 'integer'],
             'finding_category_id' => ['nullable', 'integer'],
             'type' => ['nullable', 'string', 'in:archaeological_monument,monument,non_monument'],
-            'photo' => ['nullable', 'image', 'max:10240'],
+            'photos' => ['nullable', 'array', 'max:8'],
+            'photos.*' => ['image', 'max:10240'],
+            'delete_photo_ids' => ['nullable', 'array'],
+            'delete_photo_ids.*' => ['integer'],
         ]);
 
         $pending = Http::withToken($this->apiToken($request));
 
-        if ($request->hasFile('photo')) {
+        foreach ($request->file('photos', []) as $index => $photo) {
             $pending = $pending->attach(
-                'photo',
-                file_get_contents($request->file('photo')->getRealPath()),
-                $request->file('photo')->getClientOriginalName()
+                "photos[{$index}]",
+                file_get_contents($photo->getRealPath()),
+                $photo->getClientOriginalName()
             );
         }
 
         // PHP nie czyta multipart body przy PUT — używamy POST z _method=PUT (method spoofing)
-        $response = $pending->post(config('services.api.url')."/findings/{$id}", [
+        $payload = [
             '_method' => 'PUT',
             'name' => $request->name,
             'description' => $request->description,
@@ -254,7 +258,14 @@ class FindingController extends Controller
             'wkz_consent_id' => $request->wkz_consent_id ?: '',
             'finding_category_id' => $request->finding_category_id ?: '',
             'type' => $request->type ?: '',
-        ]);
+        ];
+
+        // Bracket notation, aby PHP po stronie API sparsował to jako tablicę także w multipart.
+        foreach (array_values($request->input('delete_photo_ids', [])) as $index => $photoId) {
+            $payload["delete_photo_ids[{$index}]"] = $photoId;
+        }
+
+        $response = $pending->post(config('services.api.url')."/findings/{$id}", $payload);
 
         if ($response->status() === 403) {
             abort(403);

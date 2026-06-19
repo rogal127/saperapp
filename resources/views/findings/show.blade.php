@@ -12,10 +12,34 @@
 
     <div class="flex-1 overflow-y-auto">
 
-        {{-- Zdjęcie --}}
-        @if(!empty($finding['photo_url']))
-        <div style="background:#0d0d1a">
-            <img src="{{ $finding['photo_url'] }}" alt="" style="width:100%;max-height:55vh;object-fit:contain;cursor:pointer" onclick="openLightbox(this.src)">
+        {{-- Zdjęcia --}}
+        @php
+            $photos = $finding['photos'] ?? [];
+            if (empty($photos) && !empty($finding['photo_url'])) {
+                $photos = [['url' => $finding['photo_url']]];
+            }
+        @endphp
+        @if(!empty($photos))
+        <div style="background:#0d0d1a;position:relative">
+            <div id="photoCarousel" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none">
+                @foreach($photos as $photo)
+                <img src="{{ $photo['url'] }}" alt=""
+                     style="flex:0 0 100%;scroll-snap-align:center;width:100%;max-height:55vh;object-fit:contain;cursor:pointer"
+                     onclick="openLightbox(this.src)">
+                @endforeach
+            </div>
+            @if(count($photos) > 1)
+            <div id="photoCounter"
+                 style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.75rem;font-weight:600;padding:0.2rem 0.6rem;border-radius:1rem">
+                1 / {{ count($photos) }}
+            </div>
+            <div style="position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:6px;pointer-events:none">
+                @foreach($photos as $i => $photo)
+                <span class="carousel-dot" data-index="{{ $i }}"
+                      style="width:7px;height:7px;border-radius:50%;background:{{ $i === 0 ? '#f59e0b' : 'rgba(255,255,255,0.4)' }};transition:background 0.2s"></span>
+                @endforeach
+            </div>
+            @endif
         </div>
         @endif
 
@@ -97,3 +121,24 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        const carousel = document.getElementById('photoCarousel');
+        const counter = document.getElementById('photoCounter');
+        if (!carousel || !counter) { return; }
+
+        const dots = Array.from(document.querySelectorAll('.carousel-dot'));
+        const total = carousel.children.length;
+
+        carousel.addEventListener('scroll', () => {
+            const index = Math.round(carousel.scrollLeft / carousel.clientWidth);
+            counter.textContent = `${index + 1} / ${total}`;
+            dots.forEach((dot, i) => {
+                dot.style.background = i === index ? '#f59e0b' : 'rgba(255,255,255,0.4)';
+            });
+        }, { passive: true });
+    })();
+</script>
+@endpush
