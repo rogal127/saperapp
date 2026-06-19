@@ -103,7 +103,28 @@ class FindingController extends Controller
             return back()->withErrors($response->json('errors') ?? ['name' => 'Błąd zapisu.'])->withInput();
         }
 
-        return redirect()->route('home')->with('success', 'Znalezisko dodane!');
+        $createdPinId = $response->json('pin_id');
+        $city = $response->json('city');
+        $voivodeship = $response->json('voivodeship');
+        $location = $city ? $city.($voivodeship ? ', '.$voivodeship : '') : null;
+
+        return redirect()->route('findings.created')->with([
+            'success' => 'Znalezisko poprawnie dodane!',
+            'created_pin_id' => $createdPinId,
+            'created_location' => $location,
+        ]);
+    }
+
+    public function created(Request $request)
+    {
+        if (! $request->session()->has('created_pin_id')) {
+            return redirect()->route('home');
+        }
+
+        return view('findings.created', [
+            'pinId' => $request->session()->get('created_pin_id'),
+            'location' => $request->session()->get('created_location'),
+        ]);
     }
 
     public function show(Request $request, int $id)

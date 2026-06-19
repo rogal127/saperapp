@@ -13,6 +13,7 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/', fn () => view('home'))->name('home');
 
     Route::get('/findings/create', [FindingController::class, 'create'])->name('findings.create');
+    Route::get('/findings/created', [FindingController::class, 'created'])->name('findings.created');
     Route::post('/findings', [FindingController::class, 'store'])->name('findings.store');
     Route::get('/map', [FindingController::class, 'map'])->name('findings.map');
     Route::get('/api/findings', [FindingController::class, 'mapSearch'])->name('findings.api');
