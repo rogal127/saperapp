@@ -140,7 +140,7 @@ class FindingController extends Controller
             abort(502);
         }
 
-        return view('findings.show', ['finding' => $response->json()]);
+        return view('findings.show', ['finding' => $response->json('data') ?? $response->json()]);
     }
 
     public function map()

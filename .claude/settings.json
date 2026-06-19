@@ -5,7 +5,8 @@
       "Bash(grep -rn \"photo_path\\\\|photo_url\\\\|'photo'\" app database tests routes)",
       "Bash(cat database/factories/FindingFactory.php)",
       "Bash(ls tests/Feature tests/Unit)",
-      "Bash(grep -rln \"photo\\\\|Finding\" tests)"
+      "Bash(grep -rln \"photo\\\\|Finding\" tests)",
+      "Bash(git -C /Users/progala/Praca/saperapp diff --stat)"
     ]
   }
 }
