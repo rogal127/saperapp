@@ -213,7 +213,17 @@
     .pin-finding-name { font-weight: 700; font-size: 0.85rem; color: #fff; }
     .pin-finding-meta { font-size: 0.72rem; color: #9ca3af; margin-top: 2px; }
     .pin-finding-depth { font-size: 0.75rem; color: #f59e0b; font-weight: 600; margin-top: 3px; }
-    .pin-finding-desc { font-size: 0.75rem; color: #d1d5db; margin-top: 4px; }
+    .pin-finding-desc { font-size: 0.75rem; color: #d1d5db; margin-top: 4px; white-space: pre-line; }
+    .pin-finding-desc.collapsed {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .pin-desc-toggle {
+        margin-top: 3px; background: none; border: none; padding: 0;
+        color: #f59e0b; font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    }
     .pin-finding-photo { width: 100%; max-height: 220px; object-fit: contain; border-radius: 0.5rem; margin-top: 0.5rem; background: #1a1a2e; cursor: pointer; }
     .pin-msg-btn {
         margin-top: 0.5rem; width: 100%; padding: 0.5rem 0.75rem;
@@ -635,7 +645,7 @@ function openCityFindingsModal(cluster) {
                     ? `<a href="/users/${f.finder_id}" style="color:#f59e0b;font-weight:600;text-decoration:none;">${escHtml(f.finder ?? '')}</a>`
                     : escHtml(f.finder ?? '')
                 }</div>
-                ${f.description ? `<div class="pin-finding-desc">${escHtml(f.description.substring(0, 120))}${f.description.length > 120 ? '…' : ''}</div>` : ''}
+                ${descHtml(f.description)}
                 ${f.photo_url ? `<img class="pin-finding-photo" src="${escHtml(f.photo_url)}" alt="" onclick="openLightbox('${escHtml(f.photo_url)}')">` : ''}
                 <button class="pin-msg-btn" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>
             `;
@@ -644,6 +654,24 @@ function openCityFindingsModal(cluster) {
     }
 
     document.getElementById('pin-modal').classList.add('open');
+}
+
+// --- Opis znaleziska z przyciskiem "Więcej" ---
+function descHtml(description) {
+    if (!description) { return ''; }
+    const esc = escHtml(description);
+    if (description.length <= 120) {
+        return `<div class="pin-finding-desc">${esc}</div>`;
+    }
+    return `<div class="pin-finding-desc collapsed">${esc}</div>`
+        + `<button type="button" class="pin-desc-toggle" onclick="toggleDesc(this)">Więcej</button>`;
+}
+
+function toggleDesc(btn) {
+    const desc = btn.previousElementSibling;
+    const expanded = desc.classList.toggle('expanded');
+    desc.classList.toggle('collapsed', !expanded);
+    btn.textContent = expanded ? 'Mniej' : 'Więcej';
 }
 
 // --- Modal pinezki ---
@@ -698,7 +726,7 @@ function openPinModal(pin) {
                             <button class="finding-action-btn delete" onclick="deleteFinding(${f.id}, this)" title="Usuń">🗑️</button>
                         </div>` : ''}
                     </div>
-                    ${f.description ? `<div class="pin-finding-desc">${escHtml(f.description.substring(0,120))}${f.description.length > 120 ? '…' : ''}</div>` : ''}
+                    ${descHtml(f.description)}
                     ${f.photo_url ? `<img class="pin-finding-photo" src="${escHtml(f.photo_url)}" alt="" onclick="openLightbox('${escHtml(f.photo_url)}')">` : ''}
                     ${!pin.is_mine ? `<button class="pin-msg-btn" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>` : ''}
                 `;
