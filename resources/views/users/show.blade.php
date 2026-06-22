@@ -328,7 +328,7 @@
             <span class="nav-icon">🗺️</span><span>Mapa</span>
         </a>
         <a href="{{ route('findings.create') }}" class="nav-item">
-            <span class="nav-icon">➕</span><span>Dodaj</span>
+            <span class="nav-icon" style="font-weight:900;color:#f59e0b;">+</span><span>Dodaj</span>
         </a>
         <a href="{{ route('messages.index') }}" class="nav-item" id="nav-messages">
             <span class="nav-icon">💬</span><span>Wiadomości</span>
