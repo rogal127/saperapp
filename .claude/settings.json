@@ -6,7 +6,13 @@
       "Bash(cat database/factories/FindingFactory.php)",
       "Bash(ls tests/Feature tests/Unit)",
       "Bash(grep -rln \"photo\\\\|Finding\" tests)",
-      "Bash(git -C /Users/progala/Praca/saperapp diff --stat)"
+      "Bash(git -C /Users/progala/Praca/saperapp diff --stat)",
+      "Bash(awk '/local\\\\.ERROR/{block=NR} END{}' storage/logs/laravel.log)",
+      "Bash(vendor/bin/pint app/Http/Controllers/UserController.php --format agent)"
+    ],
+    "additionalDirectories": [
+      "/Users/progala/Praca/saperapp-api/database/factories",
+      "/Users/progala/Praca/saperapp-api/tests/Feature"
     ]
   }
 }

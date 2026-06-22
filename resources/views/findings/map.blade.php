@@ -663,7 +663,11 @@ function openCityFindingsModal(cluster) {
 // --- Galeria zdjęć znaleziska (obsługuje tablicę url-i lub obiektów {url}) ---
 function photosHtml(f) {
     const photos = (Array.isArray(f.photos) && f.photos.length)
-        ? f.photos.map(p => (typeof p === 'string' ? p : p.url))
+        ? f.photos.map(p => {
+            if (typeof p === 'string') { return p; }
+            // Prywatne zdjęcia idą przez własny proxy — URL API wymaga nagłówka Bearer, którego <img> nie wyśle.
+            return p.is_private ? `/findings/${f.id}/photos/${p.id}` : p.url;
+        })
         : (f.photo_url ? [f.photo_url] : []);
     if (!photos.length) { return ''; }
     const imgs = photos.map(u => {

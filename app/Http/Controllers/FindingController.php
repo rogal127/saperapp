@@ -65,6 +65,8 @@ class FindingController extends Controller
             'type' => ['nullable', 'string', 'in:archaeological_monument,monument,non_monument'],
             'photos' => ['nullable', 'array', 'max:8'],
             'photos.*' => ['image', 'max:10240'],
+            'photos_private' => ['nullable', 'array'],
+            'photos_private.*' => ['integer', 'min:0'],
         ]);
 
         $pending = Http::withToken($this->apiToken($request));
@@ -86,6 +88,11 @@ class FindingController extends Controller
             'finding_category_id' => $request->finding_category_id ?: null,
             'type' => $request->type ?: null,
         ];
+
+        // Bracket notation, aby API sparsowało to jako tablicę w multipart.
+        foreach (array_values($request->input('photos_private', [])) as $index => $photoIndex) {
+            $payload["photos_private[{$index}]"] = $photoIndex;
+        }
 
         if ($hasPinId) {
             $payload['pin_id'] = $request->pin_id;
@@ -143,6 +150,25 @@ class FindingController extends Controller
         }
 
         return view('findings.show', ['finding' => $response->json('data') ?? $response->json()]);
+    }
+
+    public function photo(Request $request, int $id, int $photoId)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url')."/findings/{$id}/photos/{$photoId}");
+
+        if (in_array($response->status(), [403, 404], true)) {
+            abort($response->status());
+        }
+
+        if ($response->failed()) {
+            abort(502);
+        }
+
+        return response($response->body(), 200, [
+            'Content-Type' => $response->header('Content-Type') ?: 'image/jpeg',
+            'Cache-Control' => 'private, max-age=300',
+        ]);
     }
 
     public function map()
@@ -258,8 +284,14 @@ class FindingController extends Controller
             'type' => ['nullable', 'string', 'in:archaeological_monument,monument,non_monument'],
             'photos' => ['nullable', 'array', 'max:8'],
             'photos.*' => ['image', 'max:10240'],
+            'photos_private' => ['nullable', 'array'],
+            'photos_private.*' => ['integer', 'min:0'],
             'delete_photo_ids' => ['nullable', 'array'],
             'delete_photo_ids.*' => ['integer'],
+            'make_private_photo_ids' => ['nullable', 'array'],
+            'make_private_photo_ids.*' => ['integer'],
+            'make_public_photo_ids' => ['nullable', 'array'],
+            'make_public_photo_ids.*' => ['integer'],
         ]);
 
         $pending = Http::withToken($this->apiToken($request));
@@ -288,6 +320,18 @@ class FindingController extends Controller
         // Bracket notation, aby PHP po stronie API sparsował to jako tablicę także w multipart.
         foreach (array_values($request->input('delete_photo_ids', [])) as $index => $photoId) {
             $payload["delete_photo_ids[{$index}]"] = $photoId;
+        }
+
+        foreach (array_values($request->input('photos_private', [])) as $index => $photoIndex) {
+            $payload["photos_private[{$index}]"] = $photoIndex;
+        }
+
+        foreach (array_values($request->input('make_private_photo_ids', [])) as $index => $photoId) {
+            $payload["make_private_photo_ids[{$index}]"] = $photoId;
+        }
+
+        foreach (array_values($request->input('make_public_photo_ids', [])) as $index => $photoId) {
+            $payload["make_public_photo_ids[{$index}]"] = $photoId;
         }
 
         $response = $pending->post(config('services.api.url')."/findings/{$id}", $payload);

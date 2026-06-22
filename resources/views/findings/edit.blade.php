@@ -193,12 +193,21 @@
 
                 <div id="photoGallery" class="grid grid-cols-3 gap-2">
                     @foreach($existingPhotos as $photo)
-                    <div class="existing-photo relative rounded-xl overflow-hidden border-2 border-gray-600 aspect-square" data-photo-id="{{ $photo['id'] }}">
-                        <img src="{{ $photo['url'] }}" alt="" class="w-full h-full object-cover">
+                    @php $photoPrivate = ! empty($photo['is_private']); @endphp
+                    <div class="existing-photo relative rounded-xl overflow-hidden border-2 aspect-square {{ $photoPrivate ? 'border-purple-500' : 'border-gray-600' }}"
+                        data-photo-id="{{ $photo['id'] }}"
+                        data-was-private="{{ $photoPrivate ? '1' : '0' }}"
+                        data-is-private="{{ $photoPrivate ? '1' : '0' }}">
+                        <img src="{{ $photoPrivate ? route('findings.photo', [$finding['id'], $photo['id']]) : $photo['url'] }}" alt="" class="w-full h-full object-cover">
                         <button type="button"
                             class="remove-existing absolute top-1 right-1 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-base leading-none">
                             ×
                         </button>
+                        <button type="button"
+                            class="toggle-private absolute top-1 left-1 rounded-full w-7 h-7 flex items-center justify-center text-sm leading-none {{ $photoPrivate ? 'bg-purple-500 text-white' : 'bg-black/60 text-white/70' }}">
+                            {{ $photoPrivate ? '🔒' : '🔓' }}
+                        </button>
+                        <span class="private-badge {{ $photoPrivate ? '' : 'hidden' }} absolute bottom-1 right-1 bg-purple-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">🔒 Prywatne</span>
                         <span class="main-badge hidden absolute bottom-1 left-1 bg-amber-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded">Główne</span>
                     </div>
                     @endforeach
@@ -210,8 +219,11 @@
                     </label>
                 </div>
                 <p class="text-xs text-gray-500 mt-1 ml-1" id="photoHint">Dotknij ×, aby usunąć zdjęcie. Pierwsze będzie głównym.</p>
+                <p class="text-xs text-gray-500 mt-1 ml-1">Dotknij 🔒 na zdjęciu, aby ukryć je przed innymi (zobaczysz je tylko Ty).</p>
 
                 <div id="deleteIdsContainer" class="hidden"></div>
+                <div id="privacyIdsContainer" class="hidden"></div>
+                <div id="photosPrivateContainer" class="hidden"></div>
             </div>
 
             {{-- Submit --}}
@@ -247,7 +259,58 @@
     const photoAddTile = document.getElementById('photoAddTile');
     const photoHint = document.getElementById('photoHint');
     const deleteIdsContainer = document.getElementById('deleteIdsContainer');
-    let selectedPhotos = []; // newly added File[]
+    const privacyIdsContainer = document.getElementById('privacyIdsContainer');
+    const photosPrivateContainer = document.getElementById('photosPrivateContainer');
+    let selectedPhotos = [];  // newly added File[]
+    let selectedPrivate = []; // bool[] — równolegle do selectedPhotos
+
+    // Przebudowuje make_private/make_public dla istniejących zdjęć (tylko gdy zmienione względem stanu początkowego).
+    function syncExistingPrivacy() {
+        privacyIdsContainer.innerHTML = '';
+        photoGallery.querySelectorAll('.existing-photo').forEach(el => {
+            if (el.dataset.deleted === '1') { return; }
+            const was = el.dataset.wasPrivate === '1';
+            const now = el.dataset.isPrivate === '1';
+            if (now === was) { return; }
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = now ? 'make_private_photo_ids[]' : 'make_public_photo_ids[]';
+            input.value = el.dataset.photoId;
+            privacyIdsContainer.appendChild(input);
+        });
+    }
+
+    // Flagi prywatności dla NOWO dodanych zdjęć (indeksy zgodne z kolejnością photos[]).
+    function syncPrivateInputs() {
+        photosPrivateContainer.innerHTML = '';
+        selectedPrivate.forEach((isPrivate, index) => {
+            if (!isPrivate) { return; }
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'photos_private[]';
+            hidden.value = index;
+            photosPrivateContainer.appendChild(hidden);
+        });
+    }
+
+    // Przełącznik kłódki na istniejących zdjęciach
+    photoGallery.querySelectorAll('.existing-photo .toggle-private').forEach(btn => {
+        const el = btn.closest('.existing-photo');
+        btn.addEventListener('click', () => {
+            const now = el.dataset.isPrivate === '1';
+            const next = !now;
+            el.dataset.isPrivate = next ? '1' : '0';
+            btn.textContent = next ? '🔒' : '🔓';
+            btn.classList.toggle('bg-purple-500', next);
+            btn.classList.toggle('text-white', next);
+            btn.classList.toggle('bg-black/60', !next);
+            btn.classList.toggle('text-white/70', !next);
+            el.classList.toggle('border-purple-500', next);
+            el.classList.toggle('border-gray-600', !next);
+            el.querySelector('.private-badge').classList.toggle('hidden', !next);
+            syncExistingPrivacy();
+        });
+    });
 
     function existingKeptCount() {
         return photoGallery.querySelectorAll('.existing-photo:not([data-deleted="1"])').length;
@@ -296,25 +359,45 @@
     function renderNewPhotos() {
         photoGallery.querySelectorAll('.photo-thumb').forEach(el => el.remove());
         selectedPhotos.forEach((file, index) => {
+            const isPrivate = selectedPrivate[index];
             const wrap = document.createElement('div');
-            wrap.className = 'photo-thumb relative rounded-xl overflow-hidden border-2 border-amber-500 aspect-square';
+            wrap.className = 'photo-thumb relative rounded-xl overflow-hidden border-2 aspect-square ' + (isPrivate ? 'border-purple-500' : 'border-amber-500');
             const img = document.createElement('img');
             img.className = 'w-full h-full object-cover';
             img.src = URL.createObjectURL(file);
             img.onload = () => URL.revokeObjectURL(img.src);
+
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'absolute top-1 right-1 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-base leading-none';
             btn.textContent = '×';
             btn.addEventListener('click', () => {
                 selectedPhotos.splice(index, 1);
+                selectedPrivate.splice(index, 1);
                 renderNewPhotos();
             });
+
+            const lockBtn = document.createElement('button');
+            lockBtn.type = 'button';
+            lockBtn.className = 'absolute top-1 left-1 rounded-full w-7 h-7 flex items-center justify-center text-sm leading-none ' + (isPrivate ? 'bg-purple-500 text-white' : 'bg-black/60 text-white/70');
+            lockBtn.textContent = isPrivate ? '🔒' : '🔓';
+            lockBtn.addEventListener('click', () => {
+                selectedPrivate[index] = !selectedPrivate[index];
+                renderNewPhotos();
+            });
+
+            if (isPrivate) {
+                const lockBadge = document.createElement('span');
+                lockBadge.className = 'absolute bottom-1 right-1 bg-purple-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded';
+                lockBadge.textContent = '🔒 Prywatne';
+                wrap.appendChild(lockBadge);
+            }
             const badge = document.createElement('span');
             badge.className = 'main-badge hidden absolute bottom-1 left-1 bg-amber-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded';
             badge.textContent = 'Główne';
             wrap.appendChild(img);
             wrap.appendChild(btn);
+            wrap.appendChild(lockBtn);
             wrap.appendChild(badge);
             photoGallery.insertBefore(wrap, photoAddTile);
         });
@@ -325,6 +408,7 @@
         for (const file of this.files) {
             if (existingKeptCount() + selectedPhotos.length >= MAX_PHOTOS) { break; }
             selectedPhotos.push(file);
+            selectedPrivate.push(false);
         }
         this.value = '';
         renderNewPhotos();
@@ -371,6 +455,7 @@
                 dt.items.add(resized);
             }
             photoInput.files = dt.files;
+            syncPrivateInputs();
         }
 
         btn.disabled = true;

@@ -23,9 +23,20 @@
         <div style="background:#0d0d1a;position:relative">
             <div id="photoCarousel" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none">
                 @foreach($photos as $photo)
-                <img src="{{ $photo['url'] }}" alt=""
-                     style="flex:0 0 100%;scroll-snap-align:center;width:100%;max-height:55vh;object-fit:contain;cursor:pointer"
-                     onclick="openLightbox(this.src)">
+                @php
+                    $photoPrivate = ! empty($photo['is_private']);
+                    $photoSrc = ($photoPrivate && ! empty($photo['id']))
+                        ? route('findings.photo', [$finding['id'], $photo['id']])
+                        : $photo['url'];
+                @endphp
+                <div style="flex:0 0 100%;scroll-snap-align:center;position:relative">
+                    <img src="{{ $photoSrc }}" alt=""
+                         style="width:100%;max-height:55vh;object-fit:contain;cursor:pointer"
+                         onclick="openLightbox(this.src)">
+                    @if($photoPrivate)
+                    <span style="position:absolute;bottom:10px;right:10px;background:#a855f7;color:#fff;font-size:0.7rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:0.5rem">🔒 Prywatne</span>
+                    @endif
+                </div>
                 @endforeach
             </div>
             @if(count($photos) > 1)

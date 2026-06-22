@@ -239,8 +239,16 @@
                                             data-photo="{{ $finding['photo_url'] ?? '' }}"
                                             data-photos="{{ json_encode($finding['photos'] ?? []) }}"
                                             onclick="openFindingModal(this)">
-                                            @if(!empty($finding['photo_url']))
-                                                <img src="{{ $finding['photo_url'] }}" alt="" class="finding-thumb">
+                                            @php
+                                                $coverPhoto = $finding['photos'][0] ?? null;
+                                                $coverSrc = $coverPhoto
+                                                    ? (! empty($coverPhoto['is_private'])
+                                                        ? route('findings.photo', [$finding['id'], $coverPhoto['id']])
+                                                        : ($coverPhoto['url'] ?? ''))
+                                                    : ($finding['photo_url'] ?? '');
+                                            @endphp
+                                            @if($coverSrc)
+                                                <img src="{{ $coverSrc }}" alt="" class="finding-thumb">
                                             @else
                                                 <div class="finding-thumb-placeholder">🪙</div>
                                             @endif
@@ -357,8 +365,13 @@ function openFindingModal(card) {
     descEl.textContent = desc;
     descEl.style.display = desc ? 'block' : 'none';
 
-    let photos = [];
-    try { photos = JSON.parse(card.dataset.photos || '[]'); } catch (e) { photos = []; }
+    let rawPhotos = [];
+    try { rawPhotos = JSON.parse(card.dataset.photos || '[]'); } catch (e) { rawPhotos = []; }
+    // Zdjęcia to obiekty {id, url, is_private}; prywatne ładujemy przez proxy (URL API wymaga Bearera).
+    let photos = rawPhotos.map(p => {
+        if (typeof p === 'string') { return p; }
+        return p.is_private ? `/findings/${activeFindingId}/photos/${p.id}` : p.url;
+    }).filter(Boolean);
     if (!photos.length && card.dataset.photo) { photos = [card.dataset.photo]; }
 
     const galleryEl = document.getElementById('fmodal-gallery');

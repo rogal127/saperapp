@@ -249,6 +249,8 @@
                         </label>
                     </div>
                     <p class="text-xs text-gray-500 mt-1 ml-1" id="photoHint">Możesz dodać kilka zdjęć — pierwsze będzie głównym.</p>
+                    <p class="text-xs text-gray-500 mt-1 ml-1">Dotknij 🔒 na zdjęciu, aby ukryć je przed innymi (zobaczysz je tylko Ty).</p>
+                    <div id="photosPrivateContainer" class="hidden"></div>
                 </div>
 
                 {{-- Finding type --}}
@@ -406,9 +408,9 @@
                 body.innerHTML = '<p class="text-xs text-gray-500 ml-1">Nie udało się załadować zgód.</p>';
             });
     })();
-    const initialLat = {{ old('latitude', 52.0) }};
-    const initialLng = {{ old('longitude', 19.0) }};
-    const initialZoom = {{ old('latitude') ? 14 : 6 }};
+    const initialLat = {{ is_numeric(old('latitude')) ? old('latitude') : 52.0 }};
+    const initialLng = {{ is_numeric(old('longitude')) ? old('longitude') : 19.0 }};
+    const initialZoom = {{ is_numeric(old('latitude')) ? 14 : 6 }};
 
     const map = L.map('map-picker', {
         center: [initialLat, initialLng],
@@ -672,25 +674,47 @@
     const photoGallery = document.getElementById('photoGallery');
     const photoAddTile = document.getElementById('photoAddTile');
     const photoHint = document.getElementById('photoHint');
-    let selectedPhotos = []; // File[]
+    const photosPrivateContainer = document.getElementById('photosPrivateContainer');
+    let selectedPhotos = [];  // File[]
+    let selectedPrivate = []; // bool[] — równolegle do selectedPhotos
 
     function renderPhotoGallery() {
         photoGallery.querySelectorAll('.photo-thumb').forEach(el => el.remove());
         selectedPhotos.forEach((file, index) => {
+            const isPrivate = selectedPrivate[index];
             const wrap = document.createElement('div');
-            wrap.className = 'photo-thumb relative rounded-xl overflow-hidden border-2 border-amber-500 aspect-square';
+            wrap.className = 'photo-thumb relative rounded-xl overflow-hidden border-2 aspect-square ' + (isPrivate ? 'border-purple-500' : 'border-amber-500');
             const img = document.createElement('img');
             img.className = 'w-full h-full object-cover';
             img.src = URL.createObjectURL(file);
             img.onload = () => URL.revokeObjectURL(img.src);
+
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'absolute top-1 right-1 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-base leading-none';
             btn.textContent = '×';
             btn.addEventListener('click', () => {
                 selectedPhotos.splice(index, 1);
+                selectedPrivate.splice(index, 1);
                 renderPhotoGallery();
             });
+
+            const lockBtn = document.createElement('button');
+            lockBtn.type = 'button';
+            lockBtn.className = 'absolute top-1 left-1 rounded-full w-7 h-7 flex items-center justify-center text-sm leading-none ' + (isPrivate ? 'bg-purple-500 text-white' : 'bg-black/60 text-white/70');
+            lockBtn.textContent = isPrivate ? '🔒' : '🔓';
+            lockBtn.title = isPrivate ? 'Prywatne — tylko Ty' : 'Publiczne';
+            lockBtn.addEventListener('click', () => {
+                selectedPrivate[index] = !selectedPrivate[index];
+                renderPhotoGallery();
+            });
+
+            if (isPrivate) {
+                const lockBadge = document.createElement('span');
+                lockBadge.className = 'absolute bottom-1 right-1 bg-purple-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded';
+                lockBadge.textContent = '🔒 Prywatne';
+                wrap.appendChild(lockBadge);
+            }
             if (index === 0) {
                 const badge = document.createElement('span');
                 badge.className = 'absolute bottom-1 left-1 bg-amber-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded';
@@ -699,6 +723,7 @@
             }
             wrap.appendChild(img);
             wrap.appendChild(btn);
+            wrap.appendChild(lockBtn);
             photoGallery.insertBefore(wrap, photoAddTile);
         });
 
@@ -709,10 +734,23 @@
             : (selectedPhotos.length ? `Wybrano ${selectedPhotos.length} z ${MAX_PHOTOS}.` : 'Możesz dodać kilka zdjęć — pierwsze będzie głównym.');
     }
 
+    function syncPrivateInputs() {
+        photosPrivateContainer.innerHTML = '';
+        selectedPrivate.forEach((isPrivate, index) => {
+            if (!isPrivate) { return; }
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'photos_private[]';
+            hidden.value = index;
+            photosPrivateContainer.appendChild(hidden);
+        });
+    }
+
     photoInput.addEventListener('change', function () {
         for (const file of this.files) {
             if (selectedPhotos.length >= MAX_PHOTOS) { break; }
             selectedPhotos.push(file);
+            selectedPrivate.push(false);
         }
         this.value = '';
         renderPhotoGallery();
@@ -767,6 +805,7 @@
                 dt.items.add(resized);
             }
             photoInput.files = dt.files;
+            syncPrivateInputs();
         }
 
         btn.disabled = true;
