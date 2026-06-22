@@ -27,6 +27,105 @@
         font-size: 0.7rem; font-weight: 700; color: #9ca3af;
         text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem;
     }
+
+    /* Akordeony znalezisk */
+    .acc-voi { background: #2a2a3e; border-radius: 1rem; overflow: hidden; margin-bottom: 0.5rem; }
+    .acc-voi-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.875rem 1rem; cursor: pointer; user-select: none; gap: 0.5rem;
+    }
+    .acc-voi-header:active { background: #323250; }
+    .acc-voi-name { font-weight: 700; font-size: 0.9rem; color: #fff; }
+    .acc-voi-count { font-size: 0.72rem; color: #f59e0b; font-weight: 700; background: rgba(245,158,11,0.15); border-radius: 999px; padding: 2px 8px; flex-shrink: 0; }
+    .acc-arrow { font-size: 0.85rem; color: #6b7280; transition: transform 0.2s; flex-shrink: 0; }
+    .acc-arrow.open { transform: rotate(90deg); }
+
+    .acc-voi-body { display: none; border-top: 1px solid #323248; }
+    .acc-voi-body.open { display: block; }
+
+    .acc-cou { border-bottom: 1px solid #323248; }
+    .acc-cou:last-child { border-bottom: none; }
+    .acc-cou-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.625rem 1rem 0.625rem 1.25rem; cursor: pointer; user-select: none; gap: 0.5rem;
+    }
+    .acc-cou-header:active { background: #2f2f48; }
+    .acc-cou-name { font-size: 0.8rem; font-weight: 600; color: #e2e8f0; }
+    .acc-cou-count { font-size: 0.65rem; color: #60a5fa; font-weight: 700; background: rgba(96,165,250,0.12); border-radius: 999px; padding: 2px 7px; flex-shrink: 0; }
+    .acc-cou-arrow { font-size: 0.75rem; color: #6b7280; transition: transform 0.2s; flex-shrink: 0; }
+    .acc-cou-arrow.open { transform: rotate(90deg); }
+
+    .acc-cou-body { display: none; background: #1e1e32; }
+    .acc-cou-body.open { display: block; }
+
+    .acc-city { border-bottom: 1px solid #252535; }
+    .acc-city:last-child { border-bottom: none; }
+    .acc-city-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.5rem 1rem 0.5rem 1.5rem; cursor: pointer; user-select: none; gap: 0.5rem;
+    }
+    .acc-city-header:active { background: #232335; }
+    .acc-city-name { font-size: 0.75rem; font-weight: 600; color: #34d399; }
+    .acc-city-count { font-size: 0.6rem; color: #34d399; font-weight: 700; background: rgba(52,211,153,0.12); border-radius: 999px; padding: 1px 6px; flex-shrink: 0; }
+    .acc-city-arrow { font-size: 0.7rem; color: #6b7280; transition: transform 0.2s; flex-shrink: 0; }
+    .acc-city-arrow.open { transform: rotate(90deg); }
+
+    .acc-city-body { display: none; }
+    .acc-city-body.open { display: block; }
+
+    .finding-card {
+        display: flex; gap: 0.625rem; align-items: flex-start;
+        padding: 0.625rem 1rem 0.625rem 0.75rem;
+        border-bottom: 1px solid #252535;
+        border-left: 3px solid transparent;
+        cursor: pointer; transition: background 0.12s;
+    }
+    .finding-card:hover { background: #252538; }
+    .finding-card:last-child { border-bottom: none; }
+    .finding-card[data-type="archaeological_monument"] { border-left-color: #ef4444; }
+    .finding-card[data-type="monument"] { border-left-color: #facc15; }
+    .finding-card[data-type="non_monument"] { border-left-color: #22c55e; }
+    .finding-thumb {
+        width: 40px; height: 40px; border-radius: 0.5rem;
+        object-fit: contain; flex-shrink: 0; background: #323248;
+    }
+    .finding-thumb-placeholder {
+        width: 40px; height: 40px; border-radius: 0.5rem; flex-shrink: 0;
+        background: #323248; display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem;
+    }
+    .finding-card-name { font-size: 0.8rem; font-weight: 700; color: #fff; }
+    .finding-card-meta { font-size: 0.68rem; color: #9ca3af; margin-top: 2px; }
+    .finding-card-depth { font-size: 0.72rem; color: #f59e0b; font-weight: 600; margin-top: 2px; }
+
+    /* Modal znaleziska */
+    #finding-modal {
+        display: none; position: fixed; inset: 0; z-index: 2000;
+        background: rgba(0,0,0,0.75); align-items: flex-end; justify-content: center;
+    }
+    #finding-modal.open { display: flex; }
+    #finding-sheet {
+        background: #1a1a2e; border-radius: 1.25rem 1.25rem 0 0;
+        border: 1px solid #2a2a3e; width: 100%; max-width: 480px;
+        max-height: 90vh; overflow-y: auto;
+        animation: slideUp 0.25s ease;
+    }
+    @media (min-width: 768px) { #finding-sheet { max-width: 640px; } }
+    @media (min-width: 1280px) { #finding-sheet { max-width: 820px; } }
+    @keyframes slideUp {
+        from { transform: translateY(40px); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+    }
+    .fmodal-body { padding: 1rem; }
+    .fmodal-name { font-weight: 700; font-size: 1rem; color: #fff; }
+    .fmodal-meta { font-size: 0.75rem; color: #9ca3af; margin-top: 3px; }
+    .fmodal-depth { font-size: 0.8rem; color: #f59e0b; font-weight: 600; margin-top: 4px; }
+    .fmodal-desc { font-size: 0.8rem; color: #d1d5db; margin-top: 8px; }
+    .fmodal-photo { width: 100%; max-height: 320px; object-fit: contain; border-radius: 0.75rem; margin-top: 0.75rem; background: #252538; }
+    .fmodal-gallery { display: flex; gap: 6px; overflow-x: auto; scroll-snap-type: x mandatory; margin-top: 0.75rem; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .fmodal-gallery::-webkit-scrollbar { display: none; }
+    .fmodal-gallery .fmodal-photo { flex: 0 0 90%; scroll-snap-align: start; margin-top: 0; }
+    .fmodal-close { color: #9ca3af; font-size: 1.4rem; background: none; border: none; cursor: pointer; line-height: 1; }
 </style>
 @endpush
 
@@ -73,6 +172,99 @@
             <input id="avatar-input" type="file" name="avatar" accept="image/*" class="hidden"
                 onchange="document.getElementById('avatar-form').submit()">
         </form>
+
+        {{-- Moje znaleziska --}}
+        <div class="mb-8">
+            <div class="section-title">Moje znaleziska</div>
+            @if(empty($grouped))
+                <div class="text-center py-8 text-gray-500">
+                    <div class="text-3xl mb-2">🔍</div>
+                    <div class="text-sm">Brak znalezisk</div>
+                </div>
+            @else
+                <div id="accordion">
+                    @foreach($grouped as $voivodeship => $counties)
+                    @php
+                        $voiCount = array_sum(array_map(fn($cities) => array_sum(array_map('count', $cities)), $counties));
+                    @endphp
+                    <div class="acc-voi">
+                        <div class="acc-voi-header" onclick="toggleAcc(this)">
+                            <span class="acc-voi-name">🗺️ {{ $voivodeship }}</span>
+                            <div style="display:flex;align-items:center;gap:0.4rem;">
+                                <span class="acc-voi-count">{{ $voiCount }}</span>
+                                <span class="acc-arrow">›</span>
+                            </div>
+                        </div>
+                        <div class="acc-voi-body">
+                            @foreach($counties as $county => $cities)
+                            @php
+                                $couCount = array_sum(array_map('count', $cities));
+                            @endphp
+                            <div class="acc-cou">
+                                <div class="acc-cou-header" onclick="toggleAcc(this)">
+                                    <span class="acc-cou-name">🏘️ {{ $county }}</span>
+                                    <div style="display:flex;align-items:center;gap:0.4rem;">
+                                        <span class="acc-cou-count">{{ $couCount }}</span>
+                                        <span class="acc-cou-arrow">›</span>
+                                    </div>
+                                </div>
+                                <div class="acc-cou-body">
+                                    @foreach($cities as $city => $findings)
+                                    <div class="acc-city">
+                                        <div class="acc-city-header" onclick="toggleAcc(this)">
+                                            <span class="acc-city-name">📍 {{ $city }}</span>
+                                            <div style="display:flex;align-items:center;gap:0.4rem;">
+                                                <span class="acc-city-count">{{ count($findings) }}</span>
+                                                <span class="acc-city-arrow">›</span>
+                                            </div>
+                                        </div>
+                                        <div class="acc-city-body">
+                                            @foreach($findings as $finding)
+                                            <div class="finding-card"
+                                                data-type="{{ $finding['type'] ?? '' }}"
+                                                data-id="{{ $finding['id'] ?? '' }}"
+                                                data-name="{{ $finding['name'] ?? '' }}"
+                                                data-depth="{{ $finding['depth_cm'] ?? 0 }}"
+                                                data-date="{{ $finding['found_at'] ?? '' }}"
+                                                data-desc="{{ $finding['description'] ?? '' }}"
+                                                data-photo="{{ $finding['photo_url'] ?? '' }}"
+                                                data-photos="{{ json_encode($finding['photos'] ?? []) }}"
+                                                onclick="openFindingModal(this)">
+                                                @php
+                                                    $coverPhoto = $finding['photos'][0] ?? null;
+                                                    $coverSrc = $coverPhoto
+                                                        ? (! empty($coverPhoto['is_private'])
+                                                            ? route('findings.photo', [$finding['id'], $coverPhoto['id']])
+                                                            : ($coverPhoto['url'] ?? ''))
+                                                        : ($finding['photo_url'] ?? '');
+                                                @endphp
+                                                @if($coverSrc)
+                                                    <img src="{{ $coverSrc }}" alt="" class="finding-thumb">
+                                                @else
+                                                    <div class="finding-thumb-placeholder">🪙</div>
+                                                @endif
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="finding-card-name">{{ $finding['name'] }}</div>
+                                                    <div class="finding-card-meta">📅 {{ $finding['found_at'] }}</div>
+                                                    <div class="finding-card-depth">📏 {{ $finding['depth_cm'] }} cm</div>
+                                                    @if(!empty($finding['description']))
+                                                        <div class="finding-card-meta" style="margin-top:3px">{{ Str::limit($finding['description'], 60) }}</div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
 
         {{-- Formularz --}}
         <div class="section-title">Dane konta</div>
@@ -201,6 +393,38 @@
 
     </div>
 
+    {{-- Modal znaleziska --}}
+    <div id="finding-modal" onclick="handleFindingBackdrop(event)">
+        <div id="finding-sheet">
+            <div class="fmodal-body">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem">
+                    <div>
+                        <div class="fmodal-name" id="fmodal-name"></div>
+                        <div class="fmodal-depth" id="fmodal-depth"></div>
+                        <div class="fmodal-meta" id="fmodal-date"></div>
+                    </div>
+                    <button class="fmodal-close" onclick="closeFindingModal()">✕</button>
+                </div>
+                <div class="fmodal-desc" id="fmodal-desc"></div>
+                <div id="fmodal-gallery" class="fmodal-gallery" style="display:none"></div>
+                <div style="display:flex;gap:0.5rem;margin-top:0.875rem">
+                    <a id="fmodal-edit-link" href="#"
+                        style="flex:1;display:block;text-align:center;padding:0.8rem;background:transparent;border:1px solid #60a5fa;color:#60a5fa;border-radius:0.75rem;font-size:0.85rem;font-weight:700;text-decoration:none">
+                        ✏️ Edytuj
+                    </a>
+                    <form id="fmodal-delete-form" method="POST" action="#" style="flex:1" onsubmit="return confirmDelete()">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                            style="width:100%;padding:0.8rem;background:transparent;border:1px solid #f87171;color:#f87171;border-radius:0.75rem;font-size:0.85rem;font-weight:700;cursor:pointer">
+                            🗑️ Usuń
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Nawigacja --}}
     <div class="nav-bar safe-bottom">
         <span class="nav-item active">
@@ -220,3 +444,77 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+function toggleAcc(header) {
+    const body = header.nextElementSibling;
+    const arrow = header.querySelector('.acc-arrow, .acc-cou-arrow, .acc-city-arrow');
+    const isOpen = body.classList.toggle('open');
+    if (arrow) arrow.classList.toggle('open', isOpen);
+}
+
+let activeFindingId = null;
+
+function openFindingModal(card) {
+    activeFindingId = card.dataset.id || null;
+
+    document.getElementById('fmodal-name').textContent  = '🪙 ' + (card.dataset.name || '');
+    document.getElementById('fmodal-depth').textContent = '📏 ' + (card.dataset.depth || '0') + ' cm głębokości';
+    document.getElementById('fmodal-date').textContent  = '📅 ' + (card.dataset.date || '');
+
+    const desc = card.dataset.desc || '';
+    const descEl = document.getElementById('fmodal-desc');
+    descEl.textContent = desc;
+    descEl.style.display = desc ? 'block' : 'none';
+
+    let rawPhotos = [];
+    try { rawPhotos = JSON.parse(card.dataset.photos || '[]'); } catch (e) { rawPhotos = []; }
+    // Zdjęcia to obiekty {id, url, is_private}; prywatne ładujemy przez proxy (URL API wymaga Bearera).
+    let photos = rawPhotos.map(p => {
+        if (typeof p === 'string') { return p; }
+        return p.is_private ? `/findings/${activeFindingId}/photos/${p.id}` : p.url;
+    }).filter(Boolean);
+    if (!photos.length && card.dataset.photo) { photos = [card.dataset.photo]; }
+
+    const galleryEl = document.getElementById('fmodal-gallery');
+    galleryEl.innerHTML = '';
+    if (photos.length) {
+        photos.forEach(url => {
+            const img = document.createElement('img');
+            img.className = 'fmodal-photo';
+            img.src = url;
+            img.alt = '';
+            img.style.cursor = 'zoom-in';
+            img.addEventListener('click', () => openLightbox(url));
+            galleryEl.appendChild(img);
+        });
+        galleryEl.style.display = photos.length > 1 ? 'flex' : 'block';
+    } else {
+        galleryEl.style.display = 'none';
+    }
+
+    if (activeFindingId) {
+        const editLink = document.getElementById('fmodal-edit-link');
+        const deleteForm = document.getElementById('fmodal-delete-form');
+        if (editLink)   { editLink.href = `/findings/${activeFindingId}/edit`; }
+        if (deleteForm) { deleteForm.action = `/findings/${activeFindingId}`; }
+    }
+
+    document.getElementById('finding-modal').classList.add('open');
+}
+
+function closeFindingModal() {
+    document.getElementById('finding-modal').classList.remove('open');
+    activeFindingId = null;
+}
+
+function handleFindingBackdrop(e) {
+    if (e.target === document.getElementById('finding-modal')) { closeFindingModal(); }
+}
+
+function confirmDelete() {
+    return confirm('Na pewno chcesz usunąć to znalezisko?');
+}
+</script>
+@endpush
