@@ -622,8 +622,6 @@
             const county      = a.county ?? a.municipality ?? '';
 
             cityInput.value        = city;
-            cityLatInput.value     = parseFloat(data.lat).toFixed(7);
-            cityLngInput.value     = parseFloat(data.lon).toFixed(7);
             voivodeshipInput.value = voivodeship;
             countyInput.value      = county;
 
@@ -632,6 +630,26 @@
             locationSummary.textContent = city
                 ? `${city}${voivodeship ? ', ' + voivodeship : ''} (${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)})`
                 : `${parseFloat(lat).toFixed(5)}, ${parseFloat(lng).toFixed(5)}`;
+
+            if (city) {
+                const searchQuery = encodeURIComponent(`${city}, ${county}, ${voivodeship}, Polska`);
+                return fetch(`https://nominatim.openstreetmap.org/search?q=${searchQuery}&format=json&limit=1&accept-language=pl`, {
+                    headers: { 'Accept-Language': 'pl' }
+                })
+                .then(r => r.json())
+                .then(results => {
+                    if (results.length > 0) {
+                        cityLatInput.value = parseFloat(results[0].lat).toFixed(7);
+                        cityLngInput.value = parseFloat(results[0].lon).toFixed(7);
+                    } else {
+                        cityLatInput.value = parseFloat(data.lat).toFixed(7);
+                        cityLngInput.value = parseFloat(data.lon).toFixed(7);
+                    }
+                });
+            } else {
+                cityLatInput.value = parseFloat(data.lat).toFixed(7);
+                cityLngInput.value = parseFloat(data.lon).toFixed(7);
+            }
         })
         .catch(() => {
             cityLabel.textContent = '❓ Nie udało się wykryć miejscowości';
