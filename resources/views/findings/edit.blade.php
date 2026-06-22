@@ -78,8 +78,11 @@
                     name="description"
                     placeholder="Opisz znalezisko, stan zachowania, kontekst odkrycia..."
                     rows="3"
-                    class="input-field resize-none"
+                    class="input-field resize-none @error('description') border-red-500 @enderror"
                 >{{ old('description', $finding['description'] ?? '') }}</textarea>
+                @error('description')
+                    <p class="text-red-400 text-sm mt-1 ml-1">{{ $message }}</p>
+                @enderror
             </div>
 
             {{-- Private notes --}}
@@ -91,8 +94,11 @@
                     name="private_notes"
                     placeholder="Notatki widoczne tylko dla Ciebie — współrzędne, szczegóły znaleziska, plany..."
                     rows="3"
-                    class="input-field resize-none"
+                    class="input-field resize-none @error('private_notes') border-red-500 @enderror"
                 >{{ old('private_notes', $finding['private_notes'] ?? '') }}</textarea>
+                @error('private_notes')
+                    <p class="text-red-400 text-sm mt-1 ml-1">{{ $message }}</p>
+                @enderror
                 <p class="text-xs text-gray-500 mt-1 ml-1">Tylko Ty widzisz tę treść.</p>
             </div>
 

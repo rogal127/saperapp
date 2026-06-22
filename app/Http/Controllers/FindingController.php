@@ -50,7 +50,7 @@ class FindingController extends Controller
         $request->validate([
             'pin_id' => ['nullable', 'integer'],
             'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:1000'],
+            'description' => ['nullable', 'string', 'max:65535'],
             'latitude' => [$hasPinId ? 'nullable' : 'required', 'numeric', 'between:-90,90'],
             'longitude' => [$hasPinId ? 'nullable' : 'required', 'numeric', 'between:-180,180'],
             'city' => ['nullable', 'string', 'max:255'],
@@ -247,8 +247,8 @@ class FindingController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:1000'],
-            'private_notes' => ['nullable', 'string', 'max:2000'],
+            'description' => ['nullable', 'string', 'max:65535'],
+            'private_notes' => ['nullable', 'string', 'max:65535'],
             'depth_cm' => ['required', 'integer', 'min:0', 'max:9999'],
             'wkz_consent_id' => ['nullable', 'integer'],
             'finding_category_id' => ['nullable', 'integer'],
