@@ -225,6 +225,17 @@
                     <p class="text-xs text-gray-500 mt-1 ml-1">Tylko Ty widzisz tę treść.</p>
                 </div>
 
+                {{-- Private finding (visibility) --}}
+                <div>
+                    <label class="flex items-center justify-between gap-3 card cursor-pointer">
+                        <span class="min-w-0">
+                            <span class="block text-sm font-semibold text-gray-300">🙈 Tylko do mojego wglądu</span>
+                            <span class="block text-xs text-gray-500 mt-0.5">Znalezisko będzie prywatne — nie zobaczy go nikt poza Tobą.</span>
+                        </span>
+                        <input type="checkbox" name="is_private" value="1" class="w-5 h-5 accent-amber-500 shrink-0" {{ old('is_private') ? 'checked' : '' }}>
+                    </label>
+                </div>
+
                 {{-- Photos --}}
                 <div>
                     <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">

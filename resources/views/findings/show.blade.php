@@ -48,6 +48,12 @@
             {{-- Nazwa --}}
             <h2 class="text-xl font-bold text-white">{{ $finding['name'] }}</h2>
 
+            @if(!empty($finding['is_private']))
+                <span class="inline-flex items-center gap-1 self-start px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-xs font-semibold">
+                    🙈 Prywatne — widoczne tylko dla Ciebie
+                </span>
+            @endif
+
             {{-- Właściciel --}}
             @if(!empty($finding['finder']))
                 @php $finder = $finding['finder']; @endphp
