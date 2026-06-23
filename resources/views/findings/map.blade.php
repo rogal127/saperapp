@@ -502,6 +502,7 @@ function renderData(items, zoom) {
     }
 
     items.forEach(item => {
+        if (item.type === 'cluster' && item.count === 0) { return; }
         if (item.type === 'cluster') {
             const m = L.marker([item.lat, item.lng], { icon: bubbleIcon(item.count, item.level, item.name) }).addTo(map);
             m.on('click', () => {
