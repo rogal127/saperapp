@@ -242,6 +242,55 @@
     .finding-action-btn.edit { background: #3b3b58; color: #a5b4fc; }
     .finding-action-btn.delete { background: #3b1f1f; color: #f87171; }
     .pin-finding-header { display: flex; align-items: flex-start; gap: 0.5rem; }
+
+    /* Tryb przenoszenia pinezki */
+    #relocate-overlay {
+        display: none; position: absolute; inset: 0; z-index: 900;
+        pointer-events: none;
+    }
+    #relocate-overlay.active { display: block; }
+    #relocate-bar {
+        position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+        z-index: 901; pointer-events: auto;
+        background: rgba(26,26,46,0.95); border: 1px solid #f59e0b;
+        border-radius: 1rem; padding: 0.5rem 1rem;
+        display: flex; align-items: center; gap: 0.75rem;
+        box-shadow: 0 4px 20px rgba(245,158,11,0.3);
+    }
+    #relocate-bar span { color: #f59e0b; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+    #relocate-cancel {
+        background: #3b3b58; color: #e2e8f0; border: none; border-radius: 0.5rem;
+        padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    }
+    .modal-relocate-btn {
+        margin-top: 0.5rem; width: 100%; padding: 0.6rem;
+        background: transparent; border: 1px solid #60a5fa; color: #60a5fa;
+        border-radius: 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600;
+        transition: opacity 0.15s;
+    }
+    .modal-relocate-btn:active { opacity: 0.7; }
+
+    /* Crosshair w trybie przenoszenia */
+    #relocate-crosshair {
+        display: none; position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -100%);
+        z-index: 901; pointer-events: none;
+        font-size: 2rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+    #relocate-overlay.active ~ #relocate-crosshair { display: block; }
+
+    #relocate-confirm {
+        display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
+        z-index: 901; background: rgba(26,26,46,0.95); border: 1px solid #34d399;
+        border-radius: 1rem; padding: 0.75rem 1rem; max-width: 320px; width: 90%;
+        box-shadow: 0 4px 20px rgba(52,211,153,0.3);
+    }
+    #relocate-confirm.active { display: block; }
+    #relocate-confirm-city { color: #34d399; font-size: 0.85rem; font-weight: 700; text-align: center; margin-bottom: 0.5rem; }
+    #relocate-confirm-btns { display: flex; gap: 0.5rem; }
+    #relocate-confirm-btns button { flex: 1; padding: 0.5rem; border: none; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+    .relocate-save { background: #34d399; color: #1a1a2e; }
+    .relocate-retry { background: #3b3b58; color: #e2e8f0; }
 </style>
 @endpush
 
@@ -268,6 +317,22 @@
 
         <button id="locate-btn">🎯 Moja pozycja</button>
         <button id="layer-btn" onclick="toggleLayer()">🛰️ Ortofoto</button>
+
+        {{-- Overlay przenoszenia pinezki --}}
+        <div id="relocate-overlay">
+            <div id="relocate-bar">
+                <span>📌 Kliknij nowe miejsce na mapie</span>
+                <button id="relocate-cancel" onclick="cancelRelocate()">Anuluj</button>
+            </div>
+        </div>
+        <div id="relocate-crosshair">📍</div>
+        <div id="relocate-confirm">
+            <div id="relocate-confirm-city"></div>
+            <div id="relocate-confirm-btns">
+                <button class="relocate-retry" onclick="retryRelocate()">Wybierz ponownie</button>
+                <button class="relocate-save" onclick="saveRelocate()">Przenieś tutaj</button>
+            </div>
+        </div>
 
         {{-- Panel boczny --}}
         <div id="panel">
@@ -300,6 +365,9 @@
                     <a id="modal-add-btn" href="#" class="modal-send-btn" style="display:block;text-align:center;text-decoration:none">
                         ➕ Dodaj znalezisko do tej pinezki
                     </a>
+                    <button id="modal-relocate-btn" class="modal-relocate-btn" onclick="startRelocate()">
+                        📌 Przenieś pinezkę
+                    </button>
                 </div>
                 <div id="modal-findings-list">
                     <div id="modal-loading" style="text-align:center;color:#9ca3af;padding:1rem;font-size:0.82rem">Ładowanie…</div>
@@ -703,8 +771,10 @@ function toggleDesc(btn) {
 
 // --- Modal pinezki ---
 let activeMessageFindingId = null;
+let currentModalPin = null;
 
 function openPinModal(pin) {
+    currentModalPin = pin;
     const list   = document.getElementById('modal-findings-list');
     const addWrap = document.getElementById('modal-add-btn-wrap');
     const addBtn  = document.getElementById('modal-add-btn');
@@ -866,6 +936,115 @@ function togglePanel() {
 function escHtml(str) {
     return String(str ?? '')
         .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// --- Przenoszenie pinezki ---
+let relocatePin = null;
+let relocateData = null;
+let relocateMarker = null;
+
+function startRelocate() {
+    relocatePin = currentModalPin;
+    closeModal();
+    document.getElementById('relocate-overlay').classList.add('active');
+    document.getElementById('relocate-confirm').classList.remove('active');
+    map.getContainer().style.cursor = 'crosshair';
+    map.once('click', onRelocateClick);
+}
+
+function cancelRelocate() {
+    map.off('click', onRelocateClick);
+    document.getElementById('relocate-overlay').classList.remove('active');
+    document.getElementById('relocate-confirm').classList.remove('active');
+    map.getContainer().style.cursor = '';
+    if (relocateMarker) { map.removeLayer(relocateMarker); relocateMarker = null; }
+    relocatePin = null;
+    relocateData = null;
+}
+
+function retryRelocate() {
+    document.getElementById('relocate-confirm').classList.remove('active');
+    if (relocateMarker) { map.removeLayer(relocateMarker); relocateMarker = null; }
+    relocateData = null;
+    map.once('click', onRelocateClick);
+}
+
+function onRelocateClick(e) {
+    const { lat, lng } = e.latlng;
+
+    if (relocateMarker) { map.removeLayer(relocateMarker); }
+    relocateMarker = L.marker([lat, lng], { icon: myPinIcon(1) }).addTo(map);
+
+    document.getElementById('relocate-confirm-city').textContent = 'Wyszukiwanie miejscowości…';
+    document.getElementById('relocate-confirm').classList.add('active');
+
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=pl`)
+        .then(r => r.json())
+        .then(data => {
+            const a = data.address ?? {};
+            const city = a.city ?? a.town ?? a.village ?? a.hamlet ?? a.suburb ?? '';
+            const voivodeship = a.state ?? '';
+            const county = a.county ?? a.municipality ?? '';
+
+            relocateData = { latitude: lat, longitude: lng, city, voivodeship, county, city_lat: null, city_lng: null };
+
+            if (city) {
+                const searchQuery = `${city}, ${voivodeship}, Polska`;
+                return fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=1&accept-language=pl`)
+                    .then(r => r.json())
+                    .then(results => {
+                        if (results.length > 0) {
+                            relocateData.city_lat = parseFloat(results[0].lat);
+                            relocateData.city_lng = parseFloat(results[0].lon);
+                        } else {
+                            relocateData.city_lat = lat;
+                            relocateData.city_lng = lng;
+                        }
+                    });
+            } else {
+                relocateData.city_lat = lat;
+                relocateData.city_lng = lng;
+            }
+        })
+        .then(() => {
+            const label = relocateData.city
+                ? `📍 ${relocateData.city}` + (relocateData.voivodeship ? `, ${relocateData.voivodeship}` : '')
+                : '⚠️ Nie znaleziono miejscowości';
+            document.getElementById('relocate-confirm-city').textContent = label;
+        })
+        .catch(() => {
+            document.getElementById('relocate-confirm-city').textContent = '❌ Błąd geokodowania';
+            relocateData = null;
+        });
+}
+
+function saveRelocate() {
+    if (!relocatePin || !relocateData) { return; }
+
+    const btn = document.querySelector('.relocate-save');
+    btn.disabled = true;
+    btn.textContent = 'Zapisywanie…';
+
+    fetch(`${PINS_API_BASE}/${relocatePin.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+        body: JSON.stringify(relocateData),
+    })
+    .then(r => {
+        if (!r.ok) { throw new Error(); }
+        return r.json();
+    })
+    .then(() => {
+        cancelRelocate();
+        fetchClusters();
+    })
+    .catch(() => {
+        alert('Nie udało się przenieść pinezki.');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.textContent = 'Przenieś tutaj';
+    });
 }
 
 // Pierwsze załadowanie

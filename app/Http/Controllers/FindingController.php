@@ -239,6 +239,34 @@ class FindingController extends Controller
         return response()->json($response->json());
     }
 
+    public function updatePin(Request $request, int $pinId)
+    {
+        $request->validate([
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'city_lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'city_lng' => ['nullable', 'numeric', 'between:-180,180'],
+            'voivodeship' => ['nullable', 'string', 'max:255'],
+            'county' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $response = Http::withToken($this->apiToken($request))
+            ->put(config('services.api.url')."/pins/{$pinId}", $request->only(
+                'latitude', 'longitude', 'city', 'city_lat', 'city_lng', 'voivodeship', 'county'
+            ));
+
+        if ($response->status() === 403) {
+            return response()->json(['message' => 'Brak uprawnień.'], 403);
+        }
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'Błąd aktualizacji pinezki.'], 502);
+        }
+
+        return response()->json($response->json());
+    }
+
     public function pinFindings(Request $request, int $pinId)
     {
         $response = Http::withToken($this->apiToken($request))
