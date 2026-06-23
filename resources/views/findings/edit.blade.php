@@ -237,6 +237,12 @@
     </div>
 
 </div>
+
+{{-- Loading overlay --}}
+<div id="loadingOverlay" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm hidden">
+    <div class="w-10 h-10 border-4 border-gray-600 border-t-amber-400 rounded-full animate-spin"></div>
+    <p id="loadingText" class="mt-4 text-sm text-gray-300">Przetwarzanie…</p>
+</div>
 @endsection
 
 @push('scripts')
@@ -441,13 +447,17 @@
     }
 
     document.getElementById('editForm').addEventListener('submit', async function (e) {
-        const btn  = document.getElementById('submitBtn');
+        const btn     = document.getElementById('submitBtn');
+        const overlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
 
         if (selectedPhotos.length > 0) {
             e.preventDefault();
             btn.disabled = true;
             btn.textContent = 'Przetwarzanie zdjęć...';
             btn.classList.add('opacity-60');
+            loadingText.textContent = 'Przetwarzanie zdjęć…';
+            overlay.classList.remove('hidden');
 
             const dt = new DataTransfer();
             for (const file of selectedPhotos) {
@@ -461,6 +471,8 @@
         btn.disabled = true;
         btn.textContent = 'Zapisywanie...';
         btn.classList.add('opacity-60');
+        loadingText.textContent = 'Zapisywanie zmian…';
+        overlay.classList.remove('hidden');
 
         if (selectedPhotos.length > 0) { this.submit(); }
     });
