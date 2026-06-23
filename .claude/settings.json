@@ -10,7 +10,8 @@
       "Bash(awk '/local\\\\.ERROR/{block=NR} END{}' storage/logs/laravel.log)",
       "Bash(vendor/bin/pint app/Http/Controllers/UserController.php --format agent)",
       "Bash(php -r '$d=json_decode\\(file_get_contents\\(\"php://stdin\"\\),true\\); echo \"HTTP keys: \".implode\\(\",\",array_keys\\($d\\)\\).\"\\\\n\"; echo \"findings_count=\".\\($d[\"findings_count\"]??\"?\"\\).\"\\\\n\"; foreach\\($d[\"findings\"]??[] as $f\\){ echo \"finding#{$f[\"id\"]} photos=\".count\\($f[\"photos\"]\\).\" cover=\".var_export\\($f[\"photo_url\"],true\\).\"\\\\n\"; foreach\\($f[\"photos\"] as $p\\){ echo \"   photo id=\".var_export\\($p[\"id\"]??null,true\\).\" url=\".var_export\\($p[\"url\"],true\\).\" priv=\".var_export\\($p[\"is_private\"]??null,true\\).\"\\\\n\"; } }')",
-      "Bash(vendor/bin/pint app/Support/MapCache.php app/Observers app/Http/Controllers/MapController.php app/Providers/AppServiceProvider.php --format agent)"
+      "Bash(vendor/bin/pint app/Support/MapCache.php app/Observers app/Http/Controllers/MapController.php app/Providers/AppServiceProvider.php --format agent)",
+      "Bash(convert -background none favicon.svg -define icon:auto-resize=48,32,16 favicon.ico)"
     ],
     "additionalDirectories": [
       "/Users/progala/Praca/saperapp-api/database/factories",
