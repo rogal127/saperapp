@@ -80,6 +80,23 @@
                 Dotknij mapę, aby zaznaczyć miejsce znalezienia
             </p>
             <p class="text-xs text-gray-500 text-center hidden mb-3" id="cityLabel"></p>
+
+            <button type="button" id="manualCoordsToggle" class="text-xs text-amber-400 font-semibold mb-3 block mx-auto">
+                ✏️ Wpisz współrzędne ręcznie
+            </button>
+            <div id="manualCoordsPanel" class="hidden mb-3">
+                <div class="flex gap-2 mb-2">
+                    <input type="text" id="manualLat" inputmode="decimal" placeholder="Szerokość (np. 51.1079)"
+                        class="input-field text-sm flex-1">
+                    <input type="text" id="manualLng" inputmode="decimal" placeholder="Długość (np. 17.0385)"
+                        class="input-field text-sm flex-1">
+                </div>
+                <button type="button" id="manualCoordsApply" class="w-full text-sm font-semibold py-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 active:opacity-70">
+                    Zastosuj współrzędne
+                </button>
+                <p id="manualCoordsError" class="text-red-400 text-xs mt-1 text-center hidden"></p>
+            </div>
+
             <button type="button" id="nextBtn" class="btn-primary opacity-40" disabled>
                 Dalej — uzupełnij szczegóły →
             </button>
@@ -664,6 +681,36 @@
     }
 
     map.on('click', e => placeNewMarker(e.latlng.lat, e.latlng.lng));
+
+    // Manual coordinates entry
+    const manualToggle = document.getElementById('manualCoordsToggle');
+    const manualPanel = document.getElementById('manualCoordsPanel');
+    const manualLatInput = document.getElementById('manualLat');
+    const manualLngInput = document.getElementById('manualLng');
+    const manualError = document.getElementById('manualCoordsError');
+
+    manualToggle.addEventListener('click', () => {
+        const open = !manualPanel.classList.contains('hidden');
+        manualPanel.classList.toggle('hidden');
+        manualToggle.textContent = open ? '✏️ Wpisz współrzędne ręcznie' : '✕ Ukryj';
+    });
+
+    document.getElementById('manualCoordsApply').addEventListener('click', () => {
+        const lat = parseFloat(manualLatInput.value.replace(',', '.'));
+        const lng = parseFloat(manualLngInput.value.replace(',', '.'));
+        manualError.classList.add('hidden');
+
+        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            manualError.textContent = 'Podaj poprawne współrzędne (szerokość: -90…90, długość: -180…180).';
+            manualError.classList.remove('hidden');
+            return;
+        }
+
+        map.setView([lat, lng], 15);
+        placeNewMarker(lat, lng);
+        manualPanel.classList.add('hidden');
+        manualToggle.textContent = '✏️ Wpisz współrzędne ręcznie';
+    });
 
     document.getElementById('locateBtn').addEventListener('click', () => {
         if (!navigator.geolocation) { return; }
