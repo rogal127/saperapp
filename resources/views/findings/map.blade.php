@@ -251,7 +251,12 @@
     {{-- Header --}}
     <div class="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-surface-card flex-shrink-0">
         <a href="{{ route('home') }}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card text-gray-300 text-xl flex-shrink-0">‹</a>
-        <h1 class="text-lg font-bold text-white flex-1">Przeglądaj znaleziska</h1>
+        <div class="flex-1">
+            <h1 class="text-lg font-bold text-white">Przeglądaj znaleziska</h1>
+            @if($findingsCount !== null)
+                <p class="text-xs text-gray-400">Łącznie dodano: {{ number_format($findingsCount, 0, ',', ' ') }}</p>
+            @endif
+        </div>
         <a href="{{ route('findings.create') }}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 text-xl flex-shrink-0">➕</a>
     </div>
 

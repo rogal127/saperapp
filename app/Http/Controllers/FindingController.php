@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class FindingController extends Controller
@@ -112,6 +113,8 @@ class FindingController extends Controller
             return back()->withErrors($response->json('errors') ?? ['name' => 'Błąd zapisu.'])->withInput();
         }
 
+        Cache::forget('findings_count');
+
         $createdPinId = $response->json('pin_id');
         $city = $response->json('city');
         $voivodeship = $response->json('voivodeship');
@@ -173,7 +176,13 @@ class FindingController extends Controller
 
     public function map()
     {
-        return view('findings.map');
+        $findingsCount = Cache::remember('findings_count', 3600, function () {
+            $response = Http::get(config('services.api.url').'/findings/count');
+
+            return $response->successful() ? $response->json('count') : null;
+        });
+
+        return view('findings.map', ['findingsCount' => $findingsCount]);
     }
 
     public function sendMessage(Request $request, int $findingId)
@@ -360,7 +369,13 @@ class FindingController extends Controller
                 return response()->json(['message' => 'Błąd usuwania.'], 502);
             }
 
+            Cache::forget('findings_count');
+
             return response()->json(['message' => 'Usunięto.']);
+        }
+
+        if ($response->successful()) {
+            Cache::forget('findings_count');
         }
 
         return redirect()->route('findings.map')->with('success', 'Znalezisko usunięte.');
