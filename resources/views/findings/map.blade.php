@@ -982,7 +982,8 @@ function onRelocateClick(e) {
         .then(r => r.json())
         .then(data => {
             const a = data.address ?? {};
-            const city = a.city ?? a.town ?? a.village ?? a.hamlet ?? a.suburb ?? '';
+            const municipality = (a.municipality ?? '').replace(/^gmina\s+/i, '');
+            const city = a.city ?? a.town ?? a.village ?? a.hamlet ?? a.suburb ?? municipality || '';
             const voivodeship = a.state ?? '';
             const county = a.county ?? a.municipality ?? '';
 
