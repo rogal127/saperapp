@@ -577,13 +577,17 @@ function confirmDelete() {
 
 // --- Export PDF ---
 let exportPollTimer = null;
+const EXPORT_KEY = 'findings_export_id';
 
 function startExport() {
-    document.getElementById('export-modal').classList.add('open');
-    document.getElementById('export-percent').textContent = '0%';
-    document.getElementById('export-bar').style.width = '0%';
-    document.getElementById('export-message').textContent = 'Rozpoczynanie eksportu…';
-    document.getElementById('export-download-btn').style.display = 'none';
+    const existing = sessionStorage.getItem(EXPORT_KEY);
+    if (existing) {
+        openExportModal();
+        pollExportProgress(existing);
+        return;
+    }
+
+    openExportModal();
 
     fetch('{{ route("profile.findings-export.start") }}', {
         method: 'POST',
@@ -592,6 +596,7 @@ function startExport() {
     .then(r => r.json())
     .then(data => {
         if (data.export_id) {
+            sessionStorage.setItem(EXPORT_KEY, data.export_id);
             pollExportProgress(data.export_id);
         } else {
             document.getElementById('export-message').textContent = 'Nie udało się rozpocząć eksportu.';
@@ -600,6 +605,14 @@ function startExport() {
     .catch(() => {
         document.getElementById('export-message').textContent = 'Błąd połączenia.';
     });
+}
+
+function openExportModal() {
+    document.getElementById('export-modal').classList.add('open');
+    document.getElementById('export-percent').textContent = '0%';
+    document.getElementById('export-bar').style.width = '0%';
+    document.getElementById('export-message').textContent = 'Rozpoczynanie eksportu…';
+    document.getElementById('export-download-btn').style.display = 'none';
 }
 
 function pollExportProgress(exportId) {
@@ -619,9 +632,11 @@ function pollExportProgress(exportId) {
                 const btn = document.getElementById('export-download-btn');
                 btn.href = `/profile/findings-export/${exportId}/download`;
                 btn.style.display = 'block';
+                btn.addEventListener('click', () => sessionStorage.removeItem(EXPORT_KEY), { once: true });
                 document.getElementById('export-message').textContent = 'Twój PDF jest gotowy!';
             } else if (data.failed) {
                 clearInterval(exportPollTimer);
+                sessionStorage.removeItem(EXPORT_KEY);
                 document.getElementById('export-message').textContent = data.message || 'Eksport nie powiódł się.';
             }
         })
