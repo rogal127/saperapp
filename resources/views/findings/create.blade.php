@@ -333,8 +333,14 @@
 
 {{-- Loading overlay --}}
 <div id="loadingOverlay" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm hidden">
-    <div class="w-10 h-10 border-4 border-gray-600 border-t-amber-400 rounded-full animate-spin"></div>
+    <div id="loadingSpinner" class="w-10 h-10 border-4 border-gray-600 border-t-amber-400 rounded-full animate-spin"></div>
     <p id="loadingText" class="mt-4 text-sm text-gray-300">Przetwarzanie…</p>
+    <div id="progressContainer" class="hidden w-56 mt-3">
+        <div class="w-full bg-gray-700/50 rounded-full h-2.5 overflow-hidden">
+            <div id="progressBar" class="bg-amber-500 h-full rounded-full transition-all duration-200 ease-out" style="width: 0%"></div>
+        </div>
+        <p id="progressText" class="text-xs text-gray-500 mt-1.5 text-center">0%</p>
+    </div>
 </div>
 @endsection
 
@@ -852,46 +858,111 @@
     }
 
     document.getElementById('findingForm').addEventListener('submit', async function (e) {
-        const pinId = document.getElementById('pin_id').value;
-        const lat   = document.getElementById('lat').value;
+        e.preventDefault();
 
+        const pinId = document.getElementById('pin_id').value;
+        const lat = document.getElementById('lat').value;
         if (!pinId && !lat) {
-            e.preventDefault();
             showStep(1);
             alert('Zaznacz lokalizację na mapie lub wybierz istniejącą pinezkę!');
             return;
         }
 
-        const btn     = document.getElementById('submitBtn');
+        const btn = document.getElementById('submitBtn');
         const overlay = document.getElementById('loadingOverlay');
         const loadingText = document.getElementById('loadingText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+
+        btn.disabled = true;
+        btn.classList.add('opacity-60');
+        overlay.classList.remove('hidden');
 
         if (selectedPhotos.length > 0) {
-            e.preventDefault();
-            btn.disabled = true;
-            btn.textContent = 'Przetwarzanie zdjęć...';
-            btn.classList.add('opacity-60');
             loadingText.textContent = 'Przetwarzanie zdjęć…';
-            overlay.classList.remove('hidden');
+            btn.textContent = 'Przetwarzanie zdjęć...';
 
             const dt = new DataTransfer();
-            for (const file of selectedPhotos) {
-                const resized = await resizeImageFile(file, 1920, 0.82);
+            for (let i = 0; i < selectedPhotos.length; i++) {
+                loadingText.textContent = 'Przetwarzanie zdjęcia ' + (i + 1) + ' z ' + selectedPhotos.length + '…';
+                const resized = await resizeImageFile(selectedPhotos[i], 1920, 0.82);
                 dt.items.add(resized);
             }
             photoInput.files = dt.files;
             syncPrivateInputs();
         }
 
-        btn.disabled = true;
-        btn.textContent = 'Dodawanie...';
-        btn.classList.add('opacity-60');
-        loadingText.textContent = 'Dodawanie znaleziska…';
-        overlay.classList.remove('hidden');
+        btn.textContent = 'Przesyłanie...';
 
         if (selectedPhotos.length > 0) {
-            this.submit();
+            loadingText.textContent = 'Przesyłanie zdjęć…';
+            loadingSpinner.classList.add('hidden');
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+        } else {
+            loadingText.textContent = 'Dodawanie znaleziska…';
         }
+
+        var formData = new FormData(this);
+        var xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', function (ev) {
+            if (!ev.lengthComputable) return;
+            var pct = Math.round((ev.loaded / ev.total) * 100);
+            progressBar.style.width = pct + '%';
+            progressText.textContent = pct + '%';
+            if (pct < 100) {
+                loadingText.textContent = 'Przesyłanie zdjęć… ' + pct + '%';
+            } else {
+                loadingText.textContent = 'Zapisywanie na serwerze…';
+                loadingSpinner.classList.remove('hidden');
+                progressContainer.classList.add('hidden');
+            }
+        });
+
+        function resetUI() {
+            overlay.classList.add('hidden');
+            btn.disabled = false;
+            btn.textContent = 'Dodaj znalezisko';
+            btn.classList.remove('opacity-60');
+            loadingSpinner.classList.remove('hidden');
+            progressContainer.classList.add('hidden');
+            progressBar.style.width = '0%';
+        }
+
+        xhr.addEventListener('load', function () {
+            try {
+                var data = JSON.parse(xhr.responseText);
+                if (xhr.status >= 200 && xhr.status < 300 && data.redirect) {
+                    window.location.href = data.redirect;
+                    return;
+                }
+                if (data.errors) {
+                    var msgs = Object.values(data.errors).flat();
+                    alert(msgs.join('\n'));
+                } else if (data.message) {
+                    alert(data.message);
+                } else {
+                    alert('Wystąpił błąd. Spróbuj ponownie.');
+                }
+            } catch (err) {
+                alert('Wystąpił błąd. Spróbuj ponownie.');
+            }
+            resetUI();
+        });
+
+        xhr.addEventListener('error', function () {
+            alert('Błąd połączenia. Sprawdź internet i spróbuj ponownie.');
+            resetUI();
+        });
+
+        xhr.open('POST', this.action);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.send(formData);
     });
 </script>
 @endpush

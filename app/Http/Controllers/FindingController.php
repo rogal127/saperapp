@@ -110,7 +110,13 @@ class FindingController extends Controller
         $response = $pending->post(config('services.api.url').'/findings', $payload);
 
         if ($response->failed()) {
-            return back()->withErrors($response->json('errors') ?? ['name' => 'Błąd zapisu.'])->withInput();
+            $errors = $response->json('errors') ?? ['name' => ['Błąd zapisu.']];
+
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $errors], 422);
+            }
+
+            return back()->withErrors($errors)->withInput();
         }
 
         Cache::forget('findings_count');
@@ -119,6 +125,14 @@ class FindingController extends Controller
         $city = $response->json('city');
         $voivodeship = $response->json('voivodeship');
         $location = $city ? $city.($voivodeship ? ', '.$voivodeship : '') : null;
+
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', 'Znalezisko poprawnie dodane!');
+            $request->session()->flash('created_pin_id', $createdPinId);
+            $request->session()->flash('created_location', $location);
+
+            return response()->json(['redirect' => route('findings.created')]);
+        }
 
         return redirect()->route('findings.created')->with([
             'success' => 'Znalezisko poprawnie dodane!',
@@ -378,7 +392,17 @@ class FindingController extends Controller
         }
 
         if ($response->failed()) {
-            return back()->withErrors($response->json('errors') ?? ['name' => 'Błąd zapisu.'])->withInput();
+            $errors = $response->json('errors') ?? ['name' => ['Błąd zapisu.']];
+
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $errors], 422);
+            }
+
+            return back()->withErrors($errors)->withInput();
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['redirect' => route('findings.map')]);
         }
 
         return redirect()->route('findings.map')->with('success', 'Znalezisko zaktualizowane!');
