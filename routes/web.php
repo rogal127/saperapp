@@ -36,6 +36,9 @@ Route::middleware('api.auth')->group(function () {
     Route::post('/profile/wkz-consents', [ProfileController::class, 'storeWkzConsent'])->name('profile.wkz-consents.store');
     Route::delete('/profile/wkz-consents/{id}', [ProfileController::class, 'destroyWkzConsent'])->name('profile.wkz-consents.destroy');
     Route::get('/profile/wkz-consents/{id}/report', [ProfileController::class, 'wkzConsentReport'])->name('profile.wkz-consents.report');
+    Route::post('/profile/findings-export', [ProfileController::class, 'startFindingsExport'])->name('profile.findings-export.start');
+    Route::get('/profile/findings-export/{exportId}/progress', [ProfileController::class, 'findingsExportProgress'])->name('profile.findings-export.progress');
+    Route::get('/profile/findings-export/{exportId}/download', [ProfileController::class, 'findingsExportDownload'])->name('profile.findings-export.download');
 
     Route::post('/messages/with/{userId}', [ConversationController::class, 'startWith'])->name('messages.start-with');
     Route::get('/messages', [ConversationController::class, 'index'])->name('messages.index');

@@ -100,6 +100,41 @@ class ProfileController extends Controller
         return back()->with('success', 'Profil zaktualizowany!');
     }
 
+    public function startFindingsExport(Request $request)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->post(config('services.api.url').'/findings-export');
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Nie udało się rozpocząć eksportu.'], 500);
+        }
+
+        return response()->json($response->json());
+    }
+
+    public function findingsExportProgress(Request $request, string $exportId)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url')."/findings-export/{$exportId}/progress");
+
+        return response()->json($response->json());
+    }
+
+    public function findingsExportDownload(Request $request, string $exportId)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url')."/findings-export/{$exportId}/download");
+
+        if ($response->failed()) {
+            return back()->withErrors(['export' => 'Nie udało się pobrać eksportu.']);
+        }
+
+        return response($response->body(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="moje-znaleziska.pdf"',
+        ]);
+    }
+
     public function uploadAvatar(Request $request)
     {
         $request->validate([

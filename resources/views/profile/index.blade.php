@@ -126,6 +126,43 @@
     .fmodal-gallery::-webkit-scrollbar { display: none; }
     .fmodal-gallery .fmodal-photo { flex: 0 0 90%; scroll-snap-align: start; margin-top: 0; }
     .fmodal-close { color: #9ca3af; font-size: 1.4rem; background: none; border: none; cursor: pointer; line-height: 1; }
+
+    /* Export modal */
+    #export-modal {
+        display: none; position: fixed; inset: 0; z-index: 2000;
+        background: rgba(0,0,0,0.75); align-items: center; justify-content: center;
+    }
+    #export-modal.open { display: flex; }
+    .export-sheet {
+        background: #1a1a2e; border-radius: 1.25rem;
+        border: 1px solid #2a2a3e; width: 90%; max-width: 380px;
+        padding: 1.5rem; text-align: center;
+        animation: slideUp 0.25s ease;
+    }
+    .export-title { font-weight: 700; font-size: 1rem; color: #fff; margin-bottom: 1rem; }
+    .export-progress-wrap {
+        background: #323248; border-radius: 999px; height: 12px;
+        overflow: hidden; margin-bottom: 0.5rem;
+    }
+    .export-progress-bar {
+        height: 100%; border-radius: 999px;
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+        transition: width 0.3s ease;
+        width: 0%;
+    }
+    .export-percent { font-size: 0.85rem; color: #f59e0b; font-weight: 700; margin-bottom: 0.25rem; }
+    .export-message { font-size: 0.78rem; color: #9ca3af; margin-bottom: 1rem; min-height: 1.2em; }
+    .export-done-btn {
+        display: none; width: 100%; padding: 0.8rem;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #1a1a2e; font-weight: 700; border: none;
+        border-radius: 0.75rem; cursor: pointer; font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    .export-close-btn {
+        background: none; border: none; color: #6b7280;
+        font-size: 0.8rem; cursor: pointer; padding: 0.3rem;
+    }
 </style>
 @endpush
 
@@ -175,7 +212,14 @@
 
         {{-- Moje znaleziska --}}
         <div class="mb-8">
-            <div class="section-title">Moje znaleziska</div>
+            <div class="flex items-center justify-between mb-3">
+                <div class="section-title" style="margin-bottom:0">Moje znaleziska</div>
+                @if(!empty($grouped))
+                    <button onclick="startExport()" class="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)">
+                        PDF
+                    </button>
+                @endif
+            </div>
             @if(empty($grouped))
                 <div class="text-center py-8 text-gray-500">
                     <div class="text-3xl mb-2">🔍</div>
@@ -425,6 +469,20 @@
         </div>
     </div>
 
+    {{-- Export modal --}}
+    <div id="export-modal" onclick="if(event.target===this)closeExport()">
+        <div class="export-sheet">
+            <div class="export-title">Eksport znalezisk do PDF</div>
+            <div class="export-percent" id="export-percent">0%</div>
+            <div class="export-progress-wrap">
+                <div class="export-progress-bar" id="export-bar"></div>
+            </div>
+            <div class="export-message" id="export-message">Inicjalizacja…</div>
+            <a id="export-download-btn" class="export-done-btn" href="#" style="display:none;text-decoration:none;text-align:center">Pobierz PDF</a>
+            <button class="export-close-btn" id="export-close-btn" onclick="closeExport()">Zamknij</button>
+        </div>
+    </div>
+
     {{-- Nawigacja --}}
     <div class="nav-bar safe-bottom">
         <span class="nav-item active">
@@ -515,6 +573,65 @@ function handleFindingBackdrop(e) {
 
 function confirmDelete() {
     return confirm('Na pewno chcesz usunąć to znalezisko?');
+}
+
+// --- Export PDF ---
+let exportPollTimer = null;
+
+function startExport() {
+    document.getElementById('export-modal').classList.add('open');
+    document.getElementById('export-percent').textContent = '0%';
+    document.getElementById('export-bar').style.width = '0%';
+    document.getElementById('export-message').textContent = 'Rozpoczynanie eksportu…';
+    document.getElementById('export-download-btn').style.display = 'none';
+
+    fetch('{{ route("profile.findings-export.start") }}', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.export_id) {
+            pollExportProgress(data.export_id);
+        } else {
+            document.getElementById('export-message').textContent = 'Nie udało się rozpocząć eksportu.';
+        }
+    })
+    .catch(() => {
+        document.getElementById('export-message').textContent = 'Błąd połączenia.';
+    });
+}
+
+function pollExportProgress(exportId) {
+    clearInterval(exportPollTimer);
+    exportPollTimer = setInterval(() => {
+        fetch(`/profile/findings-export/${exportId}/progress`, {
+            headers: { 'Accept': 'application/json' },
+        })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('export-percent').textContent = data.percent + '%';
+            document.getElementById('export-bar').style.width = data.percent + '%';
+            document.getElementById('export-message').textContent = data.message;
+
+            if (data.done) {
+                clearInterval(exportPollTimer);
+                const btn = document.getElementById('export-download-btn');
+                btn.href = `/profile/findings-export/${exportId}/download`;
+                btn.style.display = 'block';
+                document.getElementById('export-message').textContent = 'Twój PDF jest gotowy!';
+            } else if (data.failed) {
+                clearInterval(exportPollTimer);
+                document.getElementById('export-message').textContent = data.message || 'Eksport nie powiódł się.';
+            }
+        })
+        .catch(() => {});
+    }, 1000);
+}
+
+function closeExport() {
+    clearInterval(exportPollTimer);
+    document.getElementById('export-modal').classList.remove('open');
 }
 </script>
 @endpush
