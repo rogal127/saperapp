@@ -478,6 +478,7 @@
                 <div class="export-progress-bar" id="export-bar"></div>
             </div>
             <div class="export-message" id="export-message">Inicjalizacja…</div>
+            <div id="export-hint" style="font-size:0.7rem;color:#6b7280;margin-bottom:0.75rem">Możesz zamknąć to okno i wrócić później — eksport będzie kontynuowany w tle.</div>
             <a id="export-download-btn" class="export-done-btn" href="#" style="display:none;text-decoration:none;text-align:center">Pobierz PDF</a>
             <button class="export-close-btn" id="export-close-btn" onclick="closeExport()">Zamknij</button>
         </div>
@@ -613,6 +614,7 @@ function openExportModal() {
     document.getElementById('export-bar').style.width = '0%';
     document.getElementById('export-message').textContent = 'Rozpoczynanie eksportu…';
     document.getElementById('export-download-btn').style.display = 'none';
+    document.getElementById('export-hint').style.display = 'block';
 }
 
 function pollExportProgress(exportId) {
@@ -633,6 +635,7 @@ function pollExportProgress(exportId) {
                 btn.href = `/profile/findings-export/${exportId}/download`;
                 btn.style.display = 'block';
                 btn.addEventListener('click', () => sessionStorage.removeItem(EXPORT_KEY), { once: true });
+                document.getElementById('export-hint').style.display = 'none';
                 document.getElementById('export-message').textContent = 'Twój PDF jest gotowy!';
             } else if (data.failed) {
                 clearInterval(exportPollTimer);
