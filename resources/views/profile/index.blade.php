@@ -216,7 +216,7 @@
                 <div class="section-title" style="margin-bottom:0">Moje znaleziska</div>
                 @if(!empty($grouped))
                     <button onclick="startExport()" class="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)">
-                        PDF
+                        Eksportuj wszystkie znaleziska
                     </button>
                 @endif
             </div>
