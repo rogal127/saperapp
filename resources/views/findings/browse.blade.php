@@ -116,6 +116,8 @@
     let userDebounce = null;
     let selectedUserId = null;
     let selectedUserName = null;
+    const currentApiUser = @json(session('api_user'));
+    const currentUserId = currentApiUser ? currentApiUser.id : null;
 
     function cacheKey(page) {
         const p = new URLSearchParams();
@@ -162,8 +164,6 @@
     const initialUserId = urlParams.get('user_id');
     if (initialUserId) {
         selectedUserId = parseInt(initialUserId);
-        // We'll resolve the name after loading
-        const currentApiUser = @json(session('api_user'));
         if (currentApiUser && currentApiUser.id == selectedUserId) {
             selectedUserName = currentApiUser.name;
             pageTitle.textContent = 'Twoje znaleziska';
@@ -217,7 +217,12 @@
 
         const heartEmoji = f.is_liked ? '❤️' : '🤍';
 
-        return '<div class="card flex gap-3" style="padding:0.875rem">' +
+        const isOwner = currentUserId && f.finder && f.finder.id === currentUserId;
+        const editBtnHtml = isOwner
+            ? '<a href="/findings/' + f.id + '/edit?from=browse" class="flex items-center justify-center flex-shrink-0 text-gray-400 hover:text-amber-400" style="min-width:32px;font-size:1.1rem" title="Edytuj">✏️</a>'
+            : '';
+
+        return '<div class="card flex gap-3 items-center" style="padding:0.875rem">' +
             '<a href="/findings/' + f.id + '" class="flex gap-3 flex-1 min-w-0">' +
                 photoHtml +
                 '<div class="flex-1 min-w-0">' +
@@ -228,6 +233,7 @@
                     (f.finder ? '<p class="text-xs text-amber-400 mt-0.5">' + f.finder.name + '</p>' : '') +
                 '</div>' +
             '</a>' +
+            editBtnHtml +
             '<button class="like-btn flex flex-col items-center justify-center gap-0.5 flex-shrink-0" data-id="' + f.id + '" style="min-width:40px">' +
                 '<span class="like-icon text-lg">' + heartEmoji + '</span>' +
                 '<span class="like-count text-xs text-gray-400">' + (f.likes_count || 0) + '</span>' +

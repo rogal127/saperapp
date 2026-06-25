@@ -380,6 +380,7 @@ class FindingController extends Controller
             'finding' => $finding,
             'wkzConsents' => $wkzConsents,
             'findingCategories' => $findingCategories,
+            'redirectTo' => $request->query('from') === 'browse' ? route('findings.browse') : null,
         ]);
     }
 
@@ -462,11 +463,13 @@ class FindingController extends Controller
             return back()->withErrors($errors)->withInput();
         }
 
+        $redirectUrl = $request->input('redirect_to', route('findings.map'));
+
         if ($request->expectsJson()) {
-            return response()->json(['redirect' => route('findings.map')]);
+            return response()->json(['redirect' => $redirectUrl]);
         }
 
-        return redirect()->route('findings.map')->with('success', 'Znalezisko zaktualizowane!');
+        return redirect($redirectUrl)->with('success', 'Znalezisko zaktualizowane!');
     }
 
     public function destroy(Request $request, int $id)

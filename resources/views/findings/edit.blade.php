@@ -25,6 +25,9 @@
         >
             @csrf
             @method('PUT')
+            @if(!empty($redirectTo))
+                <input type="hidden" name="redirect_to" value="{{ $redirectTo }}">
+            @endif
 
             {{-- Name --}}
             <div>
