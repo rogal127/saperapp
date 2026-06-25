@@ -97,9 +97,9 @@
     .finding-card-name { font-size: 0.8rem; font-weight: 700; color: #fff; }
     .finding-card-meta { font-size: 0.68rem; color: #9ca3af; margin-top: 2px; }
     .finding-card-depth { font-size: 0.72rem; color: #f59e0b; font-weight: 600; margin-top: 2px; }
-    .like-btn { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0.25rem; flex-shrink: 0; }
+    .like-btn { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0.5rem; flex-shrink: 0; min-width: 48px; min-height: 44px; justify-content: center; }
     .like-btn .like-icon { font-size: 1.1rem; }
-    .like-btn .like-count { font-size: 0.65rem; color: #9ca3af; }
+    .like-btn .like-count { font-size: 0.85rem; color: #9ca3af; }
 
     /* Modal znaleziska */
     #finding-modal {

@@ -242,9 +242,9 @@
     .finding-action-btn.edit { background: #3b3b58; color: #a5b4fc; }
     .finding-action-btn.delete { background: #3b1f1f; color: #f87171; }
     .pin-finding-header { display: flex; align-items: flex-start; gap: 0.5rem; }
-    .like-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 0.25rem 0; flex-shrink: 0; }
-    .like-btn .like-icon { font-size: 0.9rem; }
-    .like-btn .like-count { font-size: 0.72rem; color: #9ca3af; font-weight: 600; }
+    .like-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 0.5rem 0.25rem; flex-shrink: 0; min-height: 44px; }
+    .like-btn .like-icon { font-size: 1rem; }
+    .like-btn .like-count { font-size: 0.85rem; color: #9ca3af; font-weight: 600; }
     .pin-finding-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 0.4rem; }
 
     /* Tryb przenoszenia pinezki */

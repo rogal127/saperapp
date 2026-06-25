@@ -117,7 +117,7 @@
                     <span id="likeCount" class="text-sm font-semibold {{ !empty($finding['is_liked']) ? 'text-red-400' : 'text-gray-400' }}">{{ $finding['likes_count'] ?? 0 }}</span>
                 </button>
                 @if(($finding['likes_count'] ?? 0) > 0)
-                <button id="showLikersBtn" class="text-sm text-gray-400 underline underline-offset-2 active:text-gray-300">
+                <button id="showLikersBtn" class="text-sm text-gray-400 underline underline-offset-2 active:text-gray-300 px-3 py-2 -mx-1 rounded-lg">
                     kto polubił?
                 </button>
                 @endif
@@ -196,7 +196,7 @@
                 if (data.likes_count > 0 && !showBtn) {
                     const newBtn = document.createElement('button');
                     newBtn.id = 'showLikersBtn';
-                    newBtn.className = 'text-sm text-gray-400 underline underline-offset-2 active:text-gray-300';
+                    newBtn.className = 'text-sm text-gray-400 underline underline-offset-2 active:text-gray-300 px-3 py-2 -mx-1 rounded-lg';
                     newBtn.textContent = 'kto polubił?';
                     newBtn.addEventListener('click', openLikersSheet);
                     btn.parentElement.appendChild(newBtn);

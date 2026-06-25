@@ -229,9 +229,9 @@
                 '</div>' +
             '</a>' +
             editBtnHtml +
-            '<button class="like-btn flex flex-col items-center justify-center gap-0.5 flex-shrink-0" data-id="' + f.id + '" style="min-width:40px">' +
+            '<button class="like-btn flex flex-col items-center justify-center gap-0.5 flex-shrink-0" data-id="' + f.id + '" style="min-width:48px;min-height:44px;padding:0.5rem">' +
                 '<span class="like-icon text-lg">' + heartEmoji + '</span>' +
-                '<span class="like-count text-xs ' + (f.likes_count > 0 ? 'text-gray-300 underline underline-offset-2 cursor-pointer' : 'text-gray-400') + '">' + (f.likes_count || 0) + '</span>' +
+                '<span class="like-count text-sm ' + (f.likes_count > 0 ? 'text-gray-300 underline underline-offset-2 cursor-pointer' : 'text-gray-400') + '">' + (f.likes_count || 0) + '</span>' +
             '</button>' +
         '</div>';
     }
