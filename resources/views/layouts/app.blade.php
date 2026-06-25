@@ -75,6 +75,7 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
+            flex-shrink: 0;
         }
         .nav-item {
             display: flex; flex-direction: column; align-items: center;
@@ -91,7 +92,26 @@
 </head>
 <body>
     <div class="screen">
-        @yield('content')
+        <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+            @yield('content')
+        </div>
+
+        @unless($__env->yieldContent('hideNav'))
+        <div class="nav-bar safe-bottom">
+            <a href="{{ route('home') }}" class="nav-item {{ request()->routeIs('home') ? 'active' : '' }}">
+                <span class="nav-icon">🏠</span><span>Start</span>
+            </a>
+            <a href="{{ route('findings.map') }}" class="nav-item {{ request()->routeIs('findings.map') ? 'active' : '' }}">
+                <span class="nav-icon">🗺️</span><span>Mapa</span>
+            </a>
+            <a href="{{ route('findings.create') }}" class="nav-item">
+                <span class="nav-icon" style="font-weight:900;color:#f59e0b;">+</span><span>Dodaj</span>
+            </a>
+            <a href="{{ route('messages.index') }}" class="nav-item {{ request()->routeIs('messages.*') ? 'active' : '' }}" id="nav-messages">
+                <span class="nav-icon">💬</span><span>Wiadomości</span>
+            </a>
+        </div>
+        @endunless
     </div>
     <!-- Lightbox -->
     <div id="lightbox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.93);align-items:center;justify-content:center;" onclick="closeLightbox()">

@@ -93,21 +93,6 @@
         @endif
     </div>
 
-    {{-- Nawigacja --}}
-    <div class="nav-bar safe-bottom">
-        <a href="{{ route('home') }}" class="nav-item">
-            <span class="nav-icon">🏠</span><span>Start</span>
-        </a>
-        <a href="{{ route('findings.map') }}" class="nav-item">
-            <span class="nav-icon">🗺️</span><span>Mapa</span>
-        </a>
-        <a href="{{ route('findings.create') }}" class="nav-item">
-            <span class="nav-icon" style="font-weight:900;color:#f59e0b;">+</span><span>Dodaj</span>
-        </a>
-        <span class="nav-item active">
-            <span class="nav-icon">💬</span><span>Wiadomości</span>
-        </span>
-    </div>
 
 </div>
 @endsection

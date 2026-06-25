@@ -1,5 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Logowanie')
+@section('hideNav', true)
 
 @section('content')
 <div class="flex flex-col h-full safe-top safe-bottom overflow-y-auto">

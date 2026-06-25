@@ -396,21 +396,6 @@
         </div>
     </div>
 
-    {{-- Nawigacja --}}
-    <div class="nav-bar safe-bottom">
-        <a href="{{ route('home') }}" class="nav-item">
-            <span class="nav-icon">🏠</span><span>Start</span>
-        </a>
-        <span class="nav-item active">
-            <span class="nav-icon">🗺️</span><span>Mapa</span>
-        </span>
-        <a href="{{ route('findings.create') }}" class="nav-item">
-            <span class="nav-icon" style="font-weight:900;color:#f59e0b;">+</span><span>Dodaj</span>
-        </a>
-        <a href="{{ route('messages.index') }}" class="nav-item" id="nav-messages">
-            <span class="nav-icon">💬</span><span>Wiadomości</span>
-        </a>
-    </div>
 
 </div>
 @endsection
