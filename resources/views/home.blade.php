@@ -11,9 +11,9 @@
                 <h1 class="text-2xl font-bold text-white">Historius</h1>
                 <p class="text-sm text-gray-400 mt-0.5">Poszukiwacze skarbów</p>
             </div>
-            <div class="w-12 h-12 rounded-full bg-surface-card flex items-center justify-center text-2xl">
-                🪙
-            </div>
+            <a href="{{ route('profile.show') }}" class="w-12 h-12 rounded-full bg-surface-card flex items-center justify-center text-xl border-2 border-transparent active:border-amber-500 transition-colors">
+                👤
+            </a>
         </div>
     </div>
 
@@ -24,25 +24,38 @@
     </div>
     @endif
 
-    {{-- Hero --}}
-    <div class="mx-6 mb-6">
-        <div class="card relative overflow-hidden">
-            <div class="absolute inset-0 opacity-10 bg-gradient-to-br from-yellow-400 to-purple-600 rounded-xl"></div>
-            <div class="relative">
-                <div class="text-4xl mb-3">⚒️</div>
-                <h2 class="text-xl font-bold text-white mb-1">Twoje odkrycia</h2>
-                <p class="text-sm text-gray-400">Dodawaj znaleziska i przeglądaj co znaleźli inni detektoryści w Twojej okolicy.</p>
-            </div>
-        </div>
-    </div>
+    {{-- Actions --}}
+    <div class="px-6 flex-1 flex flex-col gap-3">
 
-    {{-- Main actions --}}
-    <div class="px-6 flex-1 flex flex-col gap-4">
-
-        {{-- Add finding --}}
-        <a href="{{ route('findings.create') }}" class="block">
+        <a href="{{ route('findings.browse', ['user_id' => session('api_user.id')]) }}" class="block">
             <div class="card flex items-center gap-4 active:scale-95 transition-transform">
                 <div class="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center text-3xl flex-shrink-0">
+                    ⚒️
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-white text-lg">Twoje znaleziska</h3>
+                    <p class="text-sm text-gray-400">Zobacz swoją kolekcję znalezisk</p>
+                </div>
+                <span class="text-gray-500 text-xl">›</span>
+            </div>
+        </a>
+
+        <a href="{{ route('findings.browse') }}" class="block">
+            <div class="card flex items-center gap-4 active:scale-95 transition-transform">
+                <div class="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center text-3xl flex-shrink-0">
+                    🔍
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-white text-lg">Przeglądaj znaleziska</h3>
+                    <p class="text-sm text-gray-400">Odkryj co znaleźli inni poszukiwacze</p>
+                </div>
+                <span class="text-gray-500 text-xl">›</span>
+            </div>
+        </a>
+
+        <a href="{{ route('findings.create') }}" class="block">
+            <div class="card flex items-center gap-4 active:scale-95 transition-transform">
+                <div class="w-14 h-14 rounded-2xl bg-green-500/20 flex items-center justify-center text-3xl flex-shrink-0">
                     ➕
                 </div>
                 <div class="flex-1">
@@ -53,7 +66,6 @@
             </div>
         </a>
 
-        {{-- Browse map --}}
         <a href="{{ route('findings.map') }}" class="block">
             <div class="card flex items-center gap-4 active:scale-95 transition-transform">
                 <div class="w-14 h-14 rounded-2xl bg-purple-500/20 flex items-center justify-center text-3xl flex-shrink-0">
@@ -61,7 +73,7 @@
                 </div>
                 <div class="flex-1">
                     <h3 class="font-bold text-white text-lg">Przeglądaj mapę</h3>
-                    <p class="text-sm text-gray-400">Przeglądaj znaleziska z możliwością filtrowania według lokalizacji i kategorii</p>
+                    <p class="text-sm text-gray-400">Znaleziska na interaktywnej mapie</p>
                 </div>
                 <span class="text-gray-500 text-xl">›</span>
             </div>
@@ -71,9 +83,9 @@
 
     {{-- Bottom nav --}}
     <div class="nav-bar safe-bottom">
-        <a href="{{ route('profile.show') }}" class="nav-item">
-            <span class="nav-icon">👤</span><span>Profil</span>
-        </a>
+        <span class="nav-item active">
+            <span class="nav-icon">🏠</span><span>Start</span>
+        </span>
         <a href="{{ route('findings.map') }}" class="nav-item">
             <span class="nav-icon">🗺️</span><span>Mapa</span>
         </a>

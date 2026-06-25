@@ -242,6 +242,10 @@
     .finding-action-btn.edit { background: #3b3b58; color: #a5b4fc; }
     .finding-action-btn.delete { background: #3b1f1f; color: #f87171; }
     .pin-finding-header { display: flex; align-items: flex-start; gap: 0.5rem; }
+    .like-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 0.25rem 0; flex-shrink: 0; }
+    .like-btn .like-icon { font-size: 0.9rem; }
+    .like-btn .like-count { font-size: 0.72rem; color: #9ca3af; font-weight: 600; }
+    .pin-finding-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 0.4rem; }
 
     /* Tryb przenoszenia pinezki */
     #relocate-overlay {
@@ -394,8 +398,8 @@
 
     {{-- Nawigacja --}}
     <div class="nav-bar safe-bottom">
-        <a href="{{ route('profile.show') }}" class="nav-item">
-            <span class="nav-icon">👤</span><span>Profil</span>
+        <a href="{{ route('home') }}" class="nav-item">
+            <span class="nav-icon">🏠</span><span>Start</span>
         </a>
         <span class="nav-item active">
             <span class="nav-icon">🗺️</span><span>Mapa</span>
@@ -725,7 +729,10 @@ function openCityFindingsModal(cluster) {
                 }</div>
                 ${descHtml(f.description)}
                 ${photosHtml(f)}
-                <button class="pin-msg-btn" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>
+                <div class="pin-finding-actions">
+                    ${likeButtonHtml(f.id, f.is_liked, f.likes_count)}
+                    <button class="pin-msg-btn" style="margin:0;width:auto;flex:1;margin-left:0.5rem" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>
+                </div>
             `;
             list.appendChild(card);
         });
@@ -825,7 +832,10 @@ function openPinModal(pin) {
                     </div>
                     ${descHtml(f.description)}
                     ${photosHtml(f)}
-                    ${!pin.is_mine ? `<button class="pin-msg-btn" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>` : ''}
+                    <div class="pin-finding-actions">
+                        ${likeButtonHtml(f.id, f.is_liked, f.likes_count)}
+                        ${!pin.is_mine ? `<button class="pin-msg-btn" style="margin:0;width:auto;flex:1;margin-left:0.5rem" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>` : ''}
+                    </div>
                 `;
                 list.appendChild(card);
             });
@@ -936,6 +946,25 @@ function togglePanel() {
 function escHtml(str) {
     return String(str ?? '')
         .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toggleLike(findingId, btn) {
+    const icon = btn.querySelector('.like-icon');
+    const count = btn.querySelector('.like-count');
+    fetch(`/api/findings/${findingId}/like`, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+    })
+    .then(r => r.json())
+    .then(data => {
+        icon.textContent = data.is_liked ? '❤️' : '🤍';
+        count.textContent = data.likes_count;
+    })
+    .catch(() => {});
+}
+
+function likeButtonHtml(findingId, isLiked, likesCount) {
+    return `<button class="like-btn" onclick="event.stopPropagation(); toggleLike(${findingId}, this)"><span class="like-icon">${isLiked ? '❤️' : '🤍'}</span><span class="like-count">${likesCount || 0}</span></button>`;
 }
 
 // --- Przenoszenie pinezki ---

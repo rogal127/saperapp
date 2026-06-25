@@ -293,6 +293,59 @@ class FindingController extends Controller
         return response()->json($response->json());
     }
 
+    public function toggleLike(Request $request, int $finding)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->post(config('services.api.url')."/findings/{$finding}/like");
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'Błąd.'], 502);
+        }
+
+        return response()->json($response->json());
+    }
+
+    public function browse()
+    {
+        return view('findings.browse');
+    }
+
+    public function browseApi(Request $request)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url').'/browse', $request->only('voivodeship', 'city', 'county', 'name', 'user_id', 'sort', 'page'));
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Błąd API'], 502);
+        }
+
+        return response()->json($response->json());
+    }
+
+    public function voivodeships(Request $request)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url').'/voivodeships');
+
+        if ($response->failed()) {
+            return response()->json([]);
+        }
+
+        return response()->json($response->json());
+    }
+
+    public function searchUsers(Request $request)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url').'/users/search', ['q' => $request->query('q', '')]);
+
+        if ($response->failed()) {
+            return response()->json([]);
+        }
+
+        return response()->json($response->json());
+    }
+
     public function edit(Request $request, int $id)
     {
         $token = $this->apiToken($request);

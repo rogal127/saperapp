@@ -108,6 +108,16 @@
                 @endif
             </div>
 
+            {{-- Polubienia --}}
+            <div class="flex items-center gap-3">
+                <button id="likeBtn" data-id="{{ $finding['id'] }}"
+                        class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all active:scale-95"
+                        style="background:{{ !empty($finding['is_liked']) ? 'rgba(239,68,68,0.15)' : '#323248' }}">
+                    <span id="likeIcon" class="text-lg">{{ !empty($finding['is_liked']) ? '❤️' : '🤍' }}</span>
+                    <span id="likeCount" class="text-sm font-semibold {{ !empty($finding['is_liked']) ? 'text-red-400' : 'text-gray-400' }}">{{ $finding['likes_count'] ?? 0 }}</span>
+                </button>
+            </div>
+
             {{-- Opis --}}
             @if(!empty($finding['description']))
             <div class="bg-surface-card rounded-xl p-4 text-sm text-gray-300 leading-relaxed">
@@ -122,8 +132,8 @@
 
     {{-- Nawigacja --}}
     <div class="nav-bar safe-bottom">
-        <a href="{{ route('profile.show') }}" class="nav-item">
-            <span class="nav-icon">👤</span><span>Profil</span>
+        <a href="{{ route('home') }}" class="nav-item">
+            <span class="nav-icon">🏠</span><span>Start</span>
         </a>
         <a href="{{ route('findings.map') }}" class="nav-item">
             <span class="nav-icon">🗺️</span><span>Mapa</span>
@@ -156,6 +166,40 @@
                 dot.style.background = i === index ? '#f59e0b' : 'rgba(255,255,255,0.4)';
             });
         }, { passive: true });
+    })();
+
+    (function () {
+        const btn = document.getElementById('likeBtn');
+        if (!btn) { return; }
+
+        btn.addEventListener('click', function () {
+            const findingId = btn.dataset.id;
+            const icon = document.getElementById('likeIcon');
+            const count = document.getElementById('likeCount');
+
+            fetch('/api/findings/' + findingId + '/like', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                },
+            })
+            .then(r => r.json())
+            .then(data => {
+                icon.textContent = data.is_liked ? '❤️' : '🤍';
+                count.textContent = data.likes_count;
+                if (data.is_liked) {
+                    count.classList.remove('text-gray-400');
+                    count.classList.add('text-red-400');
+                    btn.style.background = 'rgba(239,68,68,0.15)';
+                } else {
+                    count.classList.remove('text-red-400');
+                    count.classList.add('text-gray-400');
+                    btn.style.background = '#323248';
+                }
+            })
+            .catch(() => {});
+        });
     })();
 </script>
 @endpush

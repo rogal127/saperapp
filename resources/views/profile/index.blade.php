@@ -97,6 +97,9 @@
     .finding-card-name { font-size: 0.8rem; font-weight: 700; color: #fff; }
     .finding-card-meta { font-size: 0.68rem; color: #9ca3af; margin-top: 2px; }
     .finding-card-depth { font-size: 0.72rem; color: #f59e0b; font-weight: 600; margin-top: 2px; }
+    .like-btn { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0.25rem; flex-shrink: 0; }
+    .like-btn .like-icon { font-size: 1.1rem; }
+    .like-btn .like-count { font-size: 0.65rem; color: #9ca3af; }
 
     /* Modal znaleziska */
     #finding-modal {
@@ -273,6 +276,8 @@
                                                 data-desc="{{ $finding['description'] ?? '' }}"
                                                 data-photo="{{ $finding['photo_url'] ?? '' }}"
                                                 data-photos="{{ json_encode($finding['photos'] ?? []) }}"
+                                                data-likes="{{ $finding['likes_count'] ?? 0 }}"
+                                                data-liked="{{ !empty($finding['is_liked']) ? '1' : '0' }}"
                                                 onclick="openFindingModal(this)">
                                                 @php
                                                     $coverPhoto = $finding['photos'][0] ?? null;
@@ -295,6 +300,10 @@
                                                         <div class="finding-card-meta" style="margin-top:3px">{{ Str::limit($finding['description'], 60) }}</div>
                                                     @endif
                                                 </div>
+                                                <button class="like-btn" onclick="event.stopPropagation(); toggleLike({{ $finding['id'] }}, this)">
+                                                    <span class="like-icon">{{ !empty($finding['is_liked']) ? '❤️' : '🤍' }}</span>
+                                                    <span class="like-count">{{ $finding['likes_count'] ?? 0 }}</span>
+                                                </button>
                                             </div>
                                             @endforeach
                                         </div>
@@ -447,7 +456,13 @@
                         <div class="fmodal-depth" id="fmodal-depth"></div>
                         <div class="fmodal-meta" id="fmodal-date"></div>
                     </div>
-                    <button class="fmodal-close" onclick="closeFindingModal()">✕</button>
+                    <div style="display:flex;align-items:center;gap:0.5rem">
+                        <button class="like-btn" id="fmodal-like-btn" style="padding:0.4rem">
+                            <span class="like-icon" id="fmodal-like-icon">🤍</span>
+                            <span class="like-count" id="fmodal-like-count">0</span>
+                        </button>
+                        <button class="fmodal-close" onclick="closeFindingModal()">✕</button>
+                    </div>
                 </div>
                 <div class="fmodal-desc" id="fmodal-desc"></div>
                 <div id="fmodal-gallery" class="fmodal-gallery" style="display:none"></div>
@@ -486,9 +501,9 @@
 
     {{-- Nawigacja --}}
     <div class="nav-bar safe-bottom">
-        <span class="nav-item active">
-            <span class="nav-icon">👤</span><span>Profil</span>
-        </span>
+        <a href="{{ route('home') }}" class="nav-item">
+            <span class="nav-icon">🏠</span><span>Start</span>
+        </a>
         <a href="{{ route('findings.map') }}" class="nav-item">
             <span class="nav-icon">🗺️</span><span>Mapa</span>
         </a>
@@ -506,6 +521,40 @@
 
 @push('scripts')
 <script>
+const CSRF_TOKEN = '{{ csrf_token() }}';
+
+function toggleLike(findingId, btn) {
+    fetch(`/api/findings/${findingId}/like`, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+    })
+    .then(r => r.json())
+    .then(data => {
+        const icon = btn.querySelector('.like-icon');
+        const count = btn.querySelector('.like-count');
+        icon.textContent = data.is_liked ? '❤️' : '🤍';
+        count.textContent = data.likes_count;
+
+        const card = document.querySelector(`.finding-card[data-id="${findingId}"]`);
+        if (card) {
+            const cardBtn = card.querySelector('.like-btn');
+            if (cardBtn && cardBtn !== btn) {
+                cardBtn.querySelector('.like-icon').textContent = data.is_liked ? '❤️' : '🤍';
+                cardBtn.querySelector('.like-count').textContent = data.likes_count;
+            }
+            card.dataset.liked = data.is_liked ? '1' : '0';
+            card.dataset.likes = data.likes_count;
+        }
+        const modalIcon = document.getElementById('fmodal-like-icon');
+        const modalCount = document.getElementById('fmodal-like-count');
+        if (modalIcon && activeFindingId == findingId) {
+            modalIcon.textContent = data.is_liked ? '❤️' : '🤍';
+            modalCount.textContent = data.likes_count;
+        }
+    })
+    .catch(() => {});
+}
+
 function toggleAcc(header) {
     const body = header.nextElementSibling;
     const arrow = header.querySelector('.acc-arrow, .acc-cou-arrow, .acc-city-arrow');
@@ -552,6 +601,13 @@ function openFindingModal(card) {
     } else {
         galleryEl.style.display = 'none';
     }
+
+    const modalLikeIcon = document.getElementById('fmodal-like-icon');
+    const modalLikeCount = document.getElementById('fmodal-like-count');
+    const modalLikeBtn = document.getElementById('fmodal-like-btn');
+    modalLikeIcon.textContent = card.dataset.liked === '1' ? '❤️' : '🤍';
+    modalLikeCount.textContent = card.dataset.likes || '0';
+    modalLikeBtn.onclick = function () { toggleLike(activeFindingId, modalLikeBtn); };
 
     if (activeFindingId) {
         const editLink = document.getElementById('fmodal-edit-link');

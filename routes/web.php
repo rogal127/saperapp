@@ -23,6 +23,11 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/findings/{id}/photos/{photoId}', [FindingController::class, 'photo'])->name('findings.photo');
     Route::get('/findings/{id}', [FindingController::class, 'show'])->name('findings.show');
     Route::post('/api/findings/{finding}/message', [FindingController::class, 'sendMessage'])->name('findings.message');
+    Route::post('/api/findings/{finding}/like', [FindingController::class, 'toggleLike'])->name('findings.like');
+    Route::get('/browse', [FindingController::class, 'browse'])->name('findings.browse');
+    Route::get('/api/browse', [FindingController::class, 'browseApi'])->name('findings.browse.api');
+    Route::get('/api/voivodeships', [FindingController::class, 'voivodeships'])->name('voivodeships.index');
+    Route::get('/api/users/search', [FindingController::class, 'searchUsers'])->name('users.search');
 
     Route::get('/api/pins', [FindingController::class, 'pins'])->name('pins.index');
     Route::put('/api/pins/{pinId}', [FindingController::class, 'updatePin'])->name('pins.update');

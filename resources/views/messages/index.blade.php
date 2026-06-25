@@ -95,8 +95,8 @@
 
     {{-- Nawigacja --}}
     <div class="nav-bar safe-bottom">
-        <a href="{{ route('profile.show') }}" class="nav-item">
-            <span class="nav-icon">👤</span><span>Profil</span>
+        <a href="{{ route('home') }}" class="nav-item">
+            <span class="nav-icon">🏠</span><span>Start</span>
         </a>
         <a href="{{ route('findings.map') }}" class="nav-item">
             <span class="nav-icon">🗺️</span><span>Mapa</span>
