@@ -117,6 +117,46 @@
     let selectedUserId = null;
     let selectedUserName = null;
 
+    function cacheKey(page) {
+        const p = new URLSearchParams();
+        p.set('p', page);
+        if (selectedUserId) p.set('u', selectedUserId);
+        if (filterName.value.trim()) p.set('n', filterName.value.trim());
+        if (filterVoivodeship.value) p.set('v', filterVoivodeship.value);
+        if (filterCity.value.trim()) p.set('c', filterCity.value.trim());
+        if (filterSort.value && filterSort.value !== 'newest') p.set('s', filterSort.value);
+        return 'browse:' + p.toString();
+    }
+
+    function getCache(key) {
+        try { return JSON.parse(sessionStorage.getItem(key)); } catch { return null; }
+    }
+
+    function setCache(key, data) {
+        try {
+            const keys = Object.keys(sessionStorage).filter(k => k.startsWith('browse:'));
+            if (keys.length > 30) {
+                keys.slice(0, keys.length - 15).forEach(k => sessionStorage.removeItem(k));
+            }
+            sessionStorage.setItem(key, JSON.stringify(data));
+        } catch {}
+    }
+
+    function updateCachedLike(findingId, isLiked, likesCount) {
+        try {
+            Object.keys(sessionStorage).filter(k => k.startsWith('browse:')).forEach(key => {
+                const cached = JSON.parse(sessionStorage.getItem(key));
+                if (!cached || !cached.data) return;
+                const f = cached.data.find(x => x.id == findingId);
+                if (f) {
+                    f.is_liked = isLiked;
+                    f.likes_count = likesCount;
+                    sessionStorage.setItem(key, JSON.stringify(cached));
+                }
+            });
+        } catch {}
+    }
+
     // Pre-fill user_id from URL (e.g. "Twoje znaleziska")
     const urlParams = new URLSearchParams(window.location.search);
     const initialUserId = urlParams.get('user_id');
@@ -195,53 +235,71 @@
         '</div>';
     }
 
+    function clearList() {
+        list.querySelectorAll('.card').forEach(c => c.remove());
+        list.querySelectorAll('.empty-msg,.error-msg').forEach(m => m.remove());
+    }
+
+    function renderResults(res, page) {
+        clearList();
+        loading.style.display = 'none';
+
+        const findings = res.data || [];
+
+        if (findings.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'empty-msg flex flex-col items-center justify-center py-12 text-gray-500';
+            empty.innerHTML = '<div class="text-4xl mb-3">🔍</div><p class="text-sm">Brak znalezisk spełniających kryteria</p>';
+            list.appendChild(empty);
+            pagination.classList.add('hidden');
+            return;
+        }
+
+        findings.forEach(f => {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = renderCard(f);
+            list.appendChild(wrapper.firstChild);
+        });
+
+        const meta = res.meta || res;
+        const lastPage = meta.last_page || 1;
+        currentPage = meta.current_page || page;
+
+        if (lastPage > 1) {
+            pagination.classList.remove('hidden');
+            pageInfo.textContent = currentPage + ' / ' + lastPage;
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= lastPage;
+        } else {
+            pagination.classList.add('hidden');
+        }
+    }
+
     function loadPage(page) {
-        loading.style.display = 'flex';
-        const cards = list.querySelectorAll('.card');
-        cards.forEach(c => c.remove());
-        const emptyMsg = list.querySelector('.empty-msg');
-        if (emptyMsg) { emptyMsg.remove(); }
+        const key = cacheKey(page);
+        const cached = getCache(key);
+
+        if (cached) {
+            renderResults(cached, page);
+        } else {
+            clearList();
+            loading.style.display = 'flex';
+        }
 
         fetch(buildUrl(page))
             .then(r => r.json())
             .then(res => {
-                loading.style.display = 'none';
-                const findings = res.data || [];
-
-                if (findings.length === 0) {
-                    const empty = document.createElement('div');
-                    empty.className = 'empty-msg flex flex-col items-center justify-center py-12 text-gray-500';
-                    empty.innerHTML = '<div class="text-4xl mb-3">🔍</div><p class="text-sm">Brak znalezisk spełniających kryteria</p>';
-                    list.appendChild(empty);
-                    pagination.classList.add('hidden');
-                    return;
-                }
-
-                findings.forEach(f => {
-                    const wrapper = document.createElement('div');
-                    wrapper.innerHTML = renderCard(f);
-                    list.appendChild(wrapper.firstChild);
-                });
-
-                const meta = res.meta || res;
-                const lastPage = meta.last_page || 1;
-                currentPage = meta.current_page || page;
-
-                if (lastPage > 1) {
-                    pagination.classList.remove('hidden');
-                    pageInfo.textContent = currentPage + ' / ' + lastPage;
-                    prevBtn.disabled = currentPage <= 1;
-                    nextBtn.disabled = currentPage >= lastPage;
-                } else {
-                    pagination.classList.add('hidden');
-                }
+                setCache(key, res);
+                renderResults(res, page);
             })
             .catch(() => {
-                loading.style.display = 'none';
-                const err = document.createElement('div');
-                err.className = 'empty-msg flex items-center justify-center py-8 text-red-400 text-sm';
-                err.textContent = 'Błąd ładowania znalezisk.';
-                list.appendChild(err);
+                if (!cached) {
+                    loading.style.display = 'none';
+                    const err = document.createElement('div');
+                    err.className = 'error-msg flex items-center justify-center py-8 text-red-400 text-sm';
+                    err.textContent = 'Błąd ładowania znalezisk.';
+                    list.appendChild(err);
+                }
             });
     }
 
@@ -267,6 +325,7 @@
         .then(data => {
             icon.textContent = data.is_liked ? '❤️' : '🤍';
             count.textContent = data.likes_count;
+            updateCachedLike(findingId, data.is_liked, data.likes_count);
         })
         .catch(() => {});
     });

@@ -324,6 +324,11 @@ class FindingController extends Controller
 
     public function voivodeships(Request $request)
     {
+        $cached = Cache::get('voivodeships');
+        if ($cached !== null) {
+            return response()->json($cached);
+        }
+
         $response = Http::withToken($this->apiToken($request))
             ->get(config('services.api.url').'/voivodeships');
 
@@ -331,7 +336,10 @@ class FindingController extends Controller
             return response()->json([]);
         }
 
-        return response()->json($response->json());
+        $data = $response->json();
+        Cache::put('voivodeships', $data, 86400);
+
+        return response()->json($data);
     }
 
     public function searchUsers(Request $request)
