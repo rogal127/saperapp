@@ -116,6 +116,24 @@
                     <span id="likeIcon" class="text-lg">{{ !empty($finding['is_liked']) ? '❤️' : '🤍' }}</span>
                     <span id="likeCount" class="text-sm font-semibold {{ !empty($finding['is_liked']) ? 'text-red-400' : 'text-gray-400' }}">{{ $finding['likes_count'] ?? 0 }}</span>
                 </button>
+                @if(($finding['likes_count'] ?? 0) > 0)
+                <button id="showLikersBtn" class="text-sm text-gray-400 underline underline-offset-2 active:text-gray-300">
+                    kto polubił?
+                </button>
+                @endif
+            </div>
+
+            {{-- Bottom sheet: lista polubień --}}
+            <div id="likersOverlay" class="fixed inset-0 z-50 hidden" style="background:rgba(0,0,0,0.5)">
+                <div id="likersSheet" class="fixed bottom-0 left-0 right-0 bg-surface rounded-t-2xl max-h-[60vh] flex flex-col transform translate-y-full transition-transform duration-300 ease-out" style="background:#1a1a2e">
+                    <div class="flex items-center justify-between px-4 pt-4 pb-2 border-b border-surface-card flex-shrink-0">
+                        <h3 class="text-base font-bold text-white">Polubienia</h3>
+                        <button id="closeLikersBtn" class="w-8 h-8 flex items-center justify-center rounded-full bg-surface-card text-gray-400 text-lg">&times;</button>
+                    </div>
+                    <div id="likersList" class="flex-1 overflow-y-auto px-4 py-3">
+                        <div id="likersLoading" class="text-center text-gray-500 text-sm py-4">Ładowanie...</div>
+                    </div>
+                </div>
             </div>
 
             {{-- Opis --}}
@@ -173,6 +191,19 @@
             .then(data => {
                 icon.textContent = data.is_liked ? '❤️' : '🤍';
                 count.textContent = data.likes_count;
+
+                const showBtn = document.getElementById('showLikersBtn');
+                if (data.likes_count > 0 && !showBtn) {
+                    const newBtn = document.createElement('button');
+                    newBtn.id = 'showLikersBtn';
+                    newBtn.className = 'text-sm text-gray-400 underline underline-offset-2 active:text-gray-300';
+                    newBtn.textContent = 'kto polubił?';
+                    newBtn.addEventListener('click', openLikersSheet);
+                    btn.parentElement.appendChild(newBtn);
+                } else if (data.likes_count === 0 && showBtn) {
+                    showBtn.remove();
+                }
+
                 if (data.is_liked) {
                     count.classList.remove('text-gray-400');
                     count.classList.add('text-red-400');
@@ -185,6 +216,67 @@
             })
             .catch(() => {});
         });
+    })();
+
+    function openLikersSheet() {
+        const overlay = document.getElementById('likersOverlay');
+        const sheet = document.getElementById('likersSheet');
+        const list = document.getElementById('likersList');
+        const findingId = document.getElementById('likeBtn').dataset.id;
+
+        overlay.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            sheet.classList.remove('translate-y-full');
+            sheet.classList.add('translate-y-0');
+        });
+
+        list.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">Ładowanie...</div>';
+
+        fetch('/api/findings/' + findingId + '/likes', {
+            headers: { 'Accept': 'application/json' },
+        })
+        .then(r => r.json())
+        .then(users => {
+            if (!users.length) {
+                list.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">Brak polubień</div>';
+                return;
+            }
+            list.innerHTML = users.map(u => {
+                const avatar = u.avatar_url
+                    ? '<img src="' + u.avatar_url + '" alt="" style="width:100%;height:100%;object-fit:cover">'
+                    : '<span class="text-xs font-bold">' + (u.name ? u.name.charAt(0).toUpperCase() : '?') + '</span>';
+                return '<a href="/users/' + u.id + '" class="flex items-center gap-3 py-2">'
+                    + '<div class="w-9 h-9 rounded-full bg-surface-card flex items-center justify-center overflow-hidden flex-shrink-0 text-gray-300">' + avatar + '</div>'
+                    + '<span class="text-sm font-semibold text-white">' + (u.name || 'Anonim') + '</span>'
+                    + '</a>';
+            }).join('');
+        })
+        .catch(() => {
+            list.innerHTML = '<div class="text-center text-red-400 text-sm py-4">Błąd ładowania</div>';
+        });
+    }
+
+    function closeLikersSheet() {
+        const overlay = document.getElementById('likersOverlay');
+        const sheet = document.getElementById('likersSheet');
+        sheet.classList.remove('translate-y-0');
+        sheet.classList.add('translate-y-full');
+        setTimeout(() => overlay.classList.add('hidden'), 300);
+    }
+
+    (function () {
+        const showBtn = document.getElementById('showLikersBtn');
+        if (showBtn) { showBtn.addEventListener('click', openLikersSheet); }
+
+        const closeBtn = document.getElementById('closeLikersBtn');
+        if (closeBtn) { closeBtn.addEventListener('click', closeLikersSheet); }
+
+        const overlay = document.getElementById('likersOverlay');
+        if (overlay) {
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay) { closeLikersSheet(); }
+            });
+        }
     })();
 </script>
 @endpush

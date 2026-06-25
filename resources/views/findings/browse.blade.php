@@ -73,6 +73,16 @@
         </div>
     </div>
 
+    {{-- Bottom sheet: lista polubień --}}
+    <div id="likersOverlay" class="fixed inset-0 z-50 hidden" style="background:rgba(0,0,0,0.5)">
+        <div id="likersSheet" class="fixed bottom-0 left-0 right-0 bg-surface rounded-t-2xl max-h-[60vh] flex flex-col transform translate-y-full transition-transform duration-300 ease-out" style="background:#1a1a2e">
+            <div class="flex items-center justify-between px-4 pt-4 pb-2 border-b border-surface-card flex-shrink-0">
+                <h3 class="text-base font-bold text-white">Polubienia</h3>
+                <button id="closeLikersBtn" class="w-8 h-8 flex items-center justify-center rounded-full bg-surface-card text-gray-400 text-lg">&times;</button>
+            </div>
+            <div id="likersList" class="flex-1 overflow-y-auto px-4 py-3"></div>
+        </div>
+    </div>
 
 </div>
 @endsection
@@ -221,7 +231,7 @@
             editBtnHtml +
             '<button class="like-btn flex flex-col items-center justify-center gap-0.5 flex-shrink-0" data-id="' + f.id + '" style="min-width:40px">' +
                 '<span class="like-icon text-lg">' + heartEmoji + '</span>' +
-                '<span class="like-count text-xs text-gray-400">' + (f.likes_count || 0) + '</span>' +
+                '<span class="like-count text-xs ' + (f.likes_count > 0 ? 'text-gray-300 underline underline-offset-2 cursor-pointer' : 'text-gray-400') + '">' + (f.likes_count || 0) + '</span>' +
             '</button>' +
         '</div>';
     }
@@ -294,15 +304,15 @@
             });
     }
 
-    // Like toggle
+    // Like toggle (click on heart icon)
     list.addEventListener('click', function (e) {
-        const btn = e.target.closest('.like-btn');
-        if (!btn) { return; }
+        const icon = e.target.closest('.like-icon');
+        if (!icon) { return; }
         e.preventDefault();
         e.stopPropagation();
 
+        const btn = icon.closest('.like-btn');
         const findingId = btn.dataset.id;
-        const icon = btn.querySelector('.like-icon');
         const count = btn.querySelector('.like-count');
 
         fetch('/api/findings/' + findingId + '/like', {
@@ -316,9 +326,78 @@
         .then(data => {
             icon.textContent = data.is_liked ? '❤️' : '🤍';
             count.textContent = data.likes_count;
+            if (data.likes_count > 0) {
+                count.classList.add('text-gray-300', 'underline', 'underline-offset-2', 'cursor-pointer');
+                count.classList.remove('text-gray-400');
+            } else {
+                count.classList.remove('text-gray-300', 'underline', 'underline-offset-2', 'cursor-pointer');
+                count.classList.add('text-gray-400');
+            }
             updateCachedLike(findingId, data.is_liked, data.likes_count);
         })
         .catch(() => {});
+    });
+
+    // Show likers (click on count)
+    list.addEventListener('click', function (e) {
+        const count = e.target.closest('.like-count');
+        if (!count) { return; }
+        const btn = count.closest('.like-btn');
+        const likesCount = parseInt(count.textContent);
+        if (!likesCount) { return; }
+        e.preventDefault();
+        e.stopPropagation();
+        openLikersSheet(btn.dataset.id);
+    });
+
+    function openLikersSheet(findingId) {
+        const overlay = document.getElementById('likersOverlay');
+        const sheet = document.getElementById('likersSheet');
+        const likersList = document.getElementById('likersList');
+
+        overlay.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            sheet.classList.remove('translate-y-full');
+            sheet.classList.add('translate-y-0');
+        });
+
+        likersList.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">Ładowanie...</div>';
+
+        fetch('/api/findings/' + findingId + '/likes', {
+            headers: { 'Accept': 'application/json' },
+        })
+        .then(r => r.json())
+        .then(users => {
+            if (!users.length) {
+                likersList.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">Brak polubień</div>';
+                return;
+            }
+            likersList.innerHTML = users.map(u => {
+                const avatar = u.avatar_url
+                    ? '<img src="' + u.avatar_url + '" alt="" style="width:100%;height:100%;object-fit:cover">'
+                    : '<span class="text-xs font-bold">' + (u.name ? u.name.charAt(0).toUpperCase() : '?') + '</span>';
+                return '<a href="/users/' + u.id + '" class="flex items-center gap-3 py-2">'
+                    + '<div class="w-9 h-9 rounded-full bg-surface-card flex items-center justify-center overflow-hidden flex-shrink-0 text-gray-300">' + avatar + '</div>'
+                    + '<span class="text-sm font-semibold text-white">' + (u.name || 'Anonim') + '</span>'
+                    + '</a>';
+            }).join('');
+        })
+        .catch(() => {
+            likersList.innerHTML = '<div class="text-center text-red-400 text-sm py-4">Błąd ładowania</div>';
+        });
+    }
+
+    function closeLikersSheet() {
+        const overlay = document.getElementById('likersOverlay');
+        const sheet = document.getElementById('likersSheet');
+        sheet.classList.remove('translate-y-0');
+        sheet.classList.add('translate-y-full');
+        setTimeout(() => overlay.classList.add('hidden'), 300);
+    }
+
+    document.getElementById('closeLikersBtn').addEventListener('click', closeLikersSheet);
+    document.getElementById('likersOverlay').addEventListener('click', function (e) {
+        if (e.target === this) { closeLikersSheet(); }
     });
 
     // User autocomplete

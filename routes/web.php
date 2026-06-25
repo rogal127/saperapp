@@ -24,6 +24,7 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/findings/{id}', [FindingController::class, 'show'])->name('findings.show');
     Route::post('/api/findings/{finding}/message', [FindingController::class, 'sendMessage'])->name('findings.message');
     Route::post('/api/findings/{finding}/like', [FindingController::class, 'toggleLike'])->name('findings.like');
+    Route::get('/api/findings/{finding}/likes', [FindingController::class, 'likers'])->name('findings.likers');
     Route::get('/browse', [FindingController::class, 'browse'])->name('findings.browse');
     Route::get('/api/browse', [FindingController::class, 'browseApi'])->name('findings.browse.api');
     Route::get('/api/voivodeships', [FindingController::class, 'voivodeships'])->name('voivodeships.index');

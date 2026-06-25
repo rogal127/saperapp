@@ -305,6 +305,18 @@ class FindingController extends Controller
         return response()->json($response->json());
     }
 
+    public function likers(Request $request, int $finding)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url')."/findings/{$finding}/likes");
+
+        if ($response->failed()) {
+            return response()->json([], 502);
+        }
+
+        return response()->json($response->json());
+    }
+
     public function browse()
     {
         return view('findings.browse');
