@@ -21,6 +21,7 @@ Route::middleware('api.auth')->group(function () {
     Route::put('/findings/{id}', [FindingController::class, 'update'])->name('findings.update');
     Route::delete('/findings/{id}', [FindingController::class, 'destroy'])->name('findings.destroy');
     Route::get('/findings/{id}/photos/{photoId}', [FindingController::class, 'photo'])->name('findings.photo');
+    Route::get('/findings/{id}/report', [FindingController::class, 'report'])->name('findings.report');
     Route::get('/findings/{id}', [FindingController::class, 'show'])->name('findings.show');
     Route::post('/api/findings/{finding}/message', [FindingController::class, 'sendMessage'])->name('findings.message');
     Route::post('/api/findings/{finding}/like', [FindingController::class, 'toggleLike'])->name('findings.like');

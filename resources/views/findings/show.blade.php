@@ -143,6 +143,19 @@
             </div>
             @endif
 
+            {{-- Sprawozdanie (tylko właściciel) --}}
+            @if(!empty($finding['report_url']))
+            <a href="{{ $finding['report_url'] }}" target="_blank" rel="noopener"
+               class="flex items-center gap-3 bg-surface-card rounded-xl p-4 active:opacity-80">
+                <span class="text-2xl">📄</span>
+                <span class="flex-1 min-w-0">
+                    <span class="block text-sm font-semibold text-white">Sprawozdanie</span>
+                    <span class="block text-xs text-gray-500">Dokument PDF — widoczny tylko dla Ciebie</span>
+                </span>
+                <span class="text-amber-400 text-sm font-semibold whitespace-nowrap">Pobierz</span>
+            </a>
+            @endif
+
             <div class="text-xs text-gray-600">📌 Dokładna lokalizacja znaleziska jest chroniona</div>
 
         </div>

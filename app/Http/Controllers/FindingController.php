@@ -68,6 +68,7 @@ class FindingController extends Controller
             'photos.*' => ['image', 'max:10240'],
             'photos_private' => ['nullable', 'array'],
             'photos_private.*' => ['integer', 'min:0'],
+            'report' => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
         ]);
 
         $pending = Http::withToken($this->apiToken($request));
@@ -77,6 +78,15 @@ class FindingController extends Controller
                 "photos[{$index}]",
                 file_get_contents($photo->getRealPath()),
                 $photo->getClientOriginalName()
+            );
+        }
+
+        if ($request->hasFile('report')) {
+            $report = $request->file('report');
+            $pending = $pending->attach(
+                'report',
+                file_get_contents($report->getRealPath()),
+                $report->getClientOriginalName()
             );
         }
 
@@ -184,6 +194,26 @@ class FindingController extends Controller
 
         return response($response->body(), 200, [
             'Content-Type' => $response->header('Content-Type') ?: 'image/jpeg',
+            'Cache-Control' => 'private, max-age=300',
+        ]);
+    }
+
+    public function report(Request $request, int $id)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url')."/findings/{$id}/report");
+
+        if (in_array($response->status(), [403, 404], true)) {
+            abort($response->status());
+        }
+
+        if ($response->failed()) {
+            abort(502);
+        }
+
+        return response($response->body(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="sprawozdanie.pdf"',
             'Cache-Control' => 'private, max-age=300',
         ]);
     }
@@ -417,6 +447,8 @@ class FindingController extends Controller
             'make_private_photo_ids.*' => ['integer'],
             'make_public_photo_ids' => ['nullable', 'array'],
             'make_public_photo_ids.*' => ['integer'],
+            'report' => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
+            'delete_report' => ['nullable', 'boolean'],
         ]);
 
         $pending = Http::withToken($this->apiToken($request));
@@ -426,6 +458,15 @@ class FindingController extends Controller
                 "photos[{$index}]",
                 file_get_contents($photo->getRealPath()),
                 $photo->getClientOriginalName()
+            );
+        }
+
+        if ($request->hasFile('report')) {
+            $report = $request->file('report');
+            $pending = $pending->attach(
+                'report',
+                file_get_contents($report->getRealPath()),
+                $report->getClientOriginalName()
             );
         }
 
@@ -440,6 +481,7 @@ class FindingController extends Controller
             'wkz_consent_id' => $request->wkz_consent_id ?: '',
             'finding_category_id' => $request->finding_category_id ?: '',
             'type' => $request->type ?: '',
+            'delete_report' => $request->boolean('delete_report') ? '1' : '0',
         ];
 
         // Bracket notation, aby PHP po stronie API sparsował to jako tablicę także w multipart.

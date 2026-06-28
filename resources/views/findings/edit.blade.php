@@ -229,6 +229,44 @@
                 <div id="photosPrivateContainer" class="hidden"></div>
             </div>
 
+            {{-- Report (PDF) --}}
+            @php $hasReport = ! empty($finding['report_url']); @endphp
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
+                    📄 Załącz sprawozdanie <span class="text-gray-500 font-normal">(opcjonalne, PDF)</span>
+                </label>
+
+                <input type="hidden" name="delete_report" id="deleteReportInput" value="0">
+
+                {{-- Istniejące sprawozdanie --}}
+                <div id="existingReport" class="card flex items-center gap-3 {{ $hasReport ? '' : 'hidden' }}">
+                    <span class="text-xl">📄</span>
+                    @if($hasReport)
+                        <a href="{{ $finding['report_url'] }}" target="_blank" rel="noopener"
+                           class="text-sm text-amber-400 font-semibold flex-1 min-w-0 truncate">Pobierz sprawozdanie</a>
+                    @else
+                        <span class="text-sm text-gray-400 flex-1 min-w-0 truncate">Sprawozdanie</span>
+                    @endif
+                    <button type="button" id="reportRemoveExisting" class="text-red-400 text-sm font-semibold whitespace-nowrap">Usuń</button>
+                </div>
+
+                {{-- Wybór pliku --}}
+                <label id="reportTile" class="flex items-center gap-3 card border-2 border-dashed border-gray-600 cursor-pointer active:border-amber-500 transition-colors {{ $hasReport ? 'hidden' : '' }}">
+                    <span class="text-2xl">📄</span>
+                    <span id="reportTileText" class="text-sm text-gray-400 flex-1 min-w-0 truncate">Dotknij, aby wybrać plik PDF</span>
+                    <input type="file" name="report" accept="application/pdf,.pdf" class="hidden" id="reportInput">
+                </label>
+
+                {{-- Nowo wybrany plik --}}
+                <div id="reportSelected" class="hidden card mt-2 flex items-center gap-3">
+                    <span class="text-xl">📄</span>
+                    <span id="reportName" class="text-sm text-gray-200 flex-1 min-w-0 truncate"></span>
+                    <button type="button" id="reportRemove" class="text-red-400 text-sm font-semibold whitespace-nowrap">Usuń</button>
+                </div>
+
+                <p class="text-xs text-gray-500 mt-1 ml-1">Sprawozdanie widzisz tylko Ty. Maks. 20 MB.</p>
+            </div>
+
             {{-- Submit --}}
             <button type="submit" class="btn-primary" id="submitBtn">
                 Zapisz zmiany
@@ -430,6 +468,39 @@
     });
 
     refreshState();
+
+    // Report (PDF) picker
+    const reportInput = document.getElementById('reportInput');
+    const reportTile = document.getElementById('reportTile');
+    const reportSelected = document.getElementById('reportSelected');
+    const reportName = document.getElementById('reportName');
+    const reportRemove = document.getElementById('reportRemove');
+    const existingReport = document.getElementById('existingReport');
+    const reportRemoveExisting = document.getElementById('reportRemoveExisting');
+    const deleteReportInput = document.getElementById('deleteReportInput');
+
+    reportInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) { return; }
+        reportName.textContent = file.name;
+        reportSelected.classList.remove('hidden');
+        reportTile.classList.add('hidden');
+    });
+
+    reportRemove.addEventListener('click', function () {
+        reportInput.value = '';
+        reportName.textContent = '';
+        reportSelected.classList.add('hidden');
+        reportTile.classList.remove('hidden');
+    });
+
+    if (reportRemoveExisting) {
+        reportRemoveExisting.addEventListener('click', function () {
+            deleteReportInput.value = '1';
+            existingReport.classList.add('hidden');
+            reportTile.classList.remove('hidden');
+        });
+    }
 
     function resizeImageFile(file, maxPx, quality) {
         return new Promise((resolve) => {
