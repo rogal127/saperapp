@@ -716,7 +716,8 @@ function openCityFindingsModal(cluster) {
                 ${photosHtml(f)}
                 <div class="pin-finding-actions">
                     ${likeButtonHtml(f.id, f.is_liked, f.likes_count)}
-                    <button class="pin-msg-btn" style="margin:0;width:auto;flex:1;margin-left:0.5rem" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>
+                    <a href="/findings/${f.id}#comments" class="pin-msg-btn" style="margin:0;width:auto;flex:1;margin-left:0.5rem;text-decoration:none;text-align:center">💬 Skomentuj</a>
+                    <button class="pin-msg-btn" style="margin:0;width:auto;flex:1;margin-left:0.5rem" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">✉️ Napisz wiadomość</button>
                 </div>
             `;
             list.appendChild(card);
@@ -819,7 +820,8 @@ function openPinModal(pin) {
                     ${photosHtml(f)}
                     <div class="pin-finding-actions">
                         ${likeButtonHtml(f.id, f.is_liked, f.likes_count)}
-                        ${!pin.is_mine ? `<button class="pin-msg-btn" style="margin:0;width:auto;flex:1;margin-left:0.5rem" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">💬 Napisz wiadomość</button>` : ''}
+                        <a href="/findings/${f.id}#comments" class="pin-msg-btn" style="margin:0;width:auto;flex:1;margin-left:0.5rem;text-decoration:none;text-align:center">💬 Skomentuj</a>
+                        ${!pin.is_mine ? `<button class="pin-msg-btn" style="margin:0;width:auto;flex:1;margin-left:0.5rem" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">✉️ Napisz wiadomość</button>` : ''}
                     </div>
                 `;
                 list.appendChild(card);

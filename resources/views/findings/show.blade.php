@@ -566,5 +566,11 @@
     });
 
     loadComments(1);
+
+    if (window.location.hash === '#comments') {
+        const textarea = document.getElementById('commentBody');
+        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => textarea.focus(), 400);
+    }
 </script>
 @endpush
