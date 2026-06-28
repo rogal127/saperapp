@@ -396,6 +396,67 @@ class FindingController extends Controller
         return response()->json($response->json());
     }
 
+    public function comments(Request $request, int $findingId)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url')."/findings/{$findingId}/comments", $request->only('page'));
+
+        if ($response->failed()) {
+            return response()->json(['data' => []], 502);
+        }
+
+        return response()->json($response->json());
+    }
+
+    public function storeComment(Request $request, int $findingId)
+    {
+        $request->validate([
+            'body' => ['required', 'string', 'max:2000'],
+            'photos' => ['nullable', 'array', 'max:4'],
+            'photos.*' => ['image', 'max:10240'],
+        ]);
+
+        $pending = Http::withToken($this->apiToken($request));
+
+        foreach ($request->file('photos', []) as $index => $photo) {
+            $pending = $pending->attach(
+                "photos[{$index}]",
+                file_get_contents($photo->getRealPath()),
+                $photo->getClientOriginalName()
+            );
+        }
+
+        $response = $pending->post(config('services.api.url')."/findings/{$findingId}/comments", [
+            'body' => $request->body,
+        ]);
+
+        if ($response->status() === 422) {
+            return response()->json($response->json(), 422);
+        }
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'Błąd dodawania komentarza.'], 502);
+        }
+
+        return response()->json($response->json(), 201);
+    }
+
+    public function destroyComment(Request $request, int $findingId, int $commentId)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->delete(config('services.api.url')."/findings/{$findingId}/comments/{$commentId}");
+
+        if ($response->status() === 403) {
+            return response()->json(['message' => 'Brak uprawnień.'], 403);
+        }
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'Błąd usuwania komentarza.'], 502);
+        }
+
+        return response()->json($response->json());
+    }
+
     public function edit(Request $request, int $id)
     {
         $token = $this->apiToken($request);

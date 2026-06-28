@@ -158,6 +158,44 @@
 
             <div class="text-xs text-gray-600">📌 Dokładna lokalizacja znaleziska jest chroniona</div>
 
+            {{-- Komentarze --}}
+            <div class="mt-4">
+                <h3 class="text-base font-bold text-white mb-3">Komentarze</h3>
+
+                {{-- Formularz dodawania --}}
+                <div class="bg-surface-card rounded-xl p-4 mb-4">
+                    <div id="commentForm">
+                        <textarea id="commentBody" rows="2" maxlength="2000"
+                                  placeholder="Napisz komentarz..."
+                                  class="w-full bg-transparent border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 resize-none focus:outline-none focus:border-amber-500"></textarea>
+
+                        <div id="commentPhotosPreview" class="flex gap-2 mt-2 flex-wrap" style="display:none"></div>
+
+                        <div class="flex items-center justify-between mt-2">
+                            <label class="flex items-center gap-2 text-sm text-gray-400 cursor-pointer active:text-gray-300">
+                                <input type="file" id="commentPhotosInput" accept="image/*" multiple
+                                       style="display:none" onchange="previewCommentPhotos(this)">
+                                <span class="text-lg">📷</span>
+                                <span id="commentPhotoCount"></span>
+                            </label>
+                            <button onclick="submitComment()" id="commentSubmitBtn"
+                                    class="px-4 py-1.5 rounded-lg bg-amber-500 text-black text-sm font-semibold active:opacity-80 disabled:opacity-40"
+                                    disabled>
+                                Wyślij
+                            </button>
+                        </div>
+                        <div id="commentError" class="text-red-400 text-xs mt-1" style="display:none"></div>
+                    </div>
+                </div>
+
+                {{-- Lista komentarzy --}}
+                <div id="commentsList"></div>
+                <div id="commentsLoading" class="text-center text-gray-500 text-sm py-2">Ładowanie komentarzy...</div>
+                <button id="loadMoreComments" class="w-full text-center text-sm text-amber-400 font-semibold py-2 active:opacity-70" style="display:none">
+                    Załaduj więcej
+                </button>
+            </div>
+
         </div>
     </div>
 
@@ -291,5 +329,242 @@
             });
         }
     })();
+
+    // --- Komentarze ---
+    const FINDING_ID = {{ $finding['id'] }};
+    let commentsPage = 1;
+    let commentsLastPage = 1;
+    let commentPhotosFiles = [];
+
+    function loadComments(page) {
+        fetch('/api/findings/' + FINDING_ID + '/comments?page=' + page, {
+            headers: { 'Accept': 'application/json' },
+        })
+        .then(r => r.json())
+        .then(res => {
+            const list = document.getElementById('commentsList');
+            const loading = document.getElementById('commentsLoading');
+            const loadMore = document.getElementById('loadMoreComments');
+
+            if (loading) { loading.style.display = 'none'; }
+
+            const comments = res.data || [];
+            commentsLastPage = res.meta?.last_page || 1;
+
+            comments.forEach(c => {
+                list.insertAdjacentHTML('beforeend', renderComment(c));
+            });
+
+            if (commentsPage < commentsLastPage) {
+                loadMore.style.display = 'block';
+            } else {
+                loadMore.style.display = 'none';
+            }
+
+            if (comments.length === 0 && page === 1) {
+                list.innerHTML = '<div class="text-center text-gray-600 text-sm py-2">Brak komentarzy</div>';
+            }
+        })
+        .catch(() => {
+            const loading = document.getElementById('commentsLoading');
+            if (loading) { loading.textContent = 'Błąd ładowania komentarzy'; }
+        });
+    }
+
+    function renderComment(c) {
+        const user = c.user || {};
+        const avatar = user.avatar_url
+            ? '<img src="' + user.avatar_url + '" alt="" style="width:100%;height:100%;object-fit:cover">'
+            : '<span class="text-xs font-bold">' + ((user.name || '?').charAt(0).toUpperCase()) + '</span>';
+
+        let photosHtml = '';
+        if (c.photos && c.photos.length) {
+            photosHtml = '<div class="flex gap-2 mt-2 flex-wrap">' +
+                c.photos.map(p =>
+                    '<img src="' + p.url + '" alt="" onclick="openLightbox(this.src)" ' +
+                    'style="width:80px;height:80px;object-fit:cover;border-radius:0.5rem;cursor:pointer">'
+                ).join('') +
+                '</div>';
+        }
+
+        const deleteBtn = c.is_mine || {{ !empty($finding['is_mine']) ? 'true' : 'false' }}
+            ? '<button onclick="deleteComment(' + c.id + ', this)" class="text-xs text-gray-600 hover:text-red-400 ml-auto flex-shrink-0">usuń</button>'
+            : '';
+
+        return '<div class="bg-surface-card rounded-xl p-3 mb-2" id="comment-' + c.id + '">'
+            + '<div class="flex items-start gap-2">'
+            + '<a href="/users/' + user.id + '" class="w-7 h-7 rounded-full bg-[#323248] flex items-center justify-center overflow-hidden flex-shrink-0 text-gray-300">' + avatar + '</a>'
+            + '<div class="flex-1 min-w-0">'
+            + '<div class="flex items-center gap-2">'
+            + '<a href="/users/' + user.id + '" class="text-sm font-semibold text-amber-400">' + (user.name || 'Anonim') + '</a>'
+            + '<span class="text-xs text-gray-600">' + c.created_at_human + '</span>'
+            + deleteBtn
+            + '</div>'
+            + '<p class="text-sm text-gray-300 mt-1 whitespace-pre-line">' + escapeHtml(c.body) + '</p>'
+            + photosHtml
+            + '</div>'
+            + '</div>'
+            + '</div>';
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function previewCommentPhotos(input) {
+        const preview = document.getElementById('commentPhotosPreview');
+        const countEl = document.getElementById('commentPhotoCount');
+        const files = Array.from(input.files).slice(0, 4);
+        commentPhotosFiles = files;
+
+        if (!files.length) {
+            preview.style.display = 'none';
+            countEl.textContent = '';
+            updateCommentBtn();
+            return;
+        }
+
+        preview.style.display = 'flex';
+        preview.innerHTML = '';
+        countEl.textContent = files.length + '/4';
+
+        files.forEach((file, i) => {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = 'position:relative;width:60px;height:60px;flex-shrink:0';
+                wrapper.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;border-radius:0.5rem">'
+                    + '<button onclick="removeCommentPhoto(' + i + ')" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer">&times;</button>';
+                preview.appendChild(wrapper);
+            };
+            reader.readAsDataURL(file);
+        });
+
+        updateCommentBtn();
+    }
+
+    function removeCommentPhoto(index) {
+        commentPhotosFiles.splice(index, 1);
+        refreshCommentPhotosPreview();
+        updateCommentBtn();
+    }
+
+    function refreshCommentPhotosPreview() {
+        const preview = document.getElementById('commentPhotosPreview');
+        const countEl = document.getElementById('commentPhotoCount');
+        const input = document.getElementById('commentPhotosInput');
+
+        if (!commentPhotosFiles.length) {
+            preview.style.display = 'none';
+            countEl.textContent = '';
+            input.value = '';
+            return;
+        }
+
+        preview.style.display = 'flex';
+        preview.innerHTML = '';
+        countEl.textContent = commentPhotosFiles.length + '/4';
+
+        commentPhotosFiles.forEach((file, i) => {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = 'position:relative;width:60px;height:60px;flex-shrink:0';
+                wrapper.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;border-radius:0.5rem">'
+                    + '<button onclick="removeCommentPhoto(' + i + ')" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#ef4444;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer">&times;</button>';
+                preview.appendChild(wrapper);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function updateCommentBtn() {
+        const body = document.getElementById('commentBody').value.trim();
+        document.getElementById('commentSubmitBtn').disabled = !body;
+    }
+
+    document.getElementById('commentBody').addEventListener('input', updateCommentBtn);
+
+    function submitComment() {
+        const body = document.getElementById('commentBody').value.trim();
+        if (!body) { return; }
+
+        const btn = document.getElementById('commentSubmitBtn');
+        const errorEl = document.getElementById('commentError');
+        btn.disabled = true;
+        btn.textContent = 'Wysyłanie...';
+        errorEl.style.display = 'none';
+
+        const formData = new FormData();
+        formData.append('body', body);
+        commentPhotosFiles.forEach((file, i) => {
+            formData.append('photos[' + i + ']', file);
+        });
+
+        fetch('/api/findings/' + FINDING_ID + '/comments', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+            body: formData,
+        })
+        .then(r => {
+            if (!r.ok) { return r.json().then(d => Promise.reject(d)); }
+            return r.json();
+        })
+        .then(res => {
+            const comment = res.data || res;
+            const list = document.getElementById('commentsList');
+            const empty = list.querySelector('.text-gray-600');
+            if (empty) { empty.remove(); }
+
+            list.insertAdjacentHTML('afterbegin', renderComment(comment));
+
+            document.getElementById('commentBody').value = '';
+            commentPhotosFiles = [];
+            document.getElementById('commentPhotosInput').value = '';
+            document.getElementById('commentPhotosPreview').style.display = 'none';
+            document.getElementById('commentPhotoCount').textContent = '';
+            btn.textContent = 'Wyślij';
+            updateCommentBtn();
+        })
+        .catch(err => {
+            btn.textContent = 'Wyślij';
+            updateCommentBtn();
+            const msg = err.errors?.body?.[0] || err.message || 'Błąd dodawania komentarza.';
+            errorEl.textContent = msg;
+            errorEl.style.display = 'block';
+        });
+    }
+
+    function deleteComment(commentId, btnEl) {
+        if (!confirm('Usunąć komentarz?')) { return; }
+
+        fetch('/api/findings/' + FINDING_ID + '/comments/' + commentId, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+        })
+        .then(r => {
+            if (!r.ok) { return r.json().then(d => Promise.reject(d)); }
+            const el = document.getElementById('comment-' + commentId);
+            if (el) { el.remove(); }
+        })
+        .catch(() => {
+            alert('Nie udało się usunąć komentarza.');
+        });
+    }
+
+    document.getElementById('loadMoreComments').addEventListener('click', function () {
+        commentsPage++;
+        loadComments(commentsPage);
+    });
+
+    loadComments(1);
 </script>
 @endpush
