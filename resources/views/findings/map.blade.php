@@ -357,14 +357,16 @@
     {{-- Modal pinezki --}}
     <div id="pin-modal" onclick="handleModalBackdrop(event)">
         <div id="modal-sheet">
-            <div class="modal-body">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem">
+            <div style="position:sticky;top:0;background:#1a1a2e;z-index:1;padding:1rem 1rem 0.75rem;border-bottom:1px solid #2a2a3e">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start">
                     <div>
                         <div class="modal-title" id="modal-pin-location"></div>
                         <div class="modal-meta-row" id="modal-pin-finder"></div>
                     </div>
                     <button class="modal-close" onclick="closeModal()">✕</button>
                 </div>
+            </div>
+            <div class="modal-body">
                 <div id="modal-add-btn-wrap" style="display:none;margin-bottom:0.75rem">
                     <a id="modal-add-btn" href="#" class="modal-send-btn" style="display:block;text-align:center;text-decoration:none">
                         ➕ Dodaj znalezisko do tej pinezki
