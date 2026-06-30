@@ -17,7 +17,8 @@
     "additionalDirectories": [
       "/Users/progala/Praca/saperapp-api/database/factories",
       "/Users/progala/Praca/saperapp-api/tests/Feature",
-      "/Users/progala/Praca/saperapp-api/app/Support"
+      "/Users/progala/Praca/saperapp-api/app/Support",
+      "/Users/progala/Praca/saperapp-api"
     ]
   }
 }
