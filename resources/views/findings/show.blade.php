@@ -156,7 +156,20 @@
             </a>
             @endif
 
+            @if(!empty($finding['can_view_exact_location']) && isset($finding['latitude'], $finding['longitude']))
+            <a href="https://www.google.com/maps?q={{ $finding['latitude'] }},{{ $finding['longitude'] }}"
+               target="_blank" rel="noopener"
+               class="flex items-center gap-3 bg-surface-card rounded-xl p-4 active:opacity-80">
+                <span class="text-2xl">📍</span>
+                <span class="flex-1 min-w-0">
+                    <span class="block text-sm font-semibold text-white">Dokładna lokalizacja</span>
+                    <span class="block text-xs text-gray-500">{{ $finding['latitude'] }}, {{ $finding['longitude'] }}</span>
+                </span>
+                <span class="text-amber-400 text-sm font-semibold whitespace-nowrap">Mapa</span>
+            </a>
+            @else
             <div class="text-xs text-gray-600">📌 Dokładna lokalizacja znaleziska jest chroniona</div>
+            @endif
 
             {{-- Komentarze --}}
             <div class="mt-4">

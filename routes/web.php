@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ConversationController;
+use App\Http\Controllers\ExpeditionController;
 use App\Http\Controllers\FindingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserProfileController;
@@ -39,6 +40,23 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/api/pins/{pinId}/findings', [FindingController::class, 'pinFindings'])->name('pins.findings');
     Route::get('/api/wkz-consents', [FindingController::class, 'wkzConsents'])->name('wkz-consents.index');
     Route::get('/api/finding-categories', [FindingController::class, 'findingCategories'])->name('finding-categories.index');
+
+    // Poszukiwania (rajdy)
+    Route::get('/expeditions', [ExpeditionController::class, 'index'])->name('expeditions.index');
+    Route::get('/expeditions/create', [ExpeditionController::class, 'create'])->name('expeditions.create');
+    Route::post('/expeditions', [ExpeditionController::class, 'store'])->name('expeditions.store');
+    Route::get('/api/expeditions', [ExpeditionController::class, 'apiIndex'])->name('expeditions.api');
+    Route::get('/api/expeditions/pending-count', [ExpeditionController::class, 'pendingCount'])->name('expeditions.pending-count');
+    Route::post('/api/expeditions/join', [ExpeditionController::class, 'joinByCode'])->name('expeditions.join-code');
+    Route::get('/api/expeditions/{id}/findings', [ExpeditionController::class, 'findings'])->name('expeditions.findings');
+    Route::post('/api/expeditions/{id}/participants', [ExpeditionController::class, 'invite'])->name('expeditions.invite');
+    Route::post('/api/expeditions/{id}/join', [ExpeditionController::class, 'requestJoin'])->name('expeditions.request-join');
+    Route::post('/api/expeditions/{id}/participants/{participant}/accept', [ExpeditionController::class, 'acceptParticipant'])->name('expeditions.participants.accept');
+    Route::post('/api/expeditions/{id}/participants/{participant}/decline', [ExpeditionController::class, 'declineParticipant'])->name('expeditions.participants.decline');
+    Route::delete('/api/expeditions/{id}/participants/{participant}', [ExpeditionController::class, 'removeParticipant'])->name('expeditions.participants.remove');
+    Route::put('/api/expeditions/{id}', [ExpeditionController::class, 'update'])->name('expeditions.update');
+    Route::delete('/api/expeditions/{id}', [ExpeditionController::class, 'destroy'])->name('expeditions.destroy');
+    Route::get('/expeditions/{id}', [ExpeditionController::class, 'show'])->name('expeditions.show');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');

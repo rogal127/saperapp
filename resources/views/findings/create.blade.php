@@ -168,6 +168,16 @@
                     <p class="text-red-400 text-sm -mt-3">Zaznacz lokalizację na mapie.</p>
                 @enderror
 
+                {{-- Expedition (poszukiwanie) --}}
+                <div id="expeditionSection" class="hidden card border border-teal-500/30 bg-teal-500/5">
+                    <label class="block text-sm font-semibold text-teal-300 mb-1.5">
+                        🧭 Poszukiwanie
+                    </label>
+                    <div id="expeditionBody"></div>
+                    <p class="text-xs text-gray-400 mt-2">Uzupełnia się automatycznie, gdy pinezka leży w terenie poszukiwania. Możesz to zmienić.</p>
+                    <p class="text-xs text-amber-300/80 mt-1">Jeśli przypniesz znalezisko do poszukiwania, jego kierownik je zobaczy — także gdy oznaczysz je jako prywatne.</p>
+                </div>
+
                 {{-- Name --}}
                 <div>
                     <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
@@ -455,6 +465,74 @@
                 body.innerHTML = '<p class="text-xs text-gray-500 ml-1">Nie udało się załadować zgód.</p>';
             });
     })();
+    const EXPEDITIONS_URL = "{{ route('expeditions.api') }}";
+    const OLD_EXPEDITION_ID = @json((int) old('expedition_id', 0) ?: null);
+
+    let expeditionCandidates = [];
+    let expeditionSelect = null;
+    let pendingLocation = null; // { lat, lng } captured before expeditions finished loading
+
+    // Ray-casting point-in-polygon test. `ring` is a GeoJSON coordinate ring:
+    // an array of [lng, lat] pairs.
+    function pointInPolygon(lat, lng, ring) {
+        let inside = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const xi = ring[i][0], yi = ring[i][1];
+            const xj = ring[j][0], yj = ring[j][1];
+            const intersects = ((yi > lat) !== (yj > lat))
+                && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+            if (intersects) { inside = !inside; }
+        }
+        return inside;
+    }
+
+    // Auto-fill the expedition select only when the pin actually falls inside
+    // one of the user's active expedition areas — never guess otherwise.
+    function autoSelectExpeditionForLocation(lat, lng) {
+        if (!expeditionSelect) { pendingLocation = { lat, lng }; return; }
+        const match = expeditionCandidates.find(e => {
+            const ring = e.area && e.area.coordinates && e.area.coordinates[0];
+            return ring && pointInPolygon(lat, lng, ring);
+        });
+        expeditionSelect.value = match ? String(match.id) : '';
+    }
+
+    (function loadExpeditions() {
+        const section = document.getElementById('expeditionSection');
+        const body = document.getElementById('expeditionBody');
+        fetch(EXPEDITIONS_URL + '?scope=mine')
+            .then(r => r.json())
+            .then(res => {
+                const items = (res.data || []).filter(e => e.status === 'published' && e.phase === 'active');
+                if (!items.length) { return; }
+                expeditionCandidates = items;
+
+                const select = document.createElement('select');
+                select.name = 'expedition_id';
+                select.className = 'input-field';
+                const def = document.createElement('option');
+                def.value = '';
+                def.textContent = '— Nie przypisuj —';
+                def.selected = !OLD_EXPEDITION_ID;
+                select.appendChild(def);
+                items.forEach(e => {
+                    const opt = document.createElement('option');
+                    opt.value = e.id;
+                    opt.textContent = e.name;
+                    if (OLD_EXPEDITION_ID === e.id) { opt.selected = true; }
+                    select.appendChild(opt);
+                });
+                body.appendChild(select);
+                section.classList.remove('hidden');
+                expeditionSelect = select;
+
+                if (!OLD_EXPEDITION_ID && pendingLocation) {
+                    autoSelectExpeditionForLocation(pendingLocation.lat, pendingLocation.lng);
+                }
+            })
+            .catch(() => {});
+    })();
+
     const initialLat = {{ is_numeric(old('latitude')) ? old('latitude') : 52.0 }};
     const initialLng = {{ is_numeric(old('longitude')) ? old('longitude') : 19.0 }};
     const initialZoom = {{ is_numeric(old('latitude')) ? 14 : 6 }};
@@ -562,6 +640,7 @@
         locationReady = true;
         document.getElementById('nextBtn').removeAttribute('disabled');
         document.getElementById('nextBtn').classList.remove('opacity-40');
+        autoSelectExpeditionForLocation(parseFloat(pin.latitude), parseFloat(pin.longitude));
     }
 
     function clearNewPinInputs() {
@@ -609,6 +688,7 @@
                         ? `🏘️ ${pin.city}${pin.voivodeship ? ', ' + pin.voivodeship : ''} — dodaj kolejne znalezisko`
                         : '📍 Dodaj kolejne znalezisko do tej pinezki';
                     document.getElementById('cityLabel').classList.remove('hidden');
+                    autoSelectExpeditionForLocation(parseFloat(pin.latitude), parseFloat(pin.longitude));
                 } else {
                     document.getElementById('locationSummary').textContent = 'Istniejąca pinezka';
                 }
@@ -638,6 +718,7 @@
         locationReady = true;
         document.getElementById('nextBtn').removeAttribute('disabled');
         document.getElementById('nextBtn').classList.remove('opacity-40');
+        autoSelectExpeditionForLocation(lat, lng);
         reverseGeocode(lat, lng);
     }
 

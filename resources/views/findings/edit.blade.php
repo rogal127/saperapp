@@ -186,6 +186,15 @@
             </div>
             @endif
 
+            {{-- Expedition (poszukiwanie) --}}
+            <div id="expeditionSection" class="hidden">
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
+                    🧭 Przypisz do poszukiwania <span class="text-gray-500 font-normal">(opcjonalne)</span>
+                </label>
+                <div id="expeditionBody"></div>
+                <p class="text-xs text-amber-300/80 mt-1 ml-1">Kierownik poszukiwania zobaczy to znalezisko — także jeśli oznaczysz je jako prywatne.</p>
+            </div>
+
             {{-- Photos --}}
             <div>
                 <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
@@ -305,6 +314,41 @@
             btn.classList.add(btn.dataset.activeBorder, btn.dataset.activeBg);
         });
     });
+
+    // Expedition assignment
+    const CURRENT_EXPEDITION_ID = @json($finding['expedition_id'] ?? null);
+    (function loadExpeditions() {
+        const section = document.getElementById('expeditionSection');
+        const body = document.getElementById('expeditionBody');
+        fetch("{{ route('expeditions.api') }}?scope=mine")
+            .then(r => r.json())
+            .then(res => {
+                let items = (res.data || []).filter(e => e.status === 'published' && e.phase === 'active');
+                // Ensure the currently assigned expedition stays selectable even if it ended.
+                if (CURRENT_EXPEDITION_ID && !items.some(e => e.id === CURRENT_EXPEDITION_ID)) {
+                    const cur = (res.data || []).find(e => e.id === CURRENT_EXPEDITION_ID);
+                    if (cur) { items = [cur, ...items]; }
+                }
+                if (!items.length && !CURRENT_EXPEDITION_ID) { return; }
+                const select = document.createElement('select');
+                select.name = 'expedition_id';
+                select.className = 'input-field';
+                const def = document.createElement('option');
+                def.value = '';
+                def.textContent = '— Nie przypisuj —';
+                select.appendChild(def);
+                items.forEach(e => {
+                    const opt = document.createElement('option');
+                    opt.value = e.id;
+                    opt.textContent = e.name;
+                    if (CURRENT_EXPEDITION_ID === e.id) { opt.selected = true; }
+                    select.appendChild(opt);
+                });
+                body.appendChild(select);
+                section.classList.remove('hidden');
+            })
+            .catch(() => {});
+    })();
 
     const MAX_PHOTOS = 8;
     const photoInput = document.getElementById('photoInput');

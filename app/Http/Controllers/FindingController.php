@@ -63,6 +63,7 @@ class FindingController extends Controller
             'is_private' => ['nullable', 'boolean'],
             'wkz_consent_id' => ['nullable', 'integer'],
             'finding_category_id' => ['nullable', 'integer'],
+            'expedition_id' => ['nullable', 'integer'],
             'type' => ['nullable', 'string', 'in:archaeological_monument,monument,non_monument'],
             'photos' => ['nullable', 'array', 'max:8'],
             'photos.*' => ['image', 'max:10240'],
@@ -98,6 +99,7 @@ class FindingController extends Controller
             'wkz_consent_id' => $request->wkz_consent_id ?: null,
             'finding_category_id' => $request->finding_category_id ?: null,
             'type' => $request->type ?: null,
+            'expedition_id' => $request->expedition_id ?: null,
         ];
 
         // Bracket notation, aby API sparsowało to jako tablicę w multipart.
@@ -497,6 +499,7 @@ class FindingController extends Controller
             'is_private' => ['nullable', 'boolean'],
             'wkz_consent_id' => ['nullable', 'integer'],
             'finding_category_id' => ['nullable', 'integer'],
+            'expedition_id' => ['nullable', 'integer'],
             'type' => ['nullable', 'string', 'in:archaeological_monument,monument,non_monument'],
             'photos' => ['nullable', 'array', 'max:8'],
             'photos.*' => ['image', 'max:10240'],
@@ -541,6 +544,7 @@ class FindingController extends Controller
             'is_private' => $request->boolean('is_private') ? '1' : '0',
             'wkz_consent_id' => $request->wkz_consent_id ?: '',
             'finding_category_id' => $request->finding_category_id ?: '',
+            'expedition_id' => $request->expedition_id ?: '',
             'type' => $request->type ?: '',
             'delete_report' => $request->boolean('delete_report') ? '1' : '0',
         ];

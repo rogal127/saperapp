@@ -79,8 +79,9 @@
         }
         .nav-item {
             display: flex; flex-direction: column; align-items: center;
-            gap: 2px; padding: 0.5rem 1rem; flex: 1;
-            font-size: 0.65rem; color: #6b7280;
+            gap: 2px; padding: 0.5rem 0.25rem; flex: 1; min-width: 0;
+            font-size: 0.6rem; color: #6b7280;
+            white-space: nowrap;
             touch-action: manipulation;
             transition: color 0.15s;
         }
@@ -106,6 +107,9 @@
             </a>
             <a href="{{ route('findings.create') }}" class="nav-item">
                 <span class="nav-icon" style="font-weight:900;color:#f59e0b;">+</span><span>Dodaj</span>
+            </a>
+            <a href="{{ route('expeditions.index') }}" class="nav-item {{ request()->routeIs('expeditions.*') ? 'active' : '' }}" id="nav-expeditions">
+                <span class="nav-icon">🧭</span><span>Poszukiwania</span>
             </a>
             <a href="{{ route('messages.index') }}" class="nav-item {{ request()->routeIs('messages.*') ? 'active' : '' }}" id="nav-messages">
                 <span class="nav-icon">💬</span><span>Wiadomości</span>
@@ -136,6 +140,24 @@
             .then(data => {
                 if (data.count > 0) {
                     const link = document.getElementById('nav-messages');
+                    if (!link) { return; }
+                    link.style.position = 'relative';
+                    const badge = document.createElement('span');
+                    badge.style.cssText = 'position:absolute;top:6px;right:calc(50% - 18px);background:#f59e0b;color:#1a1a2e;border-radius:999px;font-size:0.55rem;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;';
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    link.appendChild(badge);
+                }
+            })
+            .catch(() => {});
+    })();
+    </script>
+    <script>
+    (function () {
+        fetch("{{ route('expeditions.pending-count') }}")
+            .then(r => r.json())
+            .then(data => {
+                if (data.count > 0) {
+                    const link = document.getElementById('nav-expeditions');
                     if (!link) { return; }
                     link.style.position = 'relative';
                     const badge = document.createElement('span');
