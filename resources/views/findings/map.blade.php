@@ -166,8 +166,17 @@
     #modal-sheet, #message-sheet {
         background: #1a1a2e; border-radius: 1.25rem 1.25rem 0 0;
         border: 1px solid #2a2a3e; width: 100%; max-width: 480px;
-        max-height: 90vh; overflow-y: auto;
+        max-height: 90vh; display: flex; flex-direction: column;
         animation: slideUp 0.25s ease;
+    }
+    #modal-sheet-header, #message-sheet-header {
+        flex-shrink: 0;
+        padding: 1rem 1rem 0.75rem;
+        border-bottom: 1px solid #2a2a3e;
+        border-radius: 1.25rem 1.25rem 0 0;
+    }
+    #modal-sheet-body, #message-sheet-body {
+        flex: 1; overflow-y: auto;
     }
     @media (min-width: 768px) {
         #modal-sheet, #message-sheet { max-width: 640px; }
@@ -357,7 +366,7 @@
     {{-- Modal pinezki --}}
     <div id="pin-modal" onclick="handleModalBackdrop(event)">
         <div id="modal-sheet">
-            <div style="position:sticky;top:0;background:#1a1a2e;z-index:1;padding:1rem 1rem 0.75rem;border-bottom:1px solid #2a2a3e">
+            <div id="modal-sheet-header">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start">
                     <div>
                         <div class="modal-title" id="modal-pin-location"></div>
@@ -366,19 +375,21 @@
                     <button class="modal-close" onclick="closeModal()">✕</button>
                 </div>
             </div>
-            <div class="modal-body">
-                <div id="modal-add-btn-wrap" style="display:none;margin-bottom:0.75rem">
-                    <a id="modal-add-btn" href="#" class="modal-send-btn" style="display:block;text-align:center;text-decoration:none">
-                        ➕ Dodaj znalezisko do tej pinezki
-                    </a>
-                    <button id="modal-relocate-btn" class="modal-relocate-btn" onclick="startRelocate()">
-                        📌 Przenieś pinezkę
-                    </button>
+            <div id="modal-sheet-body">
+                <div class="modal-body">
+                    <div id="modal-add-btn-wrap" style="display:none;margin-bottom:0.75rem">
+                        <a id="modal-add-btn" href="#" class="modal-send-btn" style="display:block;text-align:center;text-decoration:none">
+                            ➕ Dodaj znalezisko do tej pinezki
+                        </a>
+                        <button id="modal-relocate-btn" class="modal-relocate-btn" onclick="startRelocate()">
+                            📌 Przenieś pinezkę
+                        </button>
+                    </div>
+                    <div id="modal-findings-list">
+                        <div id="modal-loading" style="text-align:center;color:#9ca3af;padding:1rem;font-size:0.82rem">Ładowanie…</div>
+                    </div>
+                    <div class="modal-location-note">📌 Dokładna lokalizacja znaleziska jest chroniona</div>
                 </div>
-                <div id="modal-findings-list">
-                    <div id="modal-loading" style="text-align:center;color:#9ca3af;padding:1rem;font-size:0.82rem">Ładowanie…</div>
-                </div>
-                <div class="modal-location-note">📌 Dokładna lokalizacja znaleziska jest chroniona</div>
             </div>
         </div>
     </div>
@@ -386,14 +397,18 @@
     {{-- Modal wiadomości do znalazcy --}}
     <div id="message-modal" onclick="handleMessageBackdrop(event)">
         <div id="message-sheet">
-            <div class="modal-body">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+            <div id="message-sheet-header">
+                <div style="display:flex;justify-content:space-between;align-items:center">
                     <div class="modal-title" id="msg-modal-title">Napisz wiadomość</div>
                     <button class="modal-close" onclick="closeMessageModal()">✕</button>
                 </div>
-                <textarea id="modal-msg" class="modal-textarea" rows="3" placeholder="Napisz wiadomość do znalazcy…"></textarea>
-                <button id="modal-send" class="modal-send-btn" onclick="sendModalMessage()">Wyślij wiadomość</button>
-                <div id="modal-status"></div>
+            </div>
+            <div id="message-sheet-body">
+                <div class="modal-body">
+                    <textarea id="modal-msg" class="modal-textarea" rows="3" placeholder="Napisz wiadomość do znalazcy…"></textarea>
+                    <button id="modal-send" class="modal-send-btn" onclick="sendModalMessage()">Wyślij wiadomość</button>
+                    <div id="modal-status"></div>
+                </div>
             </div>
         </div>
     </div>
