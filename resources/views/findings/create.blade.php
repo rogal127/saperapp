@@ -612,7 +612,30 @@
     let newMarker = null;     // marker dla nowej lokalizacji (klik w puste miejsce)
     let selectedPinId = null; // id wybranej istniejącej pinezki
     let locationReady = false;
+    let accuracyCircle = null; // koło dokładności GPS (błąd pomiaru w metrach)
     const pinMarkers = {};    // pinId → L.marker
+
+    // Rysuje koło pokazujące margines błędu GPS (promień = accuracy w metrach).
+    function showAccuracyCircle(lat, lng, accuracy) {
+        if (accuracyCircle) { map.removeLayer(accuracyCircle); accuracyCircle = null; }
+        if (!accuracy || !isFinite(accuracy)) { return; }
+        accuracyCircle = L.circle([lat, lng], {
+            radius: accuracy,
+            color: '#f59e0b',
+            weight: 1,
+            fillColor: '#f59e0b',
+            fillOpacity: 0.12,
+            interactive: false,
+        }).addTo(map);
+    }
+
+    // Zwraca opis jakości sygnału na podstawie dokładności (w metrach).
+    function accuracyLabel(accuracy) {
+        const m = Math.round(accuracy);
+        if (accuracy <= 10)  { return { text: `± ${m} m · dokładny sygnał`, emoji: '🟢' }; }
+        if (accuracy <= 50)  { return { text: `± ${m} m · dobra dokładność`, emoji: '🟡' }; }
+        return { text: `± ${m} m · słaby sygnał`, emoji: '🔴' };
+    }
 
     // --- Ładowanie własnych pinezek ---
     fetch(PINS_URL)
@@ -734,6 +757,9 @@
         selectedPinId = null;
         document.getElementById('pin_id').value = '';
 
+        // Usuń koło dokładności GPS — obowiązuje tylko dla pozycji z „Moja pozycja"
+        if (accuracyCircle) { map.removeLayer(accuracyCircle); accuracyCircle = null; }
+
         if (newMarker) { map.removeLayer(newMarker); }
         newMarker = L.marker([lat, lng], { icon: newPinIcon }).addTo(map);
 
@@ -845,12 +871,25 @@
 
     document.getElementById('locateBtn').addEventListener('click', () => {
         if (!navigator.geolocation) { return; }
+        const btn = document.getElementById('locateBtn');
+        const originalText = btn.textContent;
+        btn.textContent = '⌛ Lokalizuję…';
         navigator.geolocation.getCurrentPosition(pos => {
-            const { latitude, longitude } = pos.coords;
+            const { latitude, longitude, accuracy } = pos.coords;
             map.setView([latitude, longitude], 15);
             placeNewMarker(latitude, longitude);
+            showAccuracyCircle(latitude, longitude, accuracy);
+            const q = accuracyLabel(accuracy);
+            document.getElementById('coordsLabel').textContent =
+                `📍 ${latitude.toFixed(5)}, ${longitude.toFixed(5)} · ${q.emoji} ${q.text}`;
+            btn.textContent = originalText;
         }, () => {
+            btn.textContent = originalText;
             alert('Nie udało się pobrać lokalizacji.');
+        }, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
         });
     });
 
