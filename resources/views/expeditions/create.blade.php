@@ -73,12 +73,12 @@
                     @error('name')<p class="text-red-400 text-sm mt-1 ml-1">{{ $message }}</p>@enderror
                 </div>
 
-                <div class="flex gap-3">
-                    <div class="flex-1">
+                <div class="space-y-4">
+                    <div>
                         <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">📅 Od <span class="text-red-400">*</span></label>
                         <input type="date" name="starts_at" value="{{ old('starts_at') }}" class="input-field @error('starts_at') border-red-500 @enderror">
                     </div>
-                    <div class="flex-1">
+                    <div>
                         <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">📅 Do <span class="text-red-400">*</span></label>
                         <input type="date" name="ends_at" value="{{ old('ends_at') }}" class="input-field @error('ends_at') border-red-500 @enderror">
                     </div>
