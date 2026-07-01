@@ -852,6 +852,14 @@
         manualToggle.textContent = open ? '✏️ Wpisz współrzędne ręcznie' : '✕ Ukryj';
     });
 
+    function openManualCoords() {
+        if (manualPanel.classList.contains('hidden')) {
+            manualPanel.classList.remove('hidden');
+            manualToggle.textContent = '✕ Ukryj';
+            manualLatInput.focus();
+        }
+    }
+
     document.getElementById('manualCoordsApply').addEventListener('click', () => {
         const lat = parseFloat(manualLatInput.value.replace(',', '.'));
         const lng = parseFloat(manualLngInput.value.replace(',', '.'));
@@ -870,11 +878,24 @@
     });
 
     document.getElementById('locateBtn').addEventListener('click', () => {
-        if (!navigator.geolocation) { return; }
         const btn = document.getElementById('locateBtn');
         const originalText = btn.textContent;
+
+        if (!navigator.geolocation) {
+            alert('Ta przeglądarka nie udostępnia lokalizacji. Wpisz współrzędne ręcznie.');
+            openManualCoords();
+            return;
+        }
+
+        if (!window.isSecureContext) {
+            alert('Lokalizacja działa tylko na połączeniu HTTPS. Wpisz współrzędne ręcznie.');
+            openManualCoords();
+            return;
+        }
+
         btn.textContent = '⌛ Lokalizuję…';
-        navigator.geolocation.getCurrentPosition(pos => {
+
+        const onSuccess = pos => {
             const { latitude, longitude, accuracy } = pos.coords;
             map.setView([latitude, longitude], 15);
             placeNewMarker(latitude, longitude);
@@ -883,13 +904,35 @@
             document.getElementById('coordsLabel').textContent =
                 `📍 ${latitude.toFixed(5)}, ${longitude.toFixed(5)} · ${q.emoji} ${q.text}`;
             btn.textContent = originalText;
-        }, () => {
-            btn.textContent = originalText;
-            alert('Nie udało się pobrać lokalizacji.');
+        };
+
+        // Krok 1: GPS wysokiej dokładności. Na Androidzie potrafi przekroczyć limit
+        // czasu w budynku, dlatego w razie błędu próbujemy jeszcze raz lokalizacją
+        // sieciową (Wi-Fi/komórki), która jest szybsza i działa wewnątrz.
+        navigator.geolocation.getCurrentPosition(onSuccess, err => {
+            if (err.code === err.PERMISSION_DENIED) {
+                btn.textContent = originalText;
+                alert('Brak zgody na lokalizację. Włącz uprawnienia lokalizacji dla przeglądarki albo wpisz współrzędne ręcznie.');
+                openManualCoords();
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(onSuccess, err2 => {
+                btn.textContent = originalText;
+                const msg = err2.code === err2.TIMEOUT
+                    ? 'Nie udało się ustalić lokalizacji (brak sygnału GPS). Wpisz współrzędne ręcznie.'
+                    : 'Nie udało się pobrać lokalizacji. Wpisz współrzędne ręcznie.';
+                alert(msg);
+                openManualCoords();
+            }, {
+                enableHighAccuracy: false,
+                timeout: 20000,
+                maximumAge: 60000,
+            });
         }, {
             enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0,
+            timeout: 8000,
+            maximumAge: 30000,
         });
     });
 
