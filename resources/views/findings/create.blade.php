@@ -471,6 +471,30 @@
     let expeditionCandidates = [];
     let expeditionSelect = null;
     let pendingLocation = null; // { lat, lng } captured before expeditions finished loading
+    let expeditionAreasDrawn = false;
+
+    // Draw the areas of the user's active expeditions on the picker map so the
+    // user can see where their ongoing searches are while choosing a location.
+    function drawExpeditionAreas(items) {
+        if (expeditionAreasDrawn || typeof map === 'undefined') { return; }
+        items.forEach(e => {
+            if (!e.area || !e.area.coordinates) { return; }
+            const layer = L.geoJSON(e.area, {
+                style: {
+                    color: '#14b8a6',
+                    weight: 2,
+                    opacity: 0.9,
+                    fillColor: '#14b8a6',
+                    fillOpacity: 0.12,
+                },
+            }).addTo(map);
+            layer.bindTooltip(
+                `🧭 ${e.name}`,
+                { direction: 'center', className: 'leaflet-tooltip-dark', sticky: true }
+            );
+        });
+        expeditionAreasDrawn = true;
+    }
 
     // Ray-casting point-in-polygon test. `ring` is a GeoJSON coordinate ring:
     // an array of [lng, lat] pairs.
@@ -506,6 +530,7 @@
                 const items = (res.data || []).filter(e => e.status === 'published' && e.phase === 'active');
                 if (!items.length) { return; }
                 expeditionCandidates = items;
+                drawExpeditionAreas(items);
 
                 const select = document.createElement('select');
                 select.name = 'expedition_id';
