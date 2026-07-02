@@ -510,14 +510,21 @@
         return inside;
     }
 
+    // Whether a point falls inside a GeoJSON area (Polygon or MultiPolygon).
+    function areaContainsPoint(area, lat, lng) {
+        if (!area || !area.coordinates) { return false; }
+        const polygons = area.type === 'MultiPolygon' ? area.coordinates : [area.coordinates];
+        return polygons.some(poly => {
+            const ring = poly && poly[0];
+            return ring && pointInPolygon(lat, lng, ring);
+        });
+    }
+
     // Auto-fill the expedition select only when the pin actually falls inside
     // one of the user's active expedition areas — never guess otherwise.
     function autoSelectExpeditionForLocation(lat, lng) {
         if (!expeditionSelect) { pendingLocation = { lat, lng }; return; }
-        const match = expeditionCandidates.find(e => {
-            const ring = e.area && e.area.coordinates && e.area.coordinates[0];
-            return ring && pointInPolygon(lat, lng, ring);
-        });
+        const match = expeditionCandidates.find(e => areaContainsPoint(e.area, lat, lng));
         expeditionSelect.value = match ? String(match.id) : '';
     }
 

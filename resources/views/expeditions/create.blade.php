@@ -35,7 +35,9 @@
     }
     #importOverlay.sheet-mode #importInputBlock { display: none; }
     #importOverlay:not(.sheet-mode) #importPickerHint { display: none; }
-    #undoBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+    #importOverlay:not(.sheet-mode) #importActions { display: none; }
+    #undoBtn:disabled, #commitBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .import-check { flex-shrink: 0; }
 </style>
 @endpush
 
@@ -48,7 +50,7 @@
             <a href="{{ route('expeditions.index') }}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card text-gray-300 text-xl">‹</a>
             <div class="flex-1">
                 <h1 class="text-lg font-bold text-white">Zaznacz teren</h1>
-                <p class="text-xs text-gray-500">Krok 1 z 2 — dotykaj mapę, aby dodać rogi obszaru</p>
+                <p class="text-xs text-gray-500">Krok 1 z 2 — narysuj jeden lub więcej obszarów</p>
             </div>
         </div>
 
@@ -58,11 +60,12 @@
         </div>
 
         <div class="flex-shrink-0 px-5 py-4 border-t border-surface-card bg-surface">
-            <p class="text-xs text-gray-500 mb-3 text-center" id="drawHint">Dodaj co najmniej 3 punkty, aby wyznaczyć teren.</p>
-            <button type="button" id="openImportBtn" class="btn-secondary text-sm w-full mb-3" style="padding:0.7rem">📥 Importuj z Google My Maps</button>
-            <div class="flex gap-2 mb-3">
-                <button type="button" id="undoBtn" class="btn-secondary text-sm" style="padding:0.7rem">↶ Cofnij</button>
-                <button type="button" id="clearBtn" class="btn-secondary text-sm" style="padding:0.7rem">🗑️ Wyczyść</button>
+            <p class="text-xs text-gray-500 mb-3 text-center" id="drawHint">Dodaj co najmniej 3 punkty, aby wyznaczyć obszar.</p>
+            <button type="button" id="openImportBtn" class="btn-secondary text-sm w-full mb-2" style="padding:0.7rem">📥 Importuj z Google My Maps</button>
+            <div class="flex gap-2 mb-2">
+                <button type="button" id="undoBtn" class="btn-secondary text-sm flex-1" style="padding:0.7rem" disabled>↶ Cofnij</button>
+                <button type="button" id="clearBtn" class="btn-secondary text-sm flex-1" style="padding:0.7rem">🗑️ Wyczyść</button>
+                <button type="button" id="commitBtn" class="btn-secondary text-sm flex-1 opacity-40" style="padding:0.7rem" disabled>➕ Kolejny</button>
             </div>
             <button type="button" id="toDetailsBtn" class="btn-primary opacity-40" disabled>Dalej — szczegóły →</button>
         </div>
@@ -159,9 +162,13 @@
             </div>
             <button type="button" id="importFetchBtn" class="btn-primary">Pobierz obszary</button>
         </div>
-        <p id="importPickerHint" class="text-xs text-gray-400 text-center">👆 Kliknij obszar na mapie lub wybierz z listy poniżej.</p>
+        <p id="importPickerHint" class="text-xs text-gray-400 text-center">👆 Zaznacz obszary (na mapie lub z listy), a potem je dodaj.</p>
         <p id="importStatus" class="text-sm text-center hidden"></p>
         <div id="importResults" class="flex flex-col gap-2"></div>
+    </div>
+    <div id="importActions" class="flex gap-2 px-5 py-3 border-t border-surface-card flex-shrink-0">
+        <button type="button" id="importAddSelected" class="btn-secondary flex-1 opacity-40" disabled>➕ Dodaj zaznaczone</button>
+        <button type="button" id="importAddAll" class="btn-primary flex-1">➕ Dodaj wszystkie</button>
     </div>
 </div>
 
@@ -195,12 +202,15 @@
 
     const vertexIcon = L.divIcon({ className: '', html: '<div class="draw-vertex"></div>', iconSize: [14, 14], iconAnchor: [7, 7] });
 
-    let vertices = [];          // [{lat, lng}]
-    let vertexMarkers = [];     // L.marker[]
-    let polygonLayer = null;
+    let vertices = [];          // current in-progress polygon [{lat, lng}]
+    let vertexMarkers = [];     // markers for the current polygon
+    let polygonLayer = null;    // preview layer of the current polygon
+    let committed = [];         // finalized polygons: [{ latlngs: [{lat,lng}], layer }]
 
     const drawHint = document.getElementById('drawHint');
     const toDetailsBtn = document.getElementById('toDetailsBtn');
+    const undoBtn = document.getElementById('undoBtn');
+    const commitBtn = document.getElementById('commitBtn');
 
     function redraw() {
         if (polygonLayer) { map.removeLayer(polygonLayer); polygonLayer = null; }
@@ -211,12 +221,78 @@
                 : L.polyline(latlngs, { color: '#f59e0b', weight: 2 })
             ).addTo(map);
         }
-        const ready = vertices.length >= 3;
-        toDetailsBtn.toggleAttribute('disabled', !ready);
-        toDetailsBtn.classList.toggle('opacity-40', !ready);
-        drawHint.textContent = vertices.length === 0
-            ? 'Dodaj co najmniej 3 punkty, aby wyznaczyć teren.'
-            : (ready ? `Teren: ${vertices.length} punktów. Możesz przejść dalej.` : `Punkty: ${vertices.length}/3 — dodaj jeszcze ${3 - vertices.length}.`);
+        updateControls();
+    }
+
+    function updateControls() {
+        const currentReady = vertices.length >= 3;
+        const hasAreas = committed.length > 0;
+
+        undoBtn.disabled = vertices.length === 0;
+        commitBtn.disabled = !currentReady;
+        commitBtn.classList.toggle('opacity-40', !currentReady);
+
+        const canProceed = hasAreas || currentReady;
+        toDetailsBtn.toggleAttribute('disabled', !canProceed);
+        toDetailsBtn.classList.toggle('opacity-40', !canProceed);
+
+        let hint;
+        if (!hasAreas && vertices.length === 0) {
+            hint = 'Dodaj co najmniej 3 punkty, aby wyznaczyć obszar.';
+        } else if (vertices.length > 0 && !currentReady) {
+            hint = `Bieżący obszar: ${vertices.length}/3 punktów — dodaj jeszcze ${3 - vertices.length}.`;
+        } else {
+            const parts = [];
+            if (hasAreas) { parts.push(`Zapisane obszary: ${committed.length}`); }
+            if (currentReady) { parts.push('bieżący gotowy (użyj „Kolejny", aby dodać następny)'); }
+            hint = parts.join(' · ') + '. Możesz przejść dalej.';
+        }
+        drawHint.textContent = hint;
+    }
+
+    function clearCurrent() {
+        vertices = [];
+        vertexMarkers.forEach(m => map.removeLayer(m));
+        vertexMarkers = [];
+        if (polygonLayer) { map.removeLayer(polygonLayer); polygonLayer = null; }
+    }
+
+    function fitAll() {
+        const layers = committed.map(e => e.layer);
+        if (polygonLayer) { layers.push(polygonLayer); }
+        if (!layers.length) { return; }
+        const bounds = layers.reduce((b, l) => b.extend(l.getBounds()), layers[0].getBounds());
+        map.fitBounds(bounds, { padding: [30, 30] });
+    }
+
+    function addCommittedPolygon(latlngs) {
+        const layer = L.polygon(latlngs.map(v => [v.lat, v.lng]), {
+            color: '#14b8a6', weight: 2, fillColor: '#14b8a6', fillOpacity: 0.25,
+        }).addTo(map);
+        const entry = { latlngs, layer };
+        layer.bindTooltip('Dotknij, aby usunąć ten obszar', { sticky: true });
+        layer.on('click', e => {
+            L.DomEvent.stopPropagation(e);
+            if (confirm('Usunąć ten obszar?')) { removeCommitted(entry); }
+        });
+        committed.push(entry);
+        updateControls();
+        return entry;
+    }
+
+    function removeCommitted(entry) {
+        map.removeLayer(entry.layer);
+        committed = committed.filter(e => e !== entry);
+        updateControls();
+    }
+
+    function commitCurrent() {
+        if (vertices.length < 3) { return false; }
+        const latlngs = vertices.map(v => ({ lat: v.lat, lng: v.lng }));
+        clearCurrent();
+        addCommittedPolygon(latlngs);
+        redraw();
+        return true;
     }
 
     function addVertex(lat, lng) {
@@ -238,21 +314,27 @@
         addVertex(e.latlng.lat, e.latlng.lng);
     });
 
-    document.getElementById('undoBtn').addEventListener('click', () => {
-        if (areaFromImport || !vertices.length) { return; }
+    undoBtn.addEventListener('click', () => {
+        if (!vertices.length) { return; }
         vertices.pop();
         const m = vertexMarkers.pop();
         if (m) { map.removeLayer(m); }
         redraw();
     });
 
+    // Clears the in-progress polygon; if none, removes the last saved area.
     document.getElementById('clearBtn').addEventListener('click', () => {
-        vertices = [];
-        vertexMarkers.forEach(m => map.removeLayer(m));
-        vertexMarkers = [];
-        setImportedMode(false);
-        redraw();
+        if (vertices.length) {
+            clearCurrent();
+            redraw();
+        } else if (committed.length) {
+            removeCommitted(committed[committed.length - 1]);
+        }
     });
+
+    commitBtn.addEventListener('click', () => { commitCurrent(); });
+
+    updateControls();
 
     // --- Import z Google My Maps ---
     const IMPORT_URL = "{{ route('expeditions.import-mymaps') }}";
@@ -261,11 +343,12 @@
     const importStatus = document.getElementById('importStatus');
     const importResults = document.getElementById('importResults');
     const importFetchBtn = document.getElementById('importFetchBtn');
-    const undoBtn = document.getElementById('undoBtn');
+    const importAddSelected = document.getElementById('importAddSelected');
+    const importAddAll = document.getElementById('importAddAll');
 
-    let importedPolygons = [];   // areas fetched from Google
-    let previewLayers = [];      // L.polygon[] shown on the map for preview
-    let areaFromImport = false;  // true once an imported area is loaded
+    let importedPolygons = [];      // areas fetched from Google
+    let previewLayers = [];         // L.polygon[] shown on the map for preview
+    let selectedImport = new Set(); // indices currently selected
 
     function escapeHtml(s) {
         return String(s ?? '')
@@ -280,13 +363,6 @@
         importStatus.classList.remove('hidden');
     }
 
-    // Lock "Cofnij" while an imported area is active — undoing an imported
-    // polygon point by point makes no sense.
-    function setImportedMode(on) {
-        areaFromImport = on;
-        undoBtn.disabled = on;
-    }
-
     function clearPreview() {
         previewLayers.forEach(l => { if (l) { map.removeLayer(l); } });
         previewLayers = [];
@@ -296,6 +372,7 @@
         clearPreview();
         importResults.innerHTML = '';
         importedPolygons = [];
+        selectedImport.clear();
         importOverlay.classList.remove('sheet-mode');
     }
 
@@ -317,6 +394,7 @@
         const link = document.getElementById('importLink').value.trim();
         importResults.innerHTML = '';
         clearPreview();
+        selectedImport.clear();
         if (!link) { setImportStatus('Wklej link do mapy.', 'error'); return; }
 
         setImportStatus('Pobieranie…');
@@ -353,14 +431,16 @@
         importedPolygons.forEach((p, i) => {
             const btn = document.createElement('button');
             btn.type = 'button';
+            btn.dataset.index = i;
             btn.className = 'card text-left w-full flex items-center gap-3 cursor-pointer';
-            btn.innerHTML = '<span class="text-xl">🗺️</span>'
-                + '<span class="text-sm font-semibold text-gray-200 truncate">' + escapeHtml(p.name) + '</span>';
-            btn.addEventListener('click', () => choosePolygon(i));
-            btn.addEventListener('mouseenter', () => highlightPreview(i, true));
-            btn.addEventListener('mouseleave', () => highlightPreview(i, false));
+            btn.innerHTML =
+                '<span class="import-check w-5 h-5 rounded border border-gray-500 flex items-center justify-center text-xs font-bold text-black"></span>'
+                + '<span class="text-xl">🗺️</span>'
+                + '<span class="text-sm font-semibold text-gray-200 truncate flex-1">' + escapeHtml(p.name) + '</span>';
+            btn.addEventListener('click', () => toggleSelect(i));
             importResults.appendChild(btn);
         });
+        refreshSelectionUI();
     }
 
     function ringToLatLngs(p) {
@@ -378,7 +458,7 @@
                 color: '#38bdf8', weight: 2, fillColor: '#38bdf8', fillOpacity: 0.15,
             }).addTo(map);
             layer.bindTooltip(p.name, { direction: 'center', sticky: true });
-            layer.on('click', () => choosePolygon(i));
+            layer.on('click', e => { L.DomEvent.stopPropagation(e); toggleSelect(i); });
             previewLayers.push(layer);
             drawn.push(layer);
         });
@@ -388,35 +468,67 @@
         }
     }
 
-    function highlightPreview(i, on) {
+    function styleImport(i, selected) {
         const layer = previewLayers[i];
         if (!layer) { return; }
-        layer.setStyle(on
-            ? { color: '#f59e0b', weight: 3, fillColor: '#f59e0b', fillOpacity: 0.3 }
+        layer.setStyle(selected
+            ? { color: '#f59e0b', weight: 3, fillColor: '#f59e0b', fillOpacity: 0.35 }
             : { color: '#38bdf8', weight: 2, fillColor: '#38bdf8', fillOpacity: 0.15 });
     }
 
-    function choosePolygon(i) {
-        const p = importedPolygons[i];
-        const ring = (p && p.area && p.area.coordinates && p.area.coordinates[0]) || [];
-        if (ring.length < 4) { setImportStatus('Ten obszar jest nieprawidłowy.', 'error'); return; }
+    function toggleSelect(i) {
+        if (selectedImport.has(i)) { selectedImport.delete(i); }
+        else { selectedImport.add(i); }
+        refreshSelectionUI();
+    }
 
-        // Reset current drawing.
-        vertices = [];
-        vertexMarkers.forEach(m => map.removeLayer(m));
-        vertexMarkers = [];
+    function refreshSelectionUI() {
+        importResults.querySelectorAll('button[data-index]').forEach(btn => {
+            const i = Number(btn.dataset.index);
+            const on = selectedImport.has(i);
+            btn.classList.toggle('ring-2', on);
+            btn.classList.toggle('ring-amber-500', on);
+            const check = btn.querySelector('.import-check');
+            if (check) {
+                check.classList.toggle('bg-amber-500', on);
+                check.classList.toggle('border-amber-500', on);
+                check.textContent = on ? '✓' : '';
+            }
+            styleImport(i, on);
+        });
+        const n = selectedImport.size;
+        importAddSelected.disabled = n === 0;
+        importAddSelected.classList.toggle('opacity-40', n === 0);
+        importAddSelected.textContent = n > 0 ? `➕ Dodaj zaznaczone (${n})` : '➕ Dodaj zaznaczone';
+    }
 
-        // Load ring points, skipping the closing duplicate. Coordinates are [lng, lat].
-        for (let j = 0; j < ring.length - 1; j++) {
-            addVertex(ring[j][1], ring[j][0]);
-        }
-
-        setImportedMode(true);
-        if (polygonLayer) { map.fitBounds(polygonLayer.getBounds(), { padding: [30, 30] }); }
-
+    function addImported(indices) {
+        let added = 0;
+        indices.forEach(i => {
+            const p = importedPolygons[i];
+            const ring = (p && p.area && p.area.coordinates && p.area.coordinates[0]) || [];
+            if (ring.length < 4) { return; }
+            const latlngs = [];
+            for (let j = 0; j < ring.length - 1; j++) {
+                latlngs.push({ lat: ring[j][1], lng: ring[j][0] });
+            }
+            addCommittedPolygon(latlngs);
+            added++;
+        });
+        if (!added) { setImportStatus('Nie wybrano poprawnych obszarów.', 'error'); return; }
         exitPickerMode();
         importOverlay.classList.add('hidden');
+        fitAll();
     }
+
+    importAddSelected.addEventListener('click', () => {
+        if (!selectedImport.size) { return; }
+        addImported([...selectedImport]);
+    });
+
+    importAddAll.addEventListener('click', () => {
+        addImported(importedPolygons.map((_, i) => i));
+    });
 
     function showStep(n) {
         document.getElementById('step1').classList.toggle('active', n === 1);
@@ -425,11 +537,18 @@
     }
 
     toDetailsBtn.addEventListener('click', () => {
-        if (vertices.length < 3) { return; }
-        // Closed GeoJSON ring: [lng, lat], first point repeated at the end.
-        const ring = vertices.map(v => [v.lng, v.lat]);
-        ring.push([vertices[0].lng, vertices[0].lat]);
-        document.getElementById('area').value = JSON.stringify({ type: 'Polygon', coordinates: [ring] });
+        // Auto-save a valid in-progress polygon before proceeding.
+        if (vertices.length >= 3) { commitCurrent(); }
+        if (!committed.length) { return; }
+
+        // GeoJSON MultiPolygon: each polygon is [outerRing], the ring closed with
+        // its first point repeated at the end. Coordinates are [lng, lat].
+        const coordinates = committed.map(entry => {
+            const ring = entry.latlngs.map(v => [v.lng, v.lat]);
+            ring.push([entry.latlngs[0].lng, entry.latlngs[0].lat]);
+            return [ring];
+        });
+        document.getElementById('area').value = JSON.stringify({ type: 'MultiPolygon', coordinates });
         showStep(2);
     });
 

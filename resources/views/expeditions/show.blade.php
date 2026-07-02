@@ -144,11 +144,12 @@
     const map = L.map('map-view', { zoomControl: false, attributionControl: false, dragging: true, tap: false });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
     try {
-        const coords = (EXP.area && EXP.area.coordinates && EXP.area.coordinates[0]) || [];
-        const latlngs = coords.map(c => [c[1], c[0]]);
-        if (latlngs.length) {
-            const poly = L.polygon(latlngs, { color: '#f59e0b', weight: 2, fillColor: '#f59e0b', fillOpacity: 0.2 }).addTo(map);
-            map.fitBounds(poly.getBounds(), { padding: [20, 20] });
+        const layer = L.geoJSON(EXP.area, {
+            style: { color: '#f59e0b', weight: 2, fillColor: '#f59e0b', fillOpacity: 0.2 },
+        }).addTo(map);
+        const bounds = layer.getBounds();
+        if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [20, 20] });
         } else {
             map.setView([52.0, 19.0], 6);
         }
