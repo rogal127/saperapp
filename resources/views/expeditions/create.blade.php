@@ -21,6 +21,21 @@
     .step-screen { display: none; flex-direction: column; height: 100%; }
     .step-screen.active { display: flex; }
     .screen-scroll { overflow-y: auto; flex: 1; }
+
+    /* Import overlay as a bottom sheet once results are shown, so the preview
+       polygons drawn on the map behind it stay visible. */
+    #importOverlay.sheet-mode {
+        top: auto;
+        height: auto;
+        max-height: 55vh;
+        border-top: 1px solid #2a2a3e;
+        border-top-left-radius: 1rem;
+        border-top-right-radius: 1rem;
+        box-shadow: 0 -8px 24px rgba(0,0,0,0.45);
+    }
+    #importOverlay.sheet-mode #importInputBlock { display: none; }
+    #importOverlay:not(.sheet-mode) #importPickerHint { display: none; }
+    #undoBtn:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
 @endpush
 
@@ -136,12 +151,15 @@
         </div>
     </div>
     <div class="screen-scroll px-5 py-5 flex flex-col gap-4">
-        <div>
-            <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">🔗 Link do mapy</label>
-            <input type="url" id="importLink" placeholder="https://www.google.com/maps/d/..." class="input-field" autocomplete="off">
-            <p class="text-xs text-gray-500 mt-1 ml-1">Mapa musi być udostępniona publicznie (dostępna przez link).</p>
+        <div id="importInputBlock" class="flex flex-col gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">🔗 Link do mapy</label>
+                <input type="url" id="importLink" placeholder="https://www.google.com/maps/d/..." class="input-field" autocomplete="off">
+                <p class="text-xs text-gray-500 mt-1 ml-1">Mapa musi być udostępniona publicznie (dostępna przez link).</p>
+            </div>
+            <button type="button" id="importFetchBtn" class="btn-primary">Pobierz obszary</button>
         </div>
-        <button type="button" id="importFetchBtn" class="btn-primary">Pobierz obszary</button>
+        <p id="importPickerHint" class="text-xs text-gray-400 text-center">👆 Kliknij obszar na mapie lub wybierz z listy poniżej.</p>
         <p id="importStatus" class="text-sm text-center hidden"></p>
         <div id="importResults" class="flex flex-col gap-2"></div>
     </div>
@@ -214,10 +232,14 @@
         redraw();
     }
 
-    map.on('click', e => addVertex(e.latlng.lat, e.latlng.lng));
+    map.on('click', e => {
+        // While picking imported areas the sheet is open — don't add vertices.
+        if (importOverlay.classList.contains('sheet-mode')) { return; }
+        addVertex(e.latlng.lat, e.latlng.lng);
+    });
 
     document.getElementById('undoBtn').addEventListener('click', () => {
-        if (!vertices.length) { return; }
+        if (areaFromImport || !vertices.length) { return; }
         vertices.pop();
         const m = vertexMarkers.pop();
         if (m) { map.removeLayer(m); }
@@ -228,6 +250,7 @@
         vertices = [];
         vertexMarkers.forEach(m => map.removeLayer(m));
         vertexMarkers = [];
+        setImportedMode(false);
         redraw();
     });
 
@@ -238,6 +261,11 @@
     const importStatus = document.getElementById('importStatus');
     const importResults = document.getElementById('importResults');
     const importFetchBtn = document.getElementById('importFetchBtn');
+    const undoBtn = document.getElementById('undoBtn');
+
+    let importedPolygons = [];   // areas fetched from Google
+    let previewLayers = [];      // L.polygon[] shown on the map for preview
+    let areaFromImport = false;  // true once an imported area is loaded
 
     function escapeHtml(s) {
         return String(s ?? '')
@@ -252,17 +280,43 @@
         importStatus.classList.remove('hidden');
     }
 
+    // Lock "Cofnij" while an imported area is active — undoing an imported
+    // polygon point by point makes no sense.
+    function setImportedMode(on) {
+        areaFromImport = on;
+        undoBtn.disabled = on;
+    }
+
+    function clearPreview() {
+        previewLayers.forEach(l => { if (l) { map.removeLayer(l); } });
+        previewLayers = [];
+    }
+
+    function exitPickerMode() {
+        clearPreview();
+        importResults.innerHTML = '';
+        importedPolygons = [];
+        importOverlay.classList.remove('sheet-mode');
+    }
+
     document.getElementById('openImportBtn').addEventListener('click', () => {
         importOverlay.classList.remove('hidden');
     });
 
     document.getElementById('importCloseBtn').addEventListener('click', () => {
+        if (importOverlay.classList.contains('sheet-mode')) {
+            // Go back to the link input rather than closing outright.
+            exitPickerMode();
+            setImportStatus('');
+            return;
+        }
         importOverlay.classList.add('hidden');
     });
 
     importFetchBtn.addEventListener('click', () => {
         const link = document.getElementById('importLink').value.trim();
         importResults.innerHTML = '';
+        clearPreview();
         if (!link) { setImportStatus('Wklej link do mapy.', 'error'); return; }
 
         setImportStatus('Pobieranie…');
@@ -283,23 +337,68 @@
             const polygons = data.polygons || [];
             if (!polygons.length) { setImportStatus('Nie znaleziono obszarów.', 'error'); return; }
 
-            setImportStatus(`Znaleziono ${polygons.length} ${polygons.length === 1 ? 'obszar' : 'obszary/-ów'}. Wybierz jeden:`);
-            polygons.forEach(p => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'card text-left w-full flex items-center gap-3 cursor-pointer';
-                btn.innerHTML = '<span class="text-xl">🗺️</span>'
-                    + '<span class="text-sm font-semibold text-gray-200 truncate">' + escapeHtml(p.name) + '</span>';
-                btn.addEventListener('click', () => choosePolygon(p));
-                importResults.appendChild(btn);
-            });
+            importedPolygons = polygons;
+            setImportStatus('');
+            renderPickerList();
+            drawPreview();
+            importOverlay.classList.add('sheet-mode');
+            setTimeout(() => map.invalidateSize(), 60);
         })
         .catch(() => setImportStatus('Błąd połączenia.', 'error'))
         .finally(() => { importFetchBtn.disabled = false; });
     });
 
-    function choosePolygon(p) {
+    function renderPickerList() {
+        importResults.innerHTML = '';
+        importedPolygons.forEach((p, i) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'card text-left w-full flex items-center gap-3 cursor-pointer';
+            btn.innerHTML = '<span class="text-xl">🗺️</span>'
+                + '<span class="text-sm font-semibold text-gray-200 truncate">' + escapeHtml(p.name) + '</span>';
+            btn.addEventListener('click', () => choosePolygon(i));
+            btn.addEventListener('mouseenter', () => highlightPreview(i, true));
+            btn.addEventListener('mouseleave', () => highlightPreview(i, false));
+            importResults.appendChild(btn);
+        });
+    }
+
+    function ringToLatLngs(p) {
         const ring = (p.area && p.area.coordinates && p.area.coordinates[0]) || [];
+        return ring.map(c => [c[1], c[0]]);
+    }
+
+    function drawPreview() {
+        clearPreview();
+        const drawn = [];
+        importedPolygons.forEach((p, i) => {
+            const latlngs = ringToLatLngs(p);
+            if (latlngs.length < 4) { previewLayers.push(null); return; }
+            const layer = L.polygon(latlngs, {
+                color: '#38bdf8', weight: 2, fillColor: '#38bdf8', fillOpacity: 0.15,
+            }).addTo(map);
+            layer.bindTooltip(p.name, { direction: 'center', sticky: true });
+            layer.on('click', () => choosePolygon(i));
+            previewLayers.push(layer);
+            drawn.push(layer);
+        });
+        if (drawn.length) {
+            const bounds = drawn.reduce((b, l) => b.extend(l.getBounds()), drawn[0].getBounds());
+            map.fitBounds(bounds, { padding: [30, 30] });
+        }
+    }
+
+    function highlightPreview(i, on) {
+        const layer = previewLayers[i];
+        if (!layer) { return; }
+        layer.setStyle(on
+            ? { color: '#f59e0b', weight: 3, fillColor: '#f59e0b', fillOpacity: 0.3 }
+            : { color: '#38bdf8', weight: 2, fillColor: '#38bdf8', fillOpacity: 0.15 });
+    }
+
+    function choosePolygon(i) {
+        const p = importedPolygons[i];
+        const ring = (p && p.area && p.area.coordinates && p.area.coordinates[0]) || [];
         if (ring.length < 4) { setImportStatus('Ten obszar jest nieprawidłowy.', 'error'); return; }
 
         // Reset current drawing.
@@ -308,11 +407,14 @@
         vertexMarkers = [];
 
         // Load ring points, skipping the closing duplicate. Coordinates are [lng, lat].
-        for (let i = 0; i < ring.length - 1; i++) {
-            addVertex(ring[i][1], ring[i][0]);
+        for (let j = 0; j < ring.length - 1; j++) {
+            addVertex(ring[j][1], ring[j][0]);
         }
 
+        setImportedMode(true);
         if (polygonLayer) { map.fitBounds(polygonLayer.getBounds(), { padding: [30, 30] }); }
+
+        exitPickerMode();
         importOverlay.classList.add('hidden');
     }
 
