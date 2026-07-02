@@ -118,6 +118,161 @@ class ExpeditionController extends Controller
             ->with('success', 'Poszukiwanie utworzone!');
     }
 
+    /**
+     * Import polygons from a public Google My Maps link.
+     *
+     * Fetches the map's KML server-side (browsers cannot due to CORS) and
+     * returns every polygon as a GeoJSON-ready structure so the user can pick
+     * one to use as the expedition area.
+     */
+    public function importGoogleMyMaps(Request $request)
+    {
+        $validated = $request->validate([
+            'link' => ['required', 'string', 'max:2048'],
+        ]);
+
+        if (! preg_match('/mid=([A-Za-z0-9_-]+)/', $validated['link'], $matches)) {
+            return response()->json([
+                'message' => 'Nie rozpoznano identyfikatora mapy (mid) w podanym linku.',
+            ], 422);
+        }
+
+        $mid = $matches[1];
+
+        try {
+            $response = Http::timeout(15)->get('https://www.google.com/maps/d/kml', [
+                'mid' => $mid,
+                'forcekml' => 1,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Nie udało się pobrać mapy z Google.'], 502);
+        }
+
+        if ($response->failed()) {
+            return response()->json([
+                'message' => 'Nie udało się pobrać mapy. Upewnij się, że jest udostępniona publicznie.',
+            ], 502);
+        }
+
+        $polygons = $this->parseKmlPolygons($response->body());
+
+        if (empty($polygons)) {
+            return response()->json([
+                'message' => 'W tej mapie nie znaleziono żadnych wielokątów (obszarów).',
+            ], 422);
+        }
+
+        return response()->json(['polygons' => $polygons]);
+    }
+
+    /**
+     * Extract all polygons from a KML document.
+     *
+     * @return list<array{name: string, area: array{type: string, coordinates: array<int, list<array{0: float, 1: float}>>}}>
+     */
+    private function parseKmlPolygons(string $kml): array
+    {
+        $previous = libxml_use_internal_errors(true);
+        $doc = new \DOMDocument;
+        $loaded = $doc->loadXML($kml);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        if (! $loaded) {
+            return [];
+        }
+
+        $polygons = [];
+
+        foreach ($doc->getElementsByTagName('Placemark') as $placemark) {
+            $baseName = '';
+            foreach ($placemark->childNodes as $child) {
+                if ($child->nodeName === 'name') {
+                    $baseName = trim($child->textContent);
+                    break;
+                }
+            }
+
+            $polygonNodes = $placemark->getElementsByTagName('Polygon');
+            $polygonCount = $polygonNodes->length;
+
+            foreach ($polygonNodes as $index => $polygonNode) {
+                $ring = $this->parseOuterRing($polygonNode);
+
+                if (count($ring) < 4) {
+                    continue;
+                }
+
+                $name = $baseName !== '' ? $baseName : 'Obszar';
+                if ($polygonCount > 1) {
+                    $name .= ' ('.($index + 1).')';
+                }
+
+                $polygons[] = [
+                    'name' => $name,
+                    'area' => ['type' => 'Polygon', 'coordinates' => [$ring]],
+                ];
+            }
+        }
+
+        return $polygons;
+    }
+
+    /**
+     * Parse a polygon's outer boundary into a closed GeoJSON ring of [lng, lat] pairs.
+     *
+     * @return list<array{0: float, 1: float}>
+     */
+    private function parseOuterRing(\DOMElement $polygon): array
+    {
+        $coordsNode = null;
+
+        $outer = $polygon->getElementsByTagName('outerBoundaryIs');
+        if ($outer->length > 0) {
+            $coordsList = $outer->item(0)->getElementsByTagName('coordinates');
+            if ($coordsList->length > 0) {
+                $coordsNode = $coordsList->item(0);
+            }
+        }
+
+        if ($coordsNode === null) {
+            $coordsList = $polygon->getElementsByTagName('coordinates');
+            if ($coordsList->length > 0) {
+                $coordsNode = $coordsList->item(0);
+            }
+        }
+
+        if ($coordsNode === null) {
+            return [];
+        }
+
+        $ring = [];
+        foreach (preg_split('/\s+/', trim($coordsNode->textContent)) ?: [] as $tuple) {
+            if ($tuple === '') {
+                continue;
+            }
+
+            $parts = explode(',', $tuple);
+            if (count($parts) < 2) {
+                continue;
+            }
+
+            $ring[] = [(float) $parts[0], (float) $parts[1]];
+        }
+
+        if (count($ring) < 3) {
+            return [];
+        }
+
+        $first = $ring[0];
+        $last = $ring[count($ring) - 1];
+        if ($first[0] !== $last[0] || $first[1] !== $last[1]) {
+            $ring[] = $first;
+        }
+
+        return $ring;
+    }
+
     public function update(Request $request, int $id)
     {
         $payload = $request->only('name', 'description', 'starts_at', 'ends_at', 'visibility', 'status');

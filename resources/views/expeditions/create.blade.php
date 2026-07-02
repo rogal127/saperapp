@@ -44,6 +44,7 @@
 
         <div class="flex-shrink-0 px-5 py-4 border-t border-surface-card bg-surface">
             <p class="text-xs text-gray-500 mb-3 text-center" id="drawHint">Dodaj co najmniej 3 punkty, aby wyznaczyć teren.</p>
+            <button type="button" id="openImportBtn" class="btn-secondary text-sm w-full mb-3" style="padding:0.7rem">📥 Importuj z Google My Maps</button>
             <div class="flex gap-2 mb-3">
                 <button type="button" id="undoBtn" class="btn-secondary text-sm" style="padding:0.7rem">↶ Cofnij</button>
                 <button type="button" id="clearBtn" class="btn-secondary text-sm" style="padding:0.7rem">🗑️ Wyczyść</button>
@@ -124,6 +125,26 @@
         </div>
     </div>
 
+</div>
+
+<div id="importOverlay" class="fixed inset-0 z-[9998] flex flex-col bg-surface hidden">
+    <div class="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-surface-card flex-shrink-0 safe-top">
+        <button type="button" id="importCloseBtn" class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card text-gray-300 text-xl">‹</button>
+        <div class="flex-1">
+            <h1 class="text-lg font-bold text-white">Importuj z Google My Maps</h1>
+            <p class="text-xs text-gray-500">Wklej link do mapy i wybierz obszar</p>
+        </div>
+    </div>
+    <div class="screen-scroll px-5 py-5 flex flex-col gap-4">
+        <div>
+            <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">🔗 Link do mapy</label>
+            <input type="url" id="importLink" placeholder="https://www.google.com/maps/d/..." class="input-field" autocomplete="off">
+            <p class="text-xs text-gray-500 mt-1 ml-1">Mapa musi być udostępniona publicznie (dostępna przez link).</p>
+        </div>
+        <button type="button" id="importFetchBtn" class="btn-primary">Pobierz obszary</button>
+        <p id="importStatus" class="text-sm text-center hidden"></p>
+        <div id="importResults" class="flex flex-col gap-2"></div>
+    </div>
 </div>
 
 <div id="loadingOverlay" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm hidden">
@@ -209,6 +230,91 @@
         vertexMarkers = [];
         redraw();
     });
+
+    // --- Import z Google My Maps ---
+    const IMPORT_URL = "{{ route('expeditions.import-mymaps') }}";
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    const importOverlay = document.getElementById('importOverlay');
+    const importStatus = document.getElementById('importStatus');
+    const importResults = document.getElementById('importResults');
+    const importFetchBtn = document.getElementById('importFetchBtn');
+
+    function escapeHtml(s) {
+        return String(s ?? '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function setImportStatus(msg, kind) {
+        if (!msg) { importStatus.classList.add('hidden'); return; }
+        importStatus.textContent = msg;
+        importStatus.className = 'text-sm text-center ' + (kind === 'error' ? 'text-red-400' : 'text-gray-400');
+        importStatus.classList.remove('hidden');
+    }
+
+    document.getElementById('openImportBtn').addEventListener('click', () => {
+        importOverlay.classList.remove('hidden');
+    });
+
+    document.getElementById('importCloseBtn').addEventListener('click', () => {
+        importOverlay.classList.add('hidden');
+    });
+
+    importFetchBtn.addEventListener('click', () => {
+        const link = document.getElementById('importLink').value.trim();
+        importResults.innerHTML = '';
+        if (!link) { setImportStatus('Wklej link do mapy.', 'error'); return; }
+
+        setImportStatus('Pobieranie…');
+        importFetchBtn.disabled = true;
+
+        fetch(IMPORT_URL, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ link }),
+        })
+        .then(async r => ({ ok: r.ok, data: await r.json() }))
+        .then(({ ok, data }) => {
+            if (!ok) { setImportStatus(data.message || 'Nie udało się pobrać mapy.', 'error'); return; }
+            const polygons = data.polygons || [];
+            if (!polygons.length) { setImportStatus('Nie znaleziono obszarów.', 'error'); return; }
+
+            setImportStatus(`Znaleziono ${polygons.length} ${polygons.length === 1 ? 'obszar' : 'obszary/-ów'}. Wybierz jeden:`);
+            polygons.forEach(p => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'card text-left w-full flex items-center gap-3 cursor-pointer';
+                btn.innerHTML = '<span class="text-xl">🗺️</span>'
+                    + '<span class="text-sm font-semibold text-gray-200 truncate">' + escapeHtml(p.name) + '</span>';
+                btn.addEventListener('click', () => choosePolygon(p));
+                importResults.appendChild(btn);
+            });
+        })
+        .catch(() => setImportStatus('Błąd połączenia.', 'error'))
+        .finally(() => { importFetchBtn.disabled = false; });
+    });
+
+    function choosePolygon(p) {
+        const ring = (p.area && p.area.coordinates && p.area.coordinates[0]) || [];
+        if (ring.length < 4) { setImportStatus('Ten obszar jest nieprawidłowy.', 'error'); return; }
+
+        // Reset current drawing.
+        vertices = [];
+        vertexMarkers.forEach(m => map.removeLayer(m));
+        vertexMarkers = [];
+
+        // Load ring points, skipping the closing duplicate. Coordinates are [lng, lat].
+        for (let i = 0; i < ring.length - 1; i++) {
+            addVertex(ring[i][1], ring[i][0]);
+        }
+
+        if (polygonLayer) { map.fitBounds(polygonLayer.getBounds(), { padding: [30, 30] }); }
+        importOverlay.classList.add('hidden');
+    }
 
     function showStep(n) {
         document.getElementById('step1').classList.toggle('active', n === 1);
