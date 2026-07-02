@@ -174,6 +174,12 @@ class ExpeditionController extends Controller
      */
     private function resolveMyMapsId(string $link): ?string
     {
+        $link = trim($link);
+
+        if (! preg_match('#^https?://#i', $link)) {
+            $link = 'https://'.ltrim($link, '/');
+        }
+
         if (preg_match('/mid=([A-Za-z0-9_-]+)/', $link, $matches)) {
             return $matches[1];
         }
