@@ -566,23 +566,46 @@
         btn.disabled = true;
         overlay.classList.remove('hidden');
 
+        const resetForm = () => {
+            overlay.classList.add('hidden');
+            btn.disabled = false;
+        };
+
         fetch(this.action, {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
             body: new FormData(this),
         })
-        .then(async r => ({ ok: r.ok, data: await r.json() }))
-        .then(({ ok, data }) => {
-            if (ok && data.redirect) { window.location.href = data.redirect; return; }
-            overlay.classList.add('hidden');
-            btn.disabled = false;
-            if (data.errors) { alert(Object.values(data.errors).flat().join('\n')); }
-            else { alert(data.message || 'Wystąpił błąd.'); }
+        .then(async r => {
+            // Parse the body defensively: an error page (419/500/redirect to login)
+            // may not be JSON, and blindly calling r.json() would throw and hide
+            // the real reason behind a generic "connection error".
+            const text = await r.text();
+            let data = null;
+            try { data = text ? JSON.parse(text) : null; } catch (_) { /* not JSON */ }
+            return { status: r.status, ok: r.ok, data };
+        })
+        .then(({ status, ok, data }) => {
+            if (ok && data && data.redirect) { window.location.href = data.redirect; return; }
+            resetForm();
+
+            if (data && data.errors) {
+                alert(Object.values(data.errors).flat().join('\n'));
+                return;
+            }
+            if (data && data.message) {
+                alert(data.message);
+                return;
+            }
+            if (status === 419) {
+                alert('Sesja wygasła. Odśwież stronę i spróbuj ponownie.');
+                return;
+            }
+            alert('Wystąpił błąd (' + status + '). Spróbuj ponownie.');
         })
         .catch(() => {
-            overlay.classList.add('hidden');
-            btn.disabled = false;
-            alert('Błąd połączenia.');
+            resetForm();
+            alert('Brak połączenia z serwerem. Sprawdź internet i spróbuj ponownie.');
         });
     });
 </script>
