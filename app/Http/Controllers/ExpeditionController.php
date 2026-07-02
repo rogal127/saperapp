@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
 
 class ExpeditionController extends Controller
 {
@@ -75,7 +77,12 @@ class ExpeditionController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        // This endpoint is always called via fetch (see expeditions/create.blade.php),
+        // so it always answers with JSON. We validate manually instead of using
+        // $request->validate() to guarantee JSON errors regardless of how the
+        // webview sends its Accept/X-Requested-With headers (which, if missed,
+        // would make Laravel redirect back to the form and "reload" the screen).
+        $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:65535'],
             'area' => ['required', 'string'],
@@ -85,37 +92,45 @@ class ExpeditionController extends Controller
             'publish' => ['nullable', 'boolean'],
         ]);
 
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
         $area = json_decode($request->input('area'), true);
 
-        $response = Http::withToken($this->apiToken($request))
-            ->post($this->base().'/expeditions', [
-                'name' => $request->name,
-                'description' => $request->description,
-                'area' => $area,
-                'starts_at' => $request->starts_at,
-                'ends_at' => $request->ends_at,
-                'visibility' => $request->visibility,
-                'publish' => $request->boolean('publish'),
-            ]);
+        try {
+            $response = Http::withToken($this->apiToken($request))
+                ->timeout(15)
+                ->post($this->base().'/expeditions', [
+                    'name' => $request->name,
+                    'description' => $request->description,
+                    'area' => $area,
+                    'starts_at' => $request->starts_at,
+                    'ends_at' => $request->ends_at,
+                    'visibility' => $request->visibility,
+                    'publish' => $request->boolean('publish'),
+                ]);
+        } catch (ConnectionException $e) {
+            return response()->json([
+                'message' => 'Serwer nie odpowiada. Spróbuj ponownie za chwilę.',
+            ], 504);
+        }
 
         if ($response->failed()) {
-            $errors = $response->json('errors') ?? ['name' => ['Błąd zapisu.']];
+            $errors = $response->json('errors');
 
-            if ($request->expectsJson()) {
+            if ($errors) {
                 return response()->json(['errors' => $errors], 422);
             }
 
-            return back()->withErrors($errors)->withInput();
+            return response()->json([
+                'message' => 'Nie udało się zapisać poszukiwania ('.$response->status().').',
+            ], 422);
         }
 
         $id = $response->json('data.id');
 
-        if ($request->expectsJson()) {
-            return response()->json(['redirect' => route('expeditions.show', $id)]);
-        }
-
-        return redirect()->route('expeditions.show', $id)
-            ->with('success', 'Poszukiwanie utworzone!');
+        return response()->json(['redirect' => route('expeditions.show', $id)]);
     }
 
     /**

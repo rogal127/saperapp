@@ -577,6 +577,13 @@
             body: new FormData(this),
         })
         .then(async r => {
+            // If the server answered with a redirect (successful creation via the
+            // non-JSON branch), fetch transparently follows it to the show page.
+            // That is a success signal — go there rather than treating it as error.
+            if (r.redirected && r.url) {
+                window.location.href = r.url;
+                return { handled: true };
+            }
             // Parse the body defensively: an error page (419/500/redirect to login)
             // may not be JSON, and blindly calling r.json() would throw and hide
             // the real reason behind a generic "connection error".
@@ -585,7 +592,8 @@
             try { data = text ? JSON.parse(text) : null; } catch (_) { /* not JSON */ }
             return { status: r.status, ok: r.ok, data };
         })
-        .then(({ status, ok, data }) => {
+        .then(({ handled, status, ok, data }) => {
+            if (handled) { return; }
             if (ok && data && data.redirect) { window.location.href = data.redirect; return; }
             resetForm();
 
