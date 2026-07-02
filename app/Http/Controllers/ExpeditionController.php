@@ -131,13 +131,13 @@ class ExpeditionController extends Controller
             'link' => ['required', 'string', 'max:2048'],
         ]);
 
-        if (! preg_match('/mid=([A-Za-z0-9_-]+)/', $validated['link'], $matches)) {
+        $mid = $this->resolveMyMapsId($validated['link']);
+
+        if ($mid === null) {
             return response()->json([
-                'message' => 'Nie rozpoznano identyfikatora mapy (mid) w podanym linku.',
+                'message' => 'Nie rozpoznano mapy w linku. Użyj linku „Udostępnij" z Google My Maps.',
             ], 422);
         }
-
-        $mid = $matches[1];
 
         try {
             $response = Http::timeout(15)->get('https://www.google.com/maps/d/kml', [
@@ -163,6 +163,46 @@ class ExpeditionController extends Controller
         }
 
         return response()->json(['polygons' => $polygons]);
+    }
+
+    /**
+     * Resolve a Google My Maps id (mid) from a full or shortened link.
+     *
+     * Shortened links (goo.gl / maps.app.goo.gl) are followed server-side to
+     * reveal the final URL that contains the mid. Only known Google hosts are
+     * followed to avoid SSRF.
+     */
+    private function resolveMyMapsId(string $link): ?string
+    {
+        if (preg_match('/mid=([A-Za-z0-9_-]+)/', $link, $matches)) {
+            return $matches[1];
+        }
+
+        $host = strtolower((string) parse_url($link, PHP_URL_HOST));
+        $allowedHosts = ['goo.gl', 'maps.app.goo.gl', 'www.google.com', 'google.com'];
+
+        if (! in_array($host, $allowedHosts, true)) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(15)
+                ->withHeaders(['User-Agent' => 'Mozilla/5.0'])
+                ->get($link);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $finalUrl = (string) $response->effectiveUri();
+        if (preg_match('/mid=([A-Za-z0-9_-]+)/', $finalUrl, $matches)) {
+            return $matches[1];
+        }
+
+        if (preg_match('/mid=([A-Za-z0-9_-]+)/', $response->body(), $matches)) {
+            return $matches[1];
+        }
+
+        return null;
     }
 
     /**
