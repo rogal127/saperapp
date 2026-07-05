@@ -169,22 +169,24 @@
             @endif
 
             {{-- WKZ Consent --}}
-            @if(!empty($wkzConsents))
             <div>
                 <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">
                     📋 Zgoda WKZ <span class="text-gray-500 font-normal">(opcjonalna)</span>
                 </label>
-                <select name="wkz_consent_id" class="input-field">
-                    <option value="">— Nie przypisuj zgody —</option>
-                    @foreach($wkzConsents as $consent)
-                        <option value="{{ $consent['id'] }}"
-                            {{ old('wkz_consent_id', $finding['wkz_consent_id'] ?? '') == $consent['id'] ? 'selected' : '' }}>
-                            {{ $consent['name'] }}
-                        </option>
-                    @endforeach
-                </select>
+                @if(!empty($wkzConsents))
+                    <select name="wkz_consent_id" class="input-field">
+                        <option value="">— Nie przypisuj zgody —</option>
+                        @foreach($wkzConsents as $consent)
+                            <option value="{{ $consent['id'] }}"
+                                {{ old('wkz_consent_id', $finding['wkz_consent_id'] ?? '') == $consent['id'] ? 'selected' : '' }}>
+                                {{ $consent['name'] }}
+                            </option>
+                        @endforeach
+                    </select>
+                @else
+                    <p class="text-xs text-gray-500 ml-1">Nie masz jeszcze żadnych zgód. <a href="{{ route('profile.show') }}#wkz-consents" class="text-amber-400">Dodaj zgodę w profilu</a>.</p>
+                @endif
             </div>
-            @endif
 
             {{-- Expedition (poszukiwanie) --}}
             <div id="expeditionSection" class="hidden">
