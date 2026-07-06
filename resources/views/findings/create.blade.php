@@ -374,6 +374,56 @@
 
 @push('scripts')
 <script>
+    // --- Auto-zapis wersji roboczej ---------------------------------------
+    // Chroni wpisane dane (zwłaszcza długi opis) przed utratą, gdy sesja
+    // wygaśnie w trakcie edycji. Draft żyje w localStorage i wraca po
+    // ponownym zalogowaniu; kasujemy go dopiero po udanym zapisie.
+    const DRAFT_KEY = 'finding_draft_v1';
+    const DRAFT_FIELDS = ['name', 'depth_cm', 'description', 'private_notes'];
+    const draftForm = document.getElementById('findingForm');
+
+    function saveDraft() {
+        try {
+            const draft = {};
+            DRAFT_FIELDS.forEach(n => {
+                const el = draftForm.elements[n];
+                if (el) { draft[n] = el.value; }
+            });
+            const priv = draftForm.elements['is_private'];
+            if (priv) { draft.is_private = priv.checked; }
+            const type = draftForm.querySelector('input[name="type"]:checked');
+            if (type) { draft.type = type.value; }
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        } catch (e) {}
+    }
+
+    function clearDraft() {
+        try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    }
+
+    function restoreDraft() {
+        let draft;
+        try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY)); } catch (e) { return; }
+        if (!draft) { return; }
+        DRAFT_FIELDS.forEach(n => {
+            const el = draftForm.elements[n];
+            // Nie nadpisujemy danych wstawionych serwerowo przez old() (błąd walidacji).
+            if (el && !el.value && draft[n]) { el.value = draft[n]; }
+        });
+        if (draft.is_private && draftForm.elements['is_private'] && !draftForm.elements['is_private'].checked) {
+            draftForm.elements['is_private'].checked = true;
+        }
+        if (draft.type && !draftForm.querySelector('input[name="type"]:checked')) {
+            const radio = draftForm.querySelector('input[name="type"][value="' + draft.type + '"]');
+            const label = radio ? radio.closest('.finding-type-btn') : null;
+            if (label) { label.click(); }
+        }
+    }
+
+    draftForm.addEventListener('input', saveDraft);
+    draftForm.addEventListener('change', saveDraft);
+    restoreDraft();
+
     // Finding type selector
     document.querySelectorAll('#findingTypeGroup .finding-type-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1170,9 +1220,19 @@
         }
 
         xhr.addEventListener('load', function () {
+            if (xhr.status === 401 || xhr.status === 419) {
+                // Sesja wygasła w trakcie edycji. Draft jest zapisany lokalnie.
+                // Odświeżamy stronę: gdy działa „Pamiętaj mnie", sesja odtworzy
+                // się z cookie (bez ponownego logowania); w przeciwnym razie
+                // użytkownik trafi na logowanie i wróci tu z odtworzonym opisem.
+                alert('Twoja sesja wygasła. Wpisane dane zostały zapisane i wrócą — odświeżam stronę.');
+                window.location.reload();
+                return;
+            }
             try {
                 var data = JSON.parse(xhr.responseText);
                 if (xhr.status >= 200 && xhr.status < 300 && data.redirect) {
+                    clearDraft();
                     window.location.href = data.redirect;
                     return;
                 }
