@@ -235,11 +235,13 @@ class FindingController extends Controller
     {
         $request->validate([
             'body' => ['required', 'string', 'min:1', 'max:2000'],
+            'user_id' => ['nullable', 'integer'],
         ]);
 
         $response = Http::withToken($this->apiToken($request))
             ->post(config('services.api.url')."/findings/{$findingId}/message", [
                 'body' => $request->body,
+                'user_id' => $request->input('user_id'),
             ]);
 
         if ($response->status() === 422) {

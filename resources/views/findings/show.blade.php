@@ -1,6 +1,14 @@
 @extends('layouts.app')
 @section('title', ($finding['name'] ?? 'Znalezisko') . ' – szczegóły')
 
+@push('styles')
+<style>
+    .autocomplete-list { position:absolute; top:100%; left:0; right:0; z-index:50; background:#323248; border:1px solid #404060; border-top:none; border-radius:0 0 0.875rem 0.875rem; max-height:200px; overflow-y:auto; }
+    .autocomplete-item { display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; font-size:0.85rem; color:#e2e8f0; cursor:pointer; }
+    .autocomplete-item:active { background:#404060; }
+</style>
+@endpush
+
 @section('content')
 <div class="flex flex-col h-full safe-top">
 
@@ -121,6 +129,47 @@
                     kto polubił?
                 </button>
                 @endif
+
+                <button id="openShareBtn"
+                        class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all active:scale-95 ml-auto"
+                        style="background:#323248">
+                    <span class="text-lg">📨</span>
+                    <span class="text-sm font-semibold text-gray-300">Prześlij</span>
+                </button>
+            </div>
+
+            {{-- Bottom sheet: prześlij znajomemu --}}
+            <div id="shareOverlay" class="fixed inset-0 z-50 hidden" style="background:rgba(0,0,0,0.5)">
+                <div id="shareSheet" class="fixed bottom-0 left-0 right-0 bg-surface rounded-t-2xl max-h-[80vh] flex flex-col transform translate-y-full transition-transform duration-300 ease-out" style="background:#1a1a2e">
+                    <div class="flex items-center justify-between px-4 pt-4 pb-2 border-b border-surface-card flex-shrink-0">
+                        <h3 class="text-base font-bold text-white">Prześlij znajomemu</h3>
+                        <button id="closeShareBtn" class="w-8 h-8 flex items-center justify-center rounded-full bg-surface-card text-gray-400 text-lg">&times;</button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
+                        <div class="relative" id="shareSearchWrap">
+                            <input type="text" id="shareUserInput" class="input-field text-sm" placeholder="🔍 Wpisz nick znajomego..." autocomplete="off">
+                            <div id="shareAutocomplete" class="autocomplete-list" style="display:none"></div>
+                        </div>
+
+                        <div id="shareSelectedUser" class="hidden items-center gap-2 bg-surface-card rounded-xl p-3">
+                            <div class="w-8 h-8 rounded-full bg-[#404060] flex items-center justify-center text-xs font-bold overflow-hidden flex-shrink-0 text-gray-300" id="shareSelectedAvatar"></div>
+                            <span class="text-sm font-semibold text-white flex-1" id="shareSelectedName"></span>
+                            <button id="shareClearUserBtn" class="text-gray-500 text-lg px-2">&times;</button>
+                        </div>
+
+                        <textarea id="shareMessageBody" rows="2" maxlength="2000"
+                                  placeholder="Dodaj wiadomość (opcjonalnie)..."
+                                  class="w-full bg-transparent border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 resize-none focus:outline-none focus:border-amber-500"></textarea>
+
+                        <div id="shareError" class="text-red-400 text-xs" style="display:none"></div>
+
+                        <button id="shareSendBtn"
+                                class="px-4 py-2.5 rounded-xl bg-amber-500 text-black text-sm font-semibold active:opacity-80 disabled:opacity-40"
+                                disabled>
+                            Wyślij
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {{-- Bottom sheet: lista polubień --}}
@@ -341,6 +390,125 @@
                 if (e.target === overlay) { closeLikersSheet(); }
             });
         }
+    })();
+
+    // --- Prześlij znajomemu ---
+    (function () {
+        const openBtn = document.getElementById('openShareBtn');
+        if (!openBtn) { return; }
+
+        const overlay = document.getElementById('shareOverlay');
+        const sheet = document.getElementById('shareSheet');
+        const closeBtn = document.getElementById('closeShareBtn');
+        const input = document.getElementById('shareUserInput');
+        const ac = document.getElementById('shareAutocomplete');
+        const selectedWrap = document.getElementById('shareSelectedUser');
+        const selectedAvatar = document.getElementById('shareSelectedAvatar');
+        const selectedName = document.getElementById('shareSelectedName');
+        const clearUserBtn = document.getElementById('shareClearUserBtn');
+        const bodyInput = document.getElementById('shareMessageBody');
+        const sendBtn = document.getElementById('shareSendBtn');
+        const errorEl = document.getElementById('shareError');
+
+        const FINDING_NAME = @json($finding['name'] ?? 'znalezisko');
+        let selectedUser = null;
+        let deb = null;
+
+        function openShareSheet() {
+            overlay.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                sheet.classList.remove('translate-y-full');
+                sheet.classList.add('translate-y-0');
+            });
+            setTimeout(() => input.focus(), 300);
+        }
+
+        function closeShareSheet() {
+            sheet.classList.remove('translate-y-0');
+            sheet.classList.add('translate-y-full');
+            setTimeout(() => overlay.classList.add('hidden'), 300);
+        }
+
+        function selectUser(u) {
+            selectedUser = u;
+            ac.style.display = 'none';
+            input.value = '';
+            selectedWrap.classList.remove('hidden');
+            selectedWrap.classList.add('flex');
+            selectedAvatar.innerHTML = u.avatar_url
+                ? '<img src="' + u.avatar_url + '" alt="" style="width:100%;height:100%;object-fit:cover">'
+                : (u.name ? u.name.charAt(0).toUpperCase() : '?');
+            selectedName.textContent = u.name;
+            sendBtn.disabled = false;
+        }
+
+        function clearSelectedUser() {
+            selectedUser = null;
+            selectedWrap.classList.add('hidden');
+            selectedWrap.classList.remove('flex');
+            sendBtn.disabled = true;
+        }
+
+        openBtn.addEventListener('click', openShareSheet);
+        closeBtn.addEventListener('click', closeShareSheet);
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) { closeShareSheet(); }
+        });
+        clearUserBtn.addEventListener('click', clearSelectedUser);
+
+        input.addEventListener('input', function () {
+            clearTimeout(deb);
+            const q = this.value.trim();
+            if (q.length < 2) { ac.style.display = 'none'; return; }
+            deb = setTimeout(() => {
+                fetch("{{ route('users.search') }}?q=" + encodeURIComponent(q))
+                    .then(r => r.json())
+                    .then(users => {
+                        ac.innerHTML = '';
+                        if (!users.length) { ac.style.display = 'none'; return; }
+                        users.forEach(u => {
+                            const item = document.createElement('div');
+                            item.className = 'autocomplete-item';
+                            item.textContent = u.name;
+                            item.addEventListener('click', () => selectUser(u));
+                            ac.appendChild(item);
+                        });
+                        ac.style.display = 'block';
+                    }).catch(() => { ac.style.display = 'none'; });
+            }, 300);
+        });
+
+        sendBtn.addEventListener('click', function () {
+            if (!selectedUser) { return; }
+
+            const body = bodyInput.value.trim() || ('Polecam Ci to znalezisko: ' + {{ \Illuminate\Support\Js::from($finding['name'] ?? 'znalezisko') }});
+            errorEl.style.display = 'none';
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Wysyłanie...';
+
+            fetch("{{ route('findings.message', $finding['id']) }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ body: body, user_id: selectedUser.id }),
+            })
+            .then(r => {
+                if (!r.ok) { return r.json().then(d => Promise.reject(d)); }
+                return r.json();
+            })
+            .then(data => {
+                window.location.href = "{{ url('/messages') }}/" + data.conversation_id;
+            })
+            .catch(err => {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Wyślij';
+                errorEl.textContent = err.message || 'Nie udało się wysłać wiadomości.';
+                errorEl.style.display = 'block';
+            });
+        });
     })();
 
     // --- Komentarze ---
