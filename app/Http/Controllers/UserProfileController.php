@@ -15,7 +15,7 @@ class UserProfileController extends Controller
     public function show(Request $request, int $id)
     {
         $response = Http::withToken($this->apiToken($request))
-            ->get(config('services.api.url') . '/users/' . $id);
+            ->get(config('services.api.url').'/users/'.$id);
 
         if ($response->failed()) {
             abort(404);
@@ -23,22 +23,39 @@ class UserProfileController extends Controller
 
         $profile = $response->json();
 
-        $grouped = [];
-        foreach ($profile['findings'] ?? [] as $finding) {
-            $voi = $finding['voivodeship'] ?? 'Nieznane';
-            $cou = $finding['county'] ?? 'Nieznane';
-            $cit = $finding['city'] ?? 'Nieznana';
-            $grouped[$voi][$cou][$cit][] = $finding;
-        }
-        ksort($grouped);
+        $regions = $profile['regions'] ?? [];
+        ksort($regions);
 
         $currentUser = $request->session()->get('api_user', []);
         $currentUserId = $currentUser['id'] ?? null;
 
         return view('users.show', [
-            'profile'       => $profile,
-            'grouped'       => $grouped,
+            'profile' => $profile,
+            'regions' => $regions,
             'currentUserId' => $currentUserId,
         ]);
+    }
+
+    /**
+     * Findings for a single voivodeship/county/city, fetched lazily once the
+     * profile page's accordion is expanded down to that location. Shared by
+     * both the own-profile and other-user-profile views.
+     */
+    public function findings(Request $request, int $id)
+    {
+        $request->validate([
+            'voivodeship' => ['required', 'string'],
+            'county' => ['required', 'string'],
+            'city' => ['required', 'string'],
+        ]);
+
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url')."/users/{$id}/findings", $request->only(['voivodeship', 'county', 'city']));
+
+        if ($response->failed()) {
+            return response()->json(['findings' => []], $response->status());
+        }
+
+        return response()->json($response->json());
     }
 }

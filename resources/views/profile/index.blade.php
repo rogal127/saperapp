@@ -217,22 +217,22 @@
         <div class="mb-8">
             <div class="flex items-center justify-between mb-3">
                 <div class="section-title" style="margin-bottom:0">Moje znaleziska</div>
-                @if(!empty($grouped))
+                @if(!empty($regions))
                     <button onclick="startExport()" class="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)">
                         Eksportuj znaleziska
                     </button>
                 @endif
             </div>
-            @if(empty($grouped))
+            @if(empty($regions))
                 <div class="text-center py-8 text-gray-500">
                     <div class="text-3xl mb-2">🔍</div>
                     <div class="text-sm">Brak znalezisk</div>
                 </div>
             @else
                 <div id="accordion">
-                    @foreach($grouped as $voivodeship => $counties)
+                    @foreach($regions as $voivodeship => $counties)
                     @php
-                        $voiCount = array_sum(array_map(fn($cities) => array_sum(array_map('count', $cities)), $counties));
+                        $voiCount = array_sum(array_map('array_sum', $counties));
                     @endphp
                     <div class="acc-voi">
                         <div class="acc-voi-header" onclick="toggleAcc(this)">
@@ -245,7 +245,7 @@
                         <div class="acc-voi-body">
                             @foreach($counties as $county => $cities)
                             @php
-                                $couCount = array_sum(array_map('count', $cities));
+                                $couCount = array_sum($cities);
                             @endphp
                             <div class="acc-cou">
                                 <div class="acc-cou-header" onclick="toggleAcc(this)">
@@ -256,57 +256,16 @@
                                     </div>
                                 </div>
                                 <div class="acc-cou-body">
-                                    @foreach($cities as $city => $findings)
-                                    <div class="acc-city">
-                                        <div class="acc-city-header" onclick="toggleAcc(this)">
+                                    @foreach($cities as $city => $count)
+                                    <div class="acc-city" data-voi="{{ $voivodeship }}" data-cou="{{ $county }}" data-cit="{{ $city }}">
+                                        <div class="acc-city-header" onclick="toggleCityAcc(this)">
                                             <span class="acc-city-name">📍 {{ $city }}</span>
                                             <div style="display:flex;align-items:center;gap:0.4rem;">
-                                                <span class="acc-city-count">{{ count($findings) }}</span>
+                                                <span class="acc-city-count">{{ $count }}</span>
                                                 <span class="acc-city-arrow">›</span>
                                             </div>
                                         </div>
-                                        <div class="acc-city-body">
-                                            @foreach($findings as $finding)
-                                            <div class="finding-card"
-                                                data-type="{{ $finding['type'] ?? '' }}"
-                                                data-id="{{ $finding['id'] ?? '' }}"
-                                                data-name="{{ $finding['name'] ?? '' }}"
-                                                data-depth="{{ $finding['depth_cm'] ?? 0 }}"
-                                                data-date="{{ $finding['found_at'] ?? '' }}"
-                                                data-desc="{{ $finding['description'] ?? '' }}"
-                                                data-photo="{{ $finding['photo_url'] ?? '' }}"
-                                                data-photos="{{ json_encode($finding['photos'] ?? []) }}"
-                                                data-likes="{{ $finding['likes_count'] ?? 0 }}"
-                                                data-liked="{{ !empty($finding['is_liked']) ? '1' : '0' }}"
-                                                onclick="openFindingModal(this)">
-                                                @php
-                                                    $coverPhoto = $finding['photos'][0] ?? null;
-                                                    $coverSrc = $coverPhoto
-                                                        ? (! empty($coverPhoto['is_private'])
-                                                            ? route('findings.photo', [$finding['id'], $coverPhoto['id']])
-                                                            : ($coverPhoto['url'] ?? ''))
-                                                        : ($finding['photo_url'] ?? '');
-                                                @endphp
-                                                @if($coverSrc)
-                                                    <img src="{{ $coverSrc }}" alt="" class="finding-thumb">
-                                                @else
-                                                    <div class="finding-thumb-placeholder">🪙</div>
-                                                @endif
-                                                <div class="flex-1 min-w-0">
-                                                    <div class="finding-card-name">{{ $finding['name'] }}</div>
-                                                    <div class="finding-card-meta">📅 {{ $finding['found_at'] }}</div>
-                                                    <div class="finding-card-depth">📏 {{ $finding['depth_cm'] }} cm</div>
-                                                    @if(!empty($finding['description']))
-                                                        <div class="finding-card-meta" style="margin-top:3px">{{ Str::limit($finding['description'], 60) }}</div>
-                                                    @endif
-                                                </div>
-                                                <button class="like-btn" onclick="event.stopPropagation(); toggleLike({{ $finding['id'] }}, this)">
-                                                    <span class="like-icon">{{ !empty($finding['is_liked']) ? '❤️' : '🤍' }}</span>
-                                                    <span class="like-count">{{ $finding['likes_count'] ?? 0 }}</span>
-                                                </button>
-                                            </div>
-                                            @endforeach
-                                        </div>
+                                        <div class="acc-city-body"></div>
                                     </div>
                                     @endforeach
                                 </div>
@@ -532,6 +491,7 @@
 @push('scripts')
 <script>
 const CSRF_TOKEN = '{{ csrf_token() }}';
+const FINDINGS_URL = '{{ route('users.findings', $user['id'] ?? 0) }}';
 
 function toggleLike(findingId, btn) {
     fetch(`/api/findings/${findingId}/like`, {
@@ -570,6 +530,94 @@ function toggleAcc(header) {
     const arrow = header.querySelector('.acc-arrow, .acc-cou-arrow, .acc-city-arrow');
     const isOpen = body.classList.toggle('open');
     if (arrow) arrow.classList.toggle('open', isOpen);
+}
+
+function toggleCityAcc(header) {
+    const cityEl = header.closest('.acc-city');
+    const body = header.nextElementSibling;
+    const arrow = header.querySelector('.acc-city-arrow');
+    const isOpen = body.classList.toggle('open');
+    arrow.classList.toggle('open', isOpen);
+
+    if (isOpen && !cityEl.dataset.loaded) {
+        loadCityFindings(cityEl, body);
+    }
+}
+
+function loadCityFindings(cityEl, body) {
+    const params = new URLSearchParams({
+        voivodeship: cityEl.dataset.voi,
+        county: cityEl.dataset.cou,
+        city: cityEl.dataset.cit,
+    });
+
+    body.innerHTML = '<div class="finding-card-meta" style="padding:0.75rem 1rem">Ładowanie…</div>';
+
+    fetch(`${FINDINGS_URL}?${params}`, { headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(data => {
+            cityEl.dataset.loaded = '1';
+            body.innerHTML = '';
+            (data.findings || []).forEach(finding => body.appendChild(buildFindingCard(finding)));
+        })
+        .catch(() => {
+            body.innerHTML = '<div class="finding-card-meta" style="padding:0.75rem 1rem">Nie udało się wczytać znalezisk.</div>';
+        });
+}
+
+function buildFindingCard(finding) {
+    const card = document.createElement('div');
+    card.className = 'finding-card';
+    card.dataset.type = finding.type || '';
+    card.dataset.id = finding.id;
+    card.dataset.name = finding.name || '';
+    card.dataset.depth = finding.depth_cm || 0;
+    card.dataset.date = finding.found_at || '';
+    card.dataset.desc = finding.description || '';
+    card.dataset.photo = finding.photo_url || '';
+    card.dataset.photos = JSON.stringify(finding.photos || []);
+    card.dataset.likes = finding.likes_count || 0;
+    card.dataset.liked = finding.is_liked ? '1' : '0';
+    card.addEventListener('click', () => openFindingModal(card));
+
+    const coverPhoto = (finding.photos || [])[0];
+    const coverSrc = coverPhoto
+        ? (coverPhoto.is_private ? `/findings/${finding.id}/photos/${coverPhoto.id}` : (coverPhoto.url || ''))
+        : (finding.photo_url || '');
+
+    const thumbHtml = coverSrc
+        ? `<img src="${escapeHtml(coverSrc)}" alt="" class="finding-thumb">`
+        : '<div class="finding-thumb-placeholder">🪙</div>';
+
+    const descHtml = finding.description
+        ? `<div class="finding-card-meta" style="margin-top:3px">${escapeHtml(truncate(finding.description, 60))}</div>`
+        : '';
+
+    card.innerHTML = `
+        ${thumbHtml}
+        <div class="flex-1 min-w-0">
+            <div class="finding-card-name">${escapeHtml(finding.name || '')}</div>
+            <div class="finding-card-meta">📅 ${escapeHtml(finding.found_at || '')}</div>
+            <div class="finding-card-depth">📏 ${finding.depth_cm || 0} cm</div>
+            ${descHtml}
+        </div>
+        <button class="like-btn" onclick="event.stopPropagation(); toggleLike(${finding.id}, this)">
+            <span class="like-icon">${finding.is_liked ? '❤️' : '🤍'}</span>
+            <span class="like-count">${finding.likes_count || 0}</span>
+        </button>
+    `;
+
+    return card;
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function truncate(str, len) {
+    return str.length > len ? str.slice(0, len) + '...' : str;
 }
 
 let activeFindingId = null;

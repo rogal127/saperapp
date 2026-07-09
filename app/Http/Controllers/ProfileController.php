@@ -23,22 +23,17 @@ class ProfileController extends Controller
         $user = $userResponse->successful() ? ($userResponse->json('data') ?? $userResponse->json()) : [];
         $wkzConsents = $consentsResponse->successful() ? $consentsResponse->json() : [];
 
-        $grouped = [];
+        $regions = [];
         if (! empty($user['id'])) {
-            $findingsResponse = Http::withToken($token)->get("{$base}/users/{$user['id']}");
+            $profileResponse = Http::withToken($token)->get("{$base}/users/{$user['id']}");
 
-            if ($findingsResponse->successful()) {
-                foreach ($findingsResponse->json('findings') ?? [] as $finding) {
-                    $voi = $finding['voivodeship'] ?? 'Nieznane';
-                    $cou = $finding['county'] ?? 'Nieznane';
-                    $cit = $finding['city'] ?? 'Nieznana';
-                    $grouped[$voi][$cou][$cit][] = $finding;
-                }
-                ksort($grouped);
+            if ($profileResponse->successful()) {
+                $regions = $profileResponse->json('regions') ?? [];
+                ksort($regions);
             }
         }
 
-        return view('profile.index', compact('user', 'wkzConsents', 'grouped'));
+        return view('profile.index', compact('user', 'wkzConsents', 'regions'));
     }
 
     public function storeWkzConsent(Request $request)

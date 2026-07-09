@@ -77,6 +77,7 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/api/conversations/unread-count', [ConversationController::class, 'unreadCount'])->name('messages.unread');
 
     Route::get('/users/{id}', [UserProfileController::class, 'show'])->name('users.show');
+    Route::get('/users/{id}/findings', [UserProfileController::class, 'findings'])->name('users.findings');
 
     Route::post('/logout', LogoutController::class)->name('logout');
 });
