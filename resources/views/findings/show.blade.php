@@ -413,7 +413,7 @@
             + '<span class="text-xs text-gray-600">' + c.created_at_human + '</span>'
             + deleteBtn
             + '</div>'
-            + '<p class="text-sm text-gray-300 mt-1 whitespace-pre-line">' + escapeHtml(c.body) + '</p>'
+            + '<p class="text-sm text-gray-300 mt-1 whitespace-pre-line break-words [overflow-wrap:anywhere]">' + escapeHtml(c.body) + '</p>'
             + photosHtml
             + '</div>'
             + '</div>'
