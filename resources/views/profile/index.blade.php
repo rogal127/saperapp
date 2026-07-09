@@ -361,6 +361,31 @@
             </div>
         </form>
 
+        {{-- Zmiana hasła --}}
+        <div class="section-title mt-6" id="password">Zmiana hasła</div>
+        <form action="{{ route('profile.password.update') }}" method="POST">
+            @csrf
+            @method('PUT')
+            <div class="flex flex-col gap-3">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Aktualne hasło</label>
+                    <input type="password" name="current_password" autocomplete="current-password"
+                        class="input-field @error('current_password') border-red-500 @enderror" placeholder="Aktualne hasło">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Nowe hasło</label>
+                    <input type="password" name="password" autocomplete="new-password"
+                        class="input-field @error('password') border-red-500 @enderror" placeholder="Nowe hasło">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Powtórz nowe hasło</label>
+                    <input type="password" name="password_confirmation" autocomplete="new-password"
+                        class="input-field" placeholder="Powtórz nowe hasło">
+                </div>
+                <button type="submit" class="btn-primary mt-1">Zmień hasło</button>
+            </div>
+        </form>
+
         {{-- Zgody WKZ --}}
         <div class="mt-6" id="wkz-consents">
             <div class="section-title">Zgody WKZ</div>

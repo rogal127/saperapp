@@ -100,6 +100,31 @@ class ProfileController extends Controller
         return back()->with('success', 'Profil zaktualizowany!');
     }
 
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $response = Http::withToken($this->apiToken($request))
+            ->put(config('services.api.url').'/me/password', [
+                'current_password' => $request->current_password,
+                'password' => $request->password,
+                'password_confirmation' => $request->password_confirmation,
+            ]);
+
+        if ($response->failed()) {
+            $message = $response->json('errors.current_password')
+                ? 'Podane aktualne hasło jest nieprawidłowe.'
+                : 'Nie udało się zmienić hasła.';
+
+            return back()->withErrors(['current_password' => $message])->withFragment('password');
+        }
+
+        return back()->with('success', 'Hasło zostało zmienione!')->withFragment('password');
+    }
+
     public function startFindingsExport(Request $request)
     {
         $response = Http::withToken($this->apiToken($request))
