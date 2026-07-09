@@ -6,6 +6,40 @@
     .autocomplete-list { position:absolute; top:100%; left:0; right:0; z-index:50; background:#323248; border:1px solid #404060; border-top:none; border-radius:0 0 0.875rem 0.875rem; max-height:200px; overflow-y:auto; }
     .autocomplete-item { display:flex; align-items:center; gap:0.5rem; padding:0.5rem 0.75rem; font-size:0.85rem; color:#e2e8f0; cursor:pointer; }
     .autocomplete-item:active { background:#404060; }
+
+    /* Modal wiadomości do znalazcy */
+    #message-modal {
+        display: none; position: fixed; inset: 0; z-index: 2000;
+        background: rgba(0,0,0,0.75); align-items: flex-end; justify-content: center;
+    }
+    #message-modal.open { display: flex; }
+    #message-sheet {
+        background: #1a1a2e; border-radius: 1.25rem 1.25rem 0 0;
+        border: 1px solid #2a2a3e; width: 100%; max-width: 480px;
+        max-height: 90vh; display: flex; flex-direction: column;
+        animation: slideUp 0.25s ease;
+    }
+    #message-sheet-header { flex-shrink: 0; padding: 1rem 1rem 0.75rem; border-bottom: 1px solid #2a2a3e; border-radius: 1.25rem 1.25rem 0 0; }
+    #message-sheet-body { flex: 1; overflow-y: auto; }
+    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-body { padding: 1rem; }
+    .modal-title { font-weight: 700; font-size: 1rem; color: #fff; }
+    .modal-close { color: #9ca3af; font-size: 1.4rem; background: none; border: none; cursor: pointer; line-height: 1; }
+    .modal-textarea {
+        width: 100%; background: #2a2a3e; border: 1px solid #404060;
+        border-radius: 0.75rem; color: #fff; padding: 0.75rem;
+        font-size: 0.82rem; resize: none; outline: none;
+        box-sizing: border-box; font-family: inherit;
+    }
+    .modal-textarea:focus { border-color: #f59e0b; }
+    .modal-send-btn {
+        margin-top: 0.75rem; width: 100%; padding: 0.8rem;
+        background: #f59e0b; color: #1a1a2e; font-weight: 700;
+        border: none; border-radius: 0.75rem; cursor: pointer;
+        font-size: 0.9rem; transition: opacity 0.15s;
+    }
+    .modal-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #modal-status { text-align: center; margin-top: 0.5rem; font-size: 0.78rem; min-height: 1.1em; }
 </style>
 @endpush
 
@@ -116,26 +150,58 @@
                 @endif
             </div>
 
-            {{-- Polubienia --}}
-            <div class="flex items-center gap-3">
-                <button id="likeBtn" data-id="{{ $finding['id'] }}"
-                        class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all active:scale-95"
-                        style="background:{{ !empty($finding['is_liked']) ? 'rgba(239,68,68,0.15)' : '#323248' }}">
-                    <span id="likeIcon" class="text-lg">{{ !empty($finding['is_liked']) ? '❤️' : '🤍' }}</span>
-                    <span id="likeCount" class="text-sm font-semibold {{ !empty($finding['is_liked']) ? 'text-red-400' : 'text-gray-400' }}">{{ $finding['likes_count'] ?? 0 }}</span>
-                </button>
-                @if(($finding['likes_count'] ?? 0) > 0)
-                <button id="showLikersBtn" class="text-sm text-gray-400 underline underline-offset-2 active:text-gray-300 px-3 py-2 -mx-1 rounded-lg">
-                    kto polubił?
-                </button>
-                @endif
+            {{-- Polubienia + akcje --}}
+            <div class="flex items-start gap-3">
+                <div class="flex flex-col items-start gap-1 flex-shrink-0">
+                    <button id="likeBtn" data-id="{{ $finding['id'] }}"
+                            class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all active:scale-95"
+                            style="background:{{ !empty($finding['is_liked']) ? 'rgba(239,68,68,0.15)' : '#323248' }}">
+                        <span id="likeIcon" class="text-lg">{{ !empty($finding['is_liked']) ? '❤️' : '🤍' }}</span>
+                        <span id="likeCount" class="text-sm font-semibold {{ !empty($finding['is_liked']) ? 'text-red-400' : 'text-gray-400' }}">{{ $finding['likes_count'] ?? 0 }}</span>
+                    </button>
+                    @if(($finding['likes_count'] ?? 0) > 0)
+                    <button id="showLikersBtn" class="text-xs text-gray-400 underline underline-offset-2 active:text-gray-300 px-1">
+                        kto polubił?
+                    </button>
+                    @endif
+                </div>
 
-                <button id="openShareBtn"
-                        class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all active:scale-95 ml-auto"
-                        style="background:#323248">
-                    <span class="text-lg">📨</span>
-                    <span class="text-sm font-semibold text-gray-300">Prześlij</span>
-                </button>
+                <div class="flex items-center gap-2 flex-wrap flex-1 justify-end">
+                    @if(empty($finding['is_mine']))
+                    <button id="openMessageBtn"
+                            class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all active:scale-95"
+                            style="background:#323248">
+                        <span class="text-lg">✉️</span>
+                        <span class="text-sm font-semibold text-gray-300">Wiadomość</span>
+                    </button>
+                    @endif
+
+                    <button id="openShareBtn"
+                            class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all active:scale-95"
+                            style="background:#323248">
+                        <span class="text-lg">📨</span>
+                        <span class="text-sm font-semibold text-gray-300">Prześlij</span>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Modal wiadomości do znalazcy --}}
+            <div id="message-modal" onclick="handleMessageBackdrop(event)">
+                <div id="message-sheet">
+                    <div id="message-sheet-header">
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <div class="modal-title" id="msg-modal-title">Napisz wiadomość</div>
+                            <button class="modal-close" onclick="closeMessageModal()">✕</button>
+                        </div>
+                    </div>
+                    <div id="message-sheet-body">
+                        <div class="modal-body">
+                            <textarea id="modal-msg" class="modal-textarea" rows="3" placeholder="Napisz wiadomość do znalazcy…"></textarea>
+                            <button id="modal-send" class="modal-send-btn" onclick="sendModalMessage()">Wyślij wiadomość</button>
+                            <div id="modal-status"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {{-- Bottom sheet: prześlij znajomemu --}}
@@ -509,6 +575,71 @@
                 errorEl.style.display = 'block';
             });
         });
+    })();
+
+    // --- Napisz wiadomość do znalazcy ---
+    (function () {
+        const openBtn = document.getElementById('openMessageBtn');
+        if (!openBtn) { return; }
+
+        const findingId = {{ $finding['id'] }};
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        let sending = false;
+
+        openBtn.addEventListener('click', function () {
+            document.getElementById('modal-msg').value = '';
+            document.getElementById('modal-status').textContent = '';
+            document.getElementById('modal-status').style.color = '';
+            document.getElementById('modal-send').disabled = false;
+            document.getElementById('message-modal').classList.add('open');
+        });
+
+        window.closeMessageModal = function () {
+            document.getElementById('message-modal').classList.remove('open');
+        };
+
+        window.handleMessageBackdrop = function (e) {
+            if (e.target === document.getElementById('message-modal')) { closeMessageModal(); }
+        };
+
+        window.sendModalMessage = function () {
+            if (sending) { return; }
+            const body = document.getElementById('modal-msg').value.trim();
+            if (!body) { return; }
+
+            const btn = document.getElementById('modal-send');
+            const status = document.getElementById('modal-status');
+            sending = true;
+            btn.disabled = true;
+            status.textContent = 'Wysyłanie…';
+            status.style.color = '#9ca3af';
+
+            fetch('/api/findings/' + findingId + '/message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                body: JSON.stringify({ body: body }),
+            })
+            .then(r => r.json().then(data => ({ ok: r.ok, data: data })))
+            .then(({ ok, data }) => {
+                sending = false;
+                if (ok) {
+                    status.textContent = '✓ Wiadomość wysłana!';
+                    status.style.color = '#34d399';
+                    document.getElementById('modal-msg').value = '';
+                    setTimeout(closeMessageModal, 1500);
+                } else {
+                    status.textContent = data.message || 'Nie udało się wysłać.';
+                    status.style.color = '#f87171';
+                    btn.disabled = false;
+                }
+            })
+            .catch(() => {
+                sending = false;
+                status.textContent = 'Błąd połączenia.';
+                status.style.color = '#f87171';
+                btn.disabled = false;
+            });
+        };
     })();
 
     // --- Komentarze ---

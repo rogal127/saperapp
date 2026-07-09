@@ -157,33 +157,39 @@
     #empty-state { text-align: center; padding: 2rem 1rem; color: #6b7280; font-size: 0.8rem; }
 
     /* Modals */
-    #pin-modal, #message-modal {
+    #pin-modal, #message-modal, #share-modal {
         display: none; position: fixed; inset: 0; z-index: 2000;
         background: rgba(0,0,0,0.75); align-items: flex-end;
         justify-content: center;
     }
-    #pin-modal.open, #message-modal.open { display: flex; }
-    #modal-sheet, #message-sheet {
+    #pin-modal.open, #message-modal.open, #share-modal.open { display: flex; }
+    #modal-sheet, #message-sheet, #share-sheet {
         background: #1a1a2e; border-radius: 1.25rem 1.25rem 0 0;
         border: 1px solid #2a2a3e; width: 100%; max-width: 480px;
         max-height: 90vh; display: flex; flex-direction: column;
         animation: slideUp 0.25s ease;
     }
-    #modal-sheet-header, #message-sheet-header {
+    #modal-sheet-header, #message-sheet-header, #share-sheet-header {
         flex-shrink: 0;
         padding: 1rem 1rem 0.75rem;
         border-bottom: 1px solid #2a2a3e;
         border-radius: 1.25rem 1.25rem 0 0;
     }
-    #modal-sheet-body, #message-sheet-body {
+    #modal-sheet-body, #message-sheet-body, #share-sheet-body {
         flex: 1; overflow-y: auto;
     }
     @media (min-width: 768px) {
-        #modal-sheet, #message-sheet { max-width: 640px; }
+        #modal-sheet, #message-sheet, #share-sheet { max-width: 640px; }
     }
     @media (min-width: 1280px) {
-        #modal-sheet, #message-sheet { max-width: 820px; }
+        #modal-sheet, #message-sheet, #share-sheet { max-width: 820px; }
     }
+    .autocomplete-list {
+        position: relative; z-index: 50; background: #2a2a3e; border: 1px solid #404060;
+        border-top: none; border-radius: 0 0 0.75rem 0.75rem; max-height: 200px; overflow-y: auto;
+    }
+    .autocomplete-item { padding: 0.5rem 0.75rem; font-size: 0.82rem; color: #e2e8f0; cursor: pointer; }
+    .autocomplete-item:active { background: #404060; }
     @keyframes slideUp {
         from { transform: translateY(40px); opacity: 0; }
         to   { transform: translateY(0);    opacity: 1; }
@@ -207,7 +213,7 @@
         font-size: 0.9rem; transition: opacity 0.15s;
     }
     .modal-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    #modal-status { text-align: center; margin-top: 0.5rem; font-size: 0.78rem; min-height: 1.1em; }
+    #modal-status, #shareStatus { text-align: center; margin-top: 0.5rem; font-size: 0.78rem; min-height: 1.1em; }
 
     /* Lista znalezisk w modalu pinezki */
     .pin-finding-card {
@@ -239,9 +245,9 @@
     .pin-finding-gallery::-webkit-scrollbar { display: none; }
     .pin-finding-gallery .pin-finding-photo { flex: 0 0 88%; scroll-snap-align: start; margin-top: 0; }
     .pin-msg-btn {
-        margin-top: 0.5rem; width: 100%; padding: 0.5rem 0.75rem;
-        background: transparent; border: 1px solid #f59e0b; color: #f59e0b;
-        border-radius: 0.625rem; cursor: pointer; font-size: 0.78rem; font-weight: 600;
+        margin-top: 0.5rem; width: 100%; padding: 0.4rem 0.4rem;
+        background: rgba(245,158,11,0.08); border: none; color: #f0a840;
+        border-radius: 0.5rem; cursor: pointer; font-size: 0.7rem; font-weight: 600;
     }
     .finding-actions { display: flex; gap: 0.4rem; margin-left: auto; flex-shrink: 0; }
     .finding-action-btn {
@@ -254,7 +260,7 @@
     .like-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 0.5rem 0.25rem; flex-shrink: 0; min-height: 44px; }
     .like-btn .like-icon { font-size: 1rem; }
     .like-btn .like-count { font-size: 0.85rem; color: #9ca3af; font-weight: 600; }
-    .pin-finding-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 0.4rem; }
+    .pin-finding-actions { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.4rem; }
 
     /* Tryb przenoszenia pinezki */
     #relocate-overlay {
@@ -413,6 +419,34 @@
         </div>
     </div>
 
+    {{-- Modal: prześlij znajomemu --}}
+    <div id="share-modal" onclick="handleShareBackdrop(event)">
+        <div id="share-sheet">
+            <div id="share-sheet-header">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <div class="modal-title">Prześlij znajomemu</div>
+                    <button class="modal-close" onclick="closeShareSheet()">✕</button>
+                </div>
+            </div>
+            <div id="share-sheet-body">
+                <div class="modal-body">
+                    <div class="relative" id="shareSearchWrap">
+                        <input type="text" id="shareUserInput" class="modal-textarea" style="resize:none" placeholder="🔍 Wpisz nick znajomego..." autocomplete="off">
+                        <div id="shareAutocomplete" class="autocomplete-list" style="display:none"></div>
+                    </div>
+                    <div id="shareSelectedUser" style="display:none;align-items:center;gap:0.5rem;background:#2a2a3e;border-radius:0.75rem;padding:0.6rem 0.75rem;margin-top:0.6rem">
+                        <div id="shareSelectedAvatar" style="width:28px;height:28px;border-radius:50%;background:#404060;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#e2e8f0;overflow:hidden;flex-shrink:0"></div>
+                        <span id="shareSelectedName" style="font-size:0.85rem;font-weight:600;color:#fff;flex:1"></span>
+                        <button id="shareClearUserBtn" style="background:none;border:none;color:#9ca3af;font-size:1.1rem;cursor:pointer;padding:0 4px">✕</button>
+                    </div>
+                    <textarea id="shareMessageBody" class="modal-textarea" rows="2" maxlength="2000" placeholder="Dodaj wiadomość (opcjonalnie)..." style="margin-top:0.6rem"></textarea>
+                    <button id="shareSendBtn" class="modal-send-btn" disabled onclick="sendShareMessage()">Wyślij</button>
+                    <div id="shareStatus"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
 </div>
 @endsection
@@ -424,6 +458,7 @@ const PINS_API_BASE = "{{ url('/api/pins') }}";
 const MESSAGE_BASE  = "{{ url('/api/findings') }}";
 const CREATE_URL    = "{{ route('findings.create') }}";
 const CSRF_TOKEN    = '{{ csrf_token() }}';
+const USERS_SEARCH_URL = "{{ route('users.search') }}";
 
 async function deleteFinding(id, btn) {
     if (!confirm('Usunąć to znalezisko? Tej operacji nie można cofnąć.')) { return; }
@@ -723,18 +758,23 @@ function openCityFindingsModal(cluster) {
             card.className = 'pin-finding-card';
             if (f.type) { card.dataset.type = f.type; }
             card.innerHTML = `
-                <div class="pin-finding-name">🪙 ${escHtml(f.name)}</div>
-                <div class="pin-finding-depth">📏 ${f.depth_cm} cm głębokości</div>
-                <div class="pin-finding-meta">📅 ${f.found_at} · 👤 ${f.finder_id
-                    ? `<a href="/users/${f.finder_id}" style="color:#f59e0b;font-weight:600;text-decoration:none;">${escHtml(f.finder ?? '')}</a>`
-                    : escHtml(f.finder ?? '')
-                }</div>
+                <div class="pin-finding-header">
+                    <div class="flex-1 min-w-0">
+                        <div class="pin-finding-name">🪙 ${escHtml(f.name)}</div>
+                        <div class="pin-finding-depth">📏 ${f.depth_cm} cm głębokości</div>
+                        <div class="pin-finding-meta">📅 ${f.found_at} · 👤 ${f.finder_id
+                            ? `<a href="/users/${f.finder_id}" style="color:#f59e0b;font-weight:600;text-decoration:none;">${escHtml(f.finder ?? '')}</a>`
+                            : escHtml(f.finder ?? '')
+                        }</div>
+                    </div>
+                    ${likeButtonHtml(f.id, f.is_liked, f.likes_count)}
+                </div>
                 ${descHtml(f.description)}
                 ${photosHtml(f)}
                 <div class="pin-finding-actions">
-                    ${likeButtonHtml(f.id, f.is_liked, f.likes_count)}
-                    <a href="/findings/${f.id}#comments" class="pin-msg-btn" style="margin:0;width:auto;flex:1;margin-left:0.5rem;text-decoration:none;text-align:center">💬 Skomentuj</a>
-                    <button class="pin-msg-btn" style="margin:0;width:auto;flex:1;margin-left:0.5rem" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">✉️ Napisz wiadomość</button>
+                    <a href="/findings/${f.id}#comments" class="pin-msg-btn" style="margin:0;width:auto;flex:1;text-decoration:none;text-align:center">💬 Skomentuj</a>
+                    <button class="pin-msg-btn" style="margin:0;width:auto;flex:1" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">✉️ Wiadomość</button>
+                    <button class="pin-msg-btn" style="margin:0;width:auto;flex:1" onclick="openShareSheet(${f.id}, '${escHtml(f.name)}')">📨 Prześlij</button>
                 </div>
             `;
             list.appendChild(card);
@@ -827,18 +867,21 @@ function openPinModal(pin) {
                             <div class="pin-finding-depth">📏 ${f.depth_cm} cm głębokości</div>
                             <div class="pin-finding-meta">📅 ${f.found_at}</div>
                         </div>
-                        ${pin.is_mine ? `
-                        <div class="finding-actions">
-                            <a href="/findings/${f.id}/edit" class="finding-action-btn edit" title="Edytuj">✏️</a>
-                            <button class="finding-action-btn delete" onclick="deleteFinding(${f.id}, this)" title="Usuń">🗑️</button>
-                        </div>` : ''}
+                        <div style="display:flex;align-items:center;gap:0.4rem;flex-shrink:0">
+                            ${likeButtonHtml(f.id, f.is_liked, f.likes_count)}
+                            ${pin.is_mine ? `
+                            <div class="finding-actions" style="margin-left:0">
+                                <a href="/findings/${f.id}/edit" class="finding-action-btn edit" title="Edytuj">✏️</a>
+                                <button class="finding-action-btn delete" onclick="deleteFinding(${f.id}, this)" title="Usuń">🗑️</button>
+                            </div>` : ''}
+                        </div>
                     </div>
                     ${descHtml(f.description)}
                     ${photosHtml(f)}
                     <div class="pin-finding-actions">
-                        ${likeButtonHtml(f.id, f.is_liked, f.likes_count)}
-                        <a href="/findings/${f.id}#comments" class="pin-msg-btn" style="margin:0;width:auto;flex:1;margin-left:0.5rem;text-decoration:none;text-align:center">💬 Skomentuj</a>
-                        ${!pin.is_mine ? `<button class="pin-msg-btn" style="margin:0;width:auto;flex:1;margin-left:0.5rem" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">✉️ Napisz wiadomość</button>` : ''}
+                        <a href="/findings/${f.id}#comments" class="pin-msg-btn" style="margin:0;width:auto;flex:1;text-decoration:none;text-align:center">💬 Skomentuj</a>
+                        ${!pin.is_mine ? `<button class="pin-msg-btn" style="margin:0;width:auto;flex:1" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">✉️ Wiadomość</button>` : ''}
+                        <button class="pin-msg-btn" style="margin:0;width:auto;flex:1" onclick="openShareSheet(${f.id}, '${escHtml(f.name)}')">📨 Prześlij</button>
                     </div>
                 `;
                 list.appendChild(card);
@@ -908,6 +951,119 @@ function sendModalMessage() {
         status.textContent = 'Błąd połączenia.';
         status.style.color = '#f87171';
         btn.disabled = false;
+    });
+}
+
+// --- Prześlij znajomemu ---
+let activeShareFindingId = null;
+let activeShareFindingName = '';
+let shareSelectedUser = null;
+let shareDeb = null;
+
+function openShareSheet(findingId, findingName) {
+    activeShareFindingId = findingId;
+    activeShareFindingName = findingName;
+    shareSelectedUser = null;
+
+    document.getElementById('shareUserInput').value = '';
+    document.getElementById('shareMessageBody').value = '';
+    document.getElementById('shareAutocomplete').style.display = 'none';
+    document.getElementById('shareSelectedUser').style.display = 'none';
+    document.getElementById('shareStatus').textContent = '';
+    document.getElementById('shareStatus').style.color = '';
+
+    const sendBtn = document.getElementById('shareSendBtn');
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Wyślij';
+
+    document.getElementById('share-modal').classList.add('open');
+}
+
+function closeShareSheet() {
+    document.getElementById('share-modal').classList.remove('open');
+    activeShareFindingId = null;
+}
+
+function handleShareBackdrop(e) {
+    if (e.target === document.getElementById('share-modal')) { closeShareSheet(); }
+}
+
+function selectShareUser(u) {
+    shareSelectedUser = u;
+    document.getElementById('shareAutocomplete').style.display = 'none';
+    document.getElementById('shareUserInput').value = '';
+
+    const wrap = document.getElementById('shareSelectedUser');
+    wrap.style.display = 'flex';
+    document.getElementById('shareSelectedAvatar').innerHTML = u.avatar_url
+        ? `<img src="${escHtml(u.avatar_url)}" alt="" style="width:100%;height:100%;object-fit:cover">`
+        : (u.name ? u.name.charAt(0).toUpperCase() : '?');
+    document.getElementById('shareSelectedName').textContent = u.name;
+    document.getElementById('shareSendBtn').disabled = false;
+}
+
+document.getElementById('shareClearUserBtn').addEventListener('click', function () {
+    shareSelectedUser = null;
+    document.getElementById('shareSelectedUser').style.display = 'none';
+    document.getElementById('shareSendBtn').disabled = true;
+});
+
+document.getElementById('shareUserInput').addEventListener('input', function () {
+    clearTimeout(shareDeb);
+    const q = this.value.trim();
+    const ac = document.getElementById('shareAutocomplete');
+    if (q.length < 2) { ac.style.display = 'none'; return; }
+    shareDeb = setTimeout(() => {
+        fetch(USERS_SEARCH_URL + '?q=' + encodeURIComponent(q))
+            .then(r => r.json())
+            .then(users => {
+                ac.innerHTML = '';
+                if (!users.length) { ac.style.display = 'none'; return; }
+                users.forEach(u => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.textContent = u.name;
+                    item.addEventListener('click', () => selectShareUser(u));
+                    ac.appendChild(item);
+                });
+                ac.style.display = 'block';
+            }).catch(() => { ac.style.display = 'none'; });
+    }, 300);
+});
+
+function sendShareMessage() {
+    if (!shareSelectedUser || !activeShareFindingId) { return; }
+
+    const bodyInput = document.getElementById('shareMessageBody');
+    const status = document.getElementById('shareStatus');
+    const btn = document.getElementById('shareSendBtn');
+    const body = bodyInput.value.trim() || ('Polecam Ci to znalezisko: ' + activeShareFindingName);
+
+    status.textContent = '';
+    btn.disabled = true;
+    btn.textContent = 'Wysyłanie…';
+
+    fetch(`${MESSAGE_BASE}/${activeShareFindingId}/message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+        body: JSON.stringify({ body, user_id: shareSelectedUser.id }),
+    })
+    .then(r => r.json().then(data => ({ ok: r.ok, data })))
+    .then(({ ok, data }) => {
+        if (ok) {
+            window.location.href = "{{ url('/messages') }}/" + data.conversation_id;
+        } else {
+            status.textContent = data.message ?? 'Nie udało się wysłać.';
+            status.style.color = '#f87171';
+            btn.disabled = false;
+            btn.textContent = 'Wyślij';
+        }
+    })
+    .catch(() => {
+        status.textContent = 'Błąd połączenia.';
+        status.style.color = '#f87171';
+        btn.disabled = false;
+        btn.textContent = 'Wyślij';
     });
 }
 
