@@ -88,6 +88,21 @@
         .nav-item.active { color: #f59e0b; }
         .nav-icon { font-size: 1.5rem; line-height: 1; }
         select.input-field option { background: #323248; }
+        .welcome-modal {
+            display: none; position: fixed; inset: 0; z-index: 3000;
+            background: rgba(0,0,0,0.75); align-items: center; justify-content: center; padding: 1.5rem;
+        }
+        .welcome-modal.open { display: flex; }
+        .welcome-modal-card {
+            background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 1.25rem;
+            width: 100%; max-width: 380px; overflow: hidden; animation: welcomeModalIn 0.25s ease;
+        }
+        @keyframes welcomeModalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .welcome-modal-img { width: 100%; height: auto; display: block; }
+        .welcome-modal-body { padding: 1.25rem; }
+        .welcome-modal-title { font-weight: 800; font-size: 1.1rem; color: #fff; margin: 0 0 0.5rem; }
+        .welcome-modal-text { font-size: 0.9rem; color: #cbd5e0; line-height: 1.5; margin: 0 0 1.25rem; }
+        .welcome-modal-link { color: #f59e0b; font-weight: 700; text-decoration: underline; }
     </style>
     @stack('styles')
 </head>
@@ -117,12 +132,36 @@
         </div>
         @endunless
     </div>
+    @if (session('show_welcome_modal'))
+    <!-- Welcome modal -->
+    <div id="welcome-modal" class="welcome-modal open" onclick="handleWelcomeModalBackdrop(event)">
+        <div class="welcome-modal-card" onclick="event.stopPropagation()">
+            <img src="https://pub-8be7d8ab5bcc40f697863889aedf500f.r2.dev/avatars/9HUg1ygBiANnT5K6g8bZK0nPNLuXjENknbw3tie8.jpg" alt="Historius" class="welcome-modal-img">
+            <div class="welcome-modal-body">
+                <p class="welcome-modal-title">Witaj w świecie Historius!</p>
+                <p class="welcome-modal-text">
+                    Aplikacja została stworzona z myślą o poszukiwaczach, archeologach oraz konserwatorach.
+                    <a href="https://info.r-dev.pl" target="_blank" rel="noopener" class="welcome-modal-link">Kliknij TUTAJ</a>, aby dowiedzieć się więcej.
+                </p>
+                <button type="button" class="btn-primary" onclick="closeWelcomeModal()">Rozumiem</button>
+            </div>
+        </div>
+    </div>
+    @endif
     <!-- Lightbox -->
     <div id="lightbox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.93);align-items:center;justify-content:center;" onclick="closeLightbox()">
         <img id="lightbox-img" style="max-width:100%;max-height:100%;object-fit:contain;padding:8px;" alt="">
         <button style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:16px;background:rgba(255,255,255,0.18);border:none;color:#fff;border-radius:50%;width:40px;height:40px;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="closeLightbox()">✕</button>
     </div>
     @stack('scripts')
+    <script>
+    function closeWelcomeModal() {
+        document.getElementById('welcome-modal').classList.remove('open');
+    }
+    function handleWelcomeModalBackdrop(e) {
+        if (e.target === document.getElementById('welcome-modal')) { closeWelcomeModal(); }
+    }
+    </script>
     <script>
     function openLightbox(src) {
         document.getElementById('lightbox-img').src = src;
