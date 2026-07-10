@@ -95,11 +95,15 @@
         .welcome-modal.open { display: flex; }
         .welcome-modal-card {
             background: #1a1a2e; border: 1px solid #2a2a3e; border-radius: 1.25rem;
-            width: 100%; max-width: 380px; overflow: hidden; animation: welcomeModalIn 0.25s ease;
+            width: 100%; max-width: 380px; max-height: 100%; overflow-y: auto;
+            display: flex; flex-direction: column; animation: welcomeModalIn 0.25s ease;
         }
         @keyframes welcomeModalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .welcome-modal-img { width: 100%; height: auto; display: block; }
-        .welcome-modal-body { padding: 1.25rem; }
+        .welcome-modal-img {
+            width: 100%; max-height: 30vh; object-fit: contain; background: #13131f;
+            display: block; flex-shrink: 0;
+        }
+        .welcome-modal-body { padding: 1.25rem; flex-shrink: 0; }
         .welcome-modal-title { font-weight: 800; font-size: 1.1rem; color: #fff; margin: 0 0 0.5rem; }
         .welcome-modal-text { font-size: 0.9rem; color: #cbd5e0; line-height: 1.5; margin: 0 0 1.25rem; }
         .welcome-modal-link { color: #f59e0b; font-weight: 700; text-decoration: underline; }
