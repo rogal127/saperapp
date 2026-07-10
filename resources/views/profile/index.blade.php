@@ -100,6 +100,14 @@
     .like-btn { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0.5rem; flex-shrink: 0; min-width: 48px; min-height: 44px; justify-content: center; }
     .like-btn .like-icon { font-size: 1.1rem; }
     .like-btn .like-count { font-size: 0.85rem; color: #9ca3af; }
+    .favorite-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.5rem; flex-shrink: 0; min-width: 40px; min-height: 44px; }
+    .favorite-btn .favorite-icon { font-size: 1.1rem; }
+
+    /* Zakładki: Moje znaleziska / Ulubione */
+    .tab-btn { flex: 1; padding: 0.65rem 0; font-size: 0.85rem; font-weight: 600; color: #6b7280; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; }
+    .tab-btn.active { color: #f59e0b; border-bottom-color: #f59e0b; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
 
     /* Modal znaleziska */
     #finding-modal {
@@ -213,69 +221,89 @@
                 onchange="document.getElementById('avatar-form').submit()">
         </form>
 
-        {{-- Moje znaleziska --}}
+        {{-- Znaleziska --}}
         <div class="mb-8">
             <div class="flex items-center justify-between mb-3">
-                <div class="section-title" style="margin-bottom:0">Moje znaleziska</div>
+                <div class="section-title" style="margin-bottom:0">Znaleziska</div>
                 @if(!empty($regions))
                     <button onclick="startExport()" class="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)">
                         Eksportuj znaleziska
                     </button>
                 @endif
             </div>
-            @if(empty($regions))
-                <div class="text-center py-8 text-gray-500">
-                    <div class="text-3xl mb-2">🔍</div>
-                    <div class="text-sm">Brak znalezisk</div>
-                </div>
-            @else
-                <div id="accordion">
-                    @foreach($regions as $voivodeship => $counties)
-                    @php
-                        $voiCount = array_sum(array_map('array_sum', $counties));
-                    @endphp
-                    <div class="acc-voi">
-                        <div class="acc-voi-header" onclick="toggleAcc(this)">
-                            <span class="acc-voi-name">🗺️ {{ $voivodeship }}</span>
-                            <div style="display:flex;align-items:center;gap:0.4rem;">
-                                <span class="acc-voi-count">{{ $voiCount }}</span>
-                                <span class="acc-arrow">›</span>
-                            </div>
-                        </div>
-                        <div class="acc-voi-body">
-                            @foreach($counties as $county => $cities)
-                            @php
-                                $couCount = array_sum($cities);
-                            @endphp
-                            <div class="acc-cou">
-                                <div class="acc-cou-header" onclick="toggleAcc(this)">
-                                    <span class="acc-cou-name">🏘️ {{ $county }}</span>
-                                    <div style="display:flex;align-items:center;gap:0.4rem;">
-                                        <span class="acc-cou-count">{{ $couCount }}</span>
-                                        <span class="acc-cou-arrow">›</span>
-                                    </div>
-                                </div>
-                                <div class="acc-cou-body">
-                                    @foreach($cities as $city => $count)
-                                    <div class="acc-city" data-voi="{{ $voivodeship }}" data-cou="{{ $county }}" data-cit="{{ $city }}">
-                                        <div class="acc-city-header" onclick="toggleCityAcc(this)">
-                                            <span class="acc-city-name">📍 {{ $city }}</span>
-                                            <div style="display:flex;align-items:center;gap:0.4rem;">
-                                                <span class="acc-city-count">{{ $count }}</span>
-                                                <span class="acc-city-arrow">›</span>
-                                            </div>
-                                        </div>
-                                        <div class="acc-city-body"></div>
-                                    </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                            @endforeach
-                        </div>
+
+            <div class="flex border-b border-surface-card mb-3">
+                <button class="tab-btn active" data-tab="mine" onclick="switchProfileTab(this)">Moje znaleziska</button>
+                <button class="tab-btn" data-tab="favorites" onclick="switchProfileTab(this)">⭐ Ulubione</button>
+            </div>
+
+            <div id="paneMine" class="tab-panel active">
+                @if(empty($regions))
+                    <div class="text-center py-8 text-gray-500">
+                        <div class="text-3xl mb-2">🔍</div>
+                        <div class="text-sm">Brak znalezisk</div>
                     </div>
-                    @endforeach
+                @else
+                    <div id="accordion">
+                        @foreach($regions as $voivodeship => $counties)
+                        @php
+                            $voiCount = array_sum(array_map('array_sum', $counties));
+                        @endphp
+                        <div class="acc-voi">
+                            <div class="acc-voi-header" onclick="toggleAcc(this)">
+                                <span class="acc-voi-name">🗺️ {{ $voivodeship }}</span>
+                                <div style="display:flex;align-items:center;gap:0.4rem;">
+                                    <span class="acc-voi-count">{{ $voiCount }}</span>
+                                    <span class="acc-arrow">›</span>
+                                </div>
+                            </div>
+                            <div class="acc-voi-body">
+                                @foreach($counties as $county => $cities)
+                                @php
+                                    $couCount = array_sum($cities);
+                                @endphp
+                                <div class="acc-cou">
+                                    <div class="acc-cou-header" onclick="toggleAcc(this)">
+                                        <span class="acc-cou-name">🏘️ {{ $county }}</span>
+                                        <div style="display:flex;align-items:center;gap:0.4rem;">
+                                            <span class="acc-cou-count">{{ $couCount }}</span>
+                                            <span class="acc-cou-arrow">›</span>
+                                        </div>
+                                    </div>
+                                    <div class="acc-cou-body">
+                                        @foreach($cities as $city => $count)
+                                        <div class="acc-city" data-voi="{{ $voivodeship }}" data-cou="{{ $county }}" data-cit="{{ $city }}">
+                                            <div class="acc-city-header" onclick="toggleCityAcc(this)">
+                                                <span class="acc-city-name">📍 {{ $city }}</span>
+                                                <div style="display:flex;align-items:center;gap:0.4rem;">
+                                                    <span class="acc-city-count">{{ $count }}</span>
+                                                    <span class="acc-city-arrow">›</span>
+                                                </div>
+                                            </div>
+                                            <div class="acc-city-body"></div>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
+            <div id="paneFavorites" class="tab-panel">
+                <div id="favoritesList" class="acc-voi" style="display:flex;flex-direction:column"></div>
+                <div id="favoritesLoading" class="text-center text-gray-500 text-sm py-4">Ładowanie...</div>
+                <div id="favoritesEmpty" class="text-center py-8 text-gray-500" style="display:none">
+                    <div class="text-3xl mb-2">⭐</div>
+                    <div class="text-sm">Brak ulubionych znalezisk</div>
                 </div>
-            @endif
+                <button id="loadMoreFavorites" class="w-full text-center text-sm text-amber-400 font-semibold py-2" style="display:none">
+                    Załaduj więcej
+                </button>
+            </div>
         </div>
 
         {{-- Formularz --}}
@@ -441,6 +469,9 @@
                         <div class="fmodal-meta" id="fmodal-date"></div>
                     </div>
                     <div style="display:flex;align-items:center;gap:0.5rem">
+                        <button class="favorite-btn" id="fmodal-favorite-btn" style="padding:0.4rem" title="Ulubione">
+                            <span class="favorite-icon" id="fmodal-favorite-icon">☆</span>
+                        </button>
                         <button class="like-btn" id="fmodal-like-btn" style="padding:0.4rem">
                             <span class="like-icon" id="fmodal-like-icon">🤍</span>
                             <span class="like-count" id="fmodal-like-count">0</span>
@@ -525,6 +556,91 @@ function toggleLike(findingId, btn) {
     .catch(() => {});
 }
 
+function toggleFavorite(findingId, btn) {
+    fetch(`/api/findings/${findingId}/favorite`, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.querySelectorAll(`.finding-card[data-id="${findingId}"] .favorite-icon`).forEach(icon => {
+            icon.textContent = data.is_favorited ? '⭐' : '☆';
+        });
+        document.querySelectorAll(`.finding-card[data-id="${findingId}"]`).forEach(card => {
+            card.dataset.favorited = data.is_favorited ? '1' : '0';
+        });
+
+        const modalIcon = document.getElementById('fmodal-favorite-icon');
+        if (modalIcon && activeFindingId == findingId) {
+            modalIcon.textContent = data.is_favorited ? '⭐' : '☆';
+        }
+
+        // Znalezisko odznaczone jako ulubione znika z listy w zakładce "Ulubione".
+        if (!data.is_favorited) {
+            const favoritesList = document.getElementById('favoritesList');
+            const card = favoritesList?.querySelector(`.finding-card[data-id="${findingId}"]`);
+            if (card) {
+                card.remove();
+                if (!favoritesList.children.length) {
+                    document.getElementById('favoritesEmpty').style.display = 'block';
+                }
+            }
+        }
+    })
+    .catch(() => {});
+}
+
+function switchProfileTab(btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById('paneMine').classList.toggle('active', tab === 'mine');
+    document.getElementById('paneFavorites').classList.toggle('active', tab === 'favorites');
+
+    if (tab === 'favorites' && !favoritesLoaded) {
+        favoritesLoaded = true;
+        loadFavorites(1);
+    }
+}
+
+let favoritesLoaded = false;
+let favoritesPage = 1;
+let favoritesLastPage = 1;
+
+function loadFavorites(page) {
+    const loading = document.getElementById('favoritesLoading');
+    const empty = document.getElementById('favoritesEmpty');
+    const list = document.getElementById('favoritesList');
+    const loadMoreBtn = document.getElementById('loadMoreFavorites');
+
+    loading.style.display = 'block';
+    loading.textContent = 'Ładowanie...';
+    empty.style.display = 'none';
+
+    fetch(`{{ route('profile.favorites') }}?page=${page}`, { headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(res => {
+            loading.style.display = 'none';
+
+            const findings = res.data || [];
+            favoritesPage = res.meta?.current_page || page;
+            favoritesLastPage = res.meta?.last_page || 1;
+
+            findings.forEach(finding => list.appendChild(buildFindingCard(finding)));
+
+            if (!list.children.length) {
+                empty.style.display = 'block';
+            }
+
+            loadMoreBtn.style.display = favoritesPage < favoritesLastPage ? 'block' : 'none';
+        })
+        .catch(() => {
+            loading.textContent = 'Nie udało się wczytać ulubionych znalezisk.';
+        });
+}
+
+document.getElementById('loadMoreFavorites').addEventListener('click', () => loadFavorites(favoritesPage + 1));
+
 function toggleAcc(header) {
     const body = header.nextElementSibling;
     const arrow = header.querySelector('.acc-arrow, .acc-cou-arrow, .acc-city-arrow');
@@ -578,6 +694,7 @@ function buildFindingCard(finding) {
     card.dataset.photos = JSON.stringify(finding.photos || []);
     card.dataset.likes = finding.likes_count || 0;
     card.dataset.liked = finding.is_liked ? '1' : '0';
+    card.dataset.favorited = finding.is_favorited ? '1' : '0';
     card.addEventListener('click', () => openFindingModal(card));
 
     const coverPhoto = (finding.photos || [])[0];
@@ -601,6 +718,9 @@ function buildFindingCard(finding) {
             <div class="finding-card-depth">📏 ${finding.depth_cm || 0} cm</div>
             ${descHtml}
         </div>
+        <button class="favorite-btn" title="Ulubione" onclick="event.stopPropagation(); toggleFavorite(${finding.id}, this)">
+            <span class="favorite-icon">${finding.is_favorited ? '⭐' : '☆'}</span>
+        </button>
         <button class="like-btn" onclick="event.stopPropagation(); toggleLike(${finding.id}, this)">
             <span class="like-icon">${finding.is_liked ? '❤️' : '🤍'}</span>
             <span class="like-count">${finding.likes_count || 0}</span>
@@ -666,6 +786,11 @@ function openFindingModal(card) {
     modalLikeIcon.textContent = card.dataset.liked === '1' ? '❤️' : '🤍';
     modalLikeCount.textContent = card.dataset.likes || '0';
     modalLikeBtn.onclick = function () { toggleLike(activeFindingId, modalLikeBtn); };
+
+    const modalFavoriteIcon = document.getElementById('fmodal-favorite-icon');
+    const modalFavoriteBtn = document.getElementById('fmodal-favorite-btn');
+    modalFavoriteIcon.textContent = card.dataset.favorited === '1' ? '⭐' : '☆';
+    modalFavoriteBtn.onclick = function () { toggleFavorite(activeFindingId, modalFavoriteBtn); };
 
     if (activeFindingId) {
         const editLink = document.getElementById('fmodal-edit-link');

@@ -351,6 +351,18 @@ class FindingController extends Controller
         return response()->json($response->json());
     }
 
+    public function toggleFavorite(Request $request, int $finding)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->post(config('services.api.url')."/findings/{$finding}/favorite");
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'Błąd.'], 502);
+        }
+
+        return response()->json($response->json());
+    }
+
     public function browse()
     {
         return view('findings.browse');

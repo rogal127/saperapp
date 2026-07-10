@@ -95,6 +95,8 @@
     .like-btn { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0.5rem; flex-shrink: 0; min-width: 48px; min-height: 44px; justify-content: center; }
     .like-btn .like-icon { font-size: 1.1rem; }
     .like-btn .like-count { font-size: 0.85rem; color: #9ca3af; }
+    .favorite-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.5rem; flex-shrink: 0; min-width: 40px; min-height: 44px; }
+    .favorite-btn .favorite-icon { font-size: 1.1rem; }
 
     /* Modal znaleziska */
     #finding-modal {
@@ -255,6 +257,9 @@
                         <div class="fmodal-meta" id="fmodal-date"></div>
                     </div>
                     <div style="display:flex;align-items:center;gap:0.5rem">
+                        <button class="favorite-btn" id="fmodal-favorite-btn" style="padding:0.4rem" title="Ulubione">
+                            <span class="favorite-icon" id="fmodal-favorite-icon">☆</span>
+                        </button>
                         <button class="like-btn" id="fmodal-like-btn" style="padding:0.4rem">
                             <span class="like-icon" id="fmodal-like-icon">🤍</span>
                             <span class="like-count" id="fmodal-like-count">0</span>
@@ -338,6 +343,34 @@ function toggleLike(findingId, btn) {
     .catch(() => {});
 }
 
+function toggleFavorite(findingId, btn) {
+    fetch(`/api/findings/${findingId}/favorite`, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+    })
+    .then(r => r.json())
+    .then(data => {
+        const icon = btn.querySelector('.favorite-icon');
+        icon.textContent = data.is_favorited ? '⭐' : '☆';
+
+        // Sync the accordion card's favorite button for the same finding
+        const card = document.querySelector(`.finding-card[data-id="${findingId}"]`);
+        if (card) {
+            const cardBtn = card.querySelector('.favorite-btn');
+            if (cardBtn && cardBtn !== btn) {
+                cardBtn.querySelector('.favorite-icon').textContent = data.is_favorited ? '⭐' : '☆';
+            }
+            card.dataset.favorited = data.is_favorited ? '1' : '0';
+        }
+        // Sync the modal favorite button
+        const modalIcon = document.getElementById('fmodal-favorite-icon');
+        if (modalIcon && activeFindingId == findingId) {
+            modalIcon.textContent = data.is_favorited ? '⭐' : '☆';
+        }
+    })
+    .catch(() => {});
+}
+
 function toggleAcc(header) {
     const body = header.nextElementSibling;
     const arrow = header.querySelector('.acc-arrow, .acc-cou-arrow, .acc-city-arrow');
@@ -391,6 +424,7 @@ function buildFindingCard(finding) {
     card.dataset.photos = JSON.stringify(finding.photos || []);
     card.dataset.likes = finding.likes_count || 0;
     card.dataset.liked = finding.is_liked ? '1' : '0';
+    card.dataset.favorited = finding.is_favorited ? '1' : '0';
     card.addEventListener('click', () => openFindingModal(card));
 
     const coverPhoto = (finding.photos || [])[0];
@@ -414,6 +448,9 @@ function buildFindingCard(finding) {
             <div class="finding-card-depth">📏 ${finding.depth_cm || 0} cm</div>
             ${descHtml}
         </div>
+        <button class="favorite-btn" title="Ulubione" onclick="event.stopPropagation(); toggleFavorite(${finding.id}, this)">
+            <span class="favorite-icon">${finding.is_favorited ? '⭐' : '☆'}</span>
+        </button>
         <button class="like-btn" onclick="event.stopPropagation(); toggleLike(${finding.id}, this)">
             <span class="like-icon">${finding.is_liked ? '❤️' : '🤍'}</span>
             <span class="like-count">${finding.likes_count || 0}</span>
@@ -490,6 +527,12 @@ function openFindingModal(card) {
     modalLikeIcon.textContent = card.dataset.liked === '1' ? '❤️' : '🤍';
     modalLikeCount.textContent = card.dataset.likes || '0';
     modalLikeBtn.onclick = function () { toggleLike(activeFindingId, modalLikeBtn); };
+
+    // Favorite button in modal
+    const modalFavoriteIcon = document.getElementById('fmodal-favorite-icon');
+    const modalFavoriteBtn = document.getElementById('fmodal-favorite-btn');
+    modalFavoriteIcon.textContent = card.dataset.favorited === '1' ? '⭐' : '☆';
+    modalFavoriteBtn.onclick = function () { toggleFavorite(activeFindingId, modalFavoriteBtn); };
 
     if (IS_OWN_PROFILE && activeFindingId) {
         const editLink = document.getElementById('fmodal-edit-link');

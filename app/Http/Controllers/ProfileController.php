@@ -36,6 +36,18 @@ class ProfileController extends Controller
         return view('profile.index', compact('user', 'wkzConsents', 'regions'));
     }
 
+    public function favorites(Request $request)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url').'/me/favorites', $request->only('page'));
+
+        if ($response->failed()) {
+            return response()->json(['data' => []], 502);
+        }
+
+        return response()->json($response->json());
+    }
+
     public function storeWkzConsent(Request $request)
     {
         $request->validate(['name' => ['required', 'string', 'max:255']]);

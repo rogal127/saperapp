@@ -166,6 +166,12 @@
                     @endif
                 </div>
 
+                <button id="favoriteBtn" data-id="{{ $finding['id'] }}" title="Dodaj do ulubionych"
+                        class="flex items-center justify-center px-4 py-2 rounded-xl transition-all active:scale-95 flex-shrink-0"
+                        style="background:{{ !empty($finding['is_favorited']) ? 'rgba(245,158,11,0.15)' : '#323248' }}">
+                    <span id="favoriteIcon" class="text-lg">{{ !empty($finding['is_favorited']) ? '⭐' : '☆' }}</span>
+                </button>
+
                 <div class="flex items-center gap-2 flex-wrap flex-1 justify-end">
                     @if(empty($finding['is_mine']))
                     <button id="openMessageBtn"
@@ -392,6 +398,30 @@
                     count.classList.add('text-gray-400');
                     btn.style.background = '#323248';
                 }
+            })
+            .catch(() => {});
+        });
+    })();
+
+    (function () {
+        const btn = document.getElementById('favoriteBtn');
+        if (!btn) { return; }
+
+        btn.addEventListener('click', function () {
+            const findingId = btn.dataset.id;
+            const icon = document.getElementById('favoriteIcon');
+
+            fetch('/api/findings/' + findingId + '/favorite', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                },
+            })
+            .then(r => r.json())
+            .then(data => {
+                icon.textContent = data.is_favorited ? '⭐' : '☆';
+                btn.style.background = data.is_favorited ? 'rgba(245,158,11,0.15)' : '#323248';
             })
             .catch(() => {});
         });

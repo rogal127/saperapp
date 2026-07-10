@@ -27,6 +27,7 @@ Route::middleware('api.auth')->group(function () {
     Route::post('/api/findings/{finding}/message', [FindingController::class, 'sendMessage'])->name('findings.message');
     Route::post('/api/findings/{finding}/like', [FindingController::class, 'toggleLike'])->name('findings.like');
     Route::get('/api/findings/{finding}/likes', [FindingController::class, 'likers'])->name('findings.likers');
+    Route::post('/api/findings/{finding}/favorite', [FindingController::class, 'toggleFavorite'])->name('findings.favorite');
     Route::get('/api/findings/{finding}/comments', [FindingController::class, 'comments'])->name('findings.comments');
     Route::post('/api/findings/{finding}/comments', [FindingController::class, 'storeComment'])->name('findings.comments.store');
     Route::delete('/api/findings/{finding}/comments/{comment}', [FindingController::class, 'destroyComment'])->name('findings.comments.destroy');
@@ -60,6 +61,7 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/expeditions/{id}', [ExpeditionController::class, 'show'])->name('expeditions.show');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/api/profile/favorites', [ProfileController::class, 'favorites'])->name('profile.favorites');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->name('profile.avatar');

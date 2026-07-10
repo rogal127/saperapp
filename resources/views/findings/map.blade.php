@@ -260,6 +260,8 @@
     .like-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 0.5rem 0.25rem; flex-shrink: 0; min-height: 44px; }
     .like-btn .like-icon { font-size: 1rem; }
     .like-btn .like-count { font-size: 0.85rem; color: #9ca3af; font-weight: 600; }
+    .favorite-btn { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; padding: 0.5rem 0.25rem; flex-shrink: 0; min-height: 44px; }
+    .favorite-btn .favorite-icon { font-size: 1rem; }
     .pin-finding-actions { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.4rem; }
 
     /* Tryb przenoszenia pinezki */
@@ -767,7 +769,10 @@ function openCityFindingsModal(cluster) {
                             : escHtml(f.finder ?? '')
                         }</div>
                     </div>
-                    ${likeButtonHtml(f.id, f.is_liked, f.likes_count)}
+                    <div style="display:flex;align-items:center;gap:0.2rem;flex-shrink:0">
+                        ${favoriteButtonHtml(f.id, f.is_favorited)}
+                        ${likeButtonHtml(f.id, f.is_liked, f.likes_count)}
+                    </div>
                 </div>
                 ${descHtml(f.description)}
                 ${photosHtml(f)}
@@ -868,6 +873,7 @@ function openPinModal(pin) {
                             <div class="pin-finding-meta">📅 ${f.found_at}</div>
                         </div>
                         <div style="display:flex;align-items:center;gap:0.4rem;flex-shrink:0">
+                            ${favoriteButtonHtml(f.id, f.is_favorited)}
                             ${likeButtonHtml(f.id, f.is_liked, f.likes_count)}
                             ${pin.is_mine ? `
                             <div class="finding-actions" style="margin-left:0">
@@ -1125,6 +1131,23 @@ function toggleLike(findingId, btn) {
 
 function likeButtonHtml(findingId, isLiked, likesCount) {
     return `<button class="like-btn" onclick="event.stopPropagation(); toggleLike(${findingId}, this)"><span class="like-icon">${isLiked ? '❤️' : '🤍'}</span><span class="like-count">${likesCount || 0}</span></button>`;
+}
+
+function toggleFavorite(findingId, btn) {
+    const icon = btn.querySelector('.favorite-icon');
+    fetch(`/api/findings/${findingId}/favorite`, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+    })
+    .then(r => r.json())
+    .then(data => {
+        icon.textContent = data.is_favorited ? '⭐' : '☆';
+    })
+    .catch(() => {});
+}
+
+function favoriteButtonHtml(findingId, isFavorited) {
+    return `<button class="favorite-btn" title="Ulubione" onclick="event.stopPropagation(); toggleFavorite(${findingId}, this)"><span class="favorite-icon">${isFavorited ? '⭐' : '☆'}</span></button>`;
 }
 
 // --- Przenoszenie pinezki ---

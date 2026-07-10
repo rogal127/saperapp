@@ -254,6 +254,20 @@
         } catch {}
     }
 
+    function updateCachedFavorite(findingId, isFavorited) {
+        try {
+            Object.keys(sessionStorage).filter(k => k.startsWith('browse:')).forEach(key => {
+                const cached = JSON.parse(sessionStorage.getItem(key));
+                if (!cached || !cached.data) return;
+                const f = cached.data.find(x => x.id == findingId);
+                if (f) {
+                    f.is_favorited = isFavorited;
+                    sessionStorage.setItem(key, JSON.stringify(cached));
+                }
+            });
+        } catch {}
+    }
+
     // Pre-fill user_id from URL (e.g. "Twoje znaleziska")
     const urlParams = new URLSearchParams(window.location.search);
     const initialUserId = urlParams.get('user_id');
@@ -317,6 +331,7 @@
         const location = locationParts.join(', ');
 
         const heartEmoji = f.is_liked ? '❤️' : '🤍';
+        const starEmoji = f.is_favorited ? '⭐' : '☆';
 
         const isOwner = currentUserId && f.finder && f.finder.id === currentUserId;
         const editBtnHtml = isOwner
@@ -342,6 +357,9 @@
                     '</div>' +
                 '</a>' +
                 editBtnHtml +
+                '<button class="favorite-btn flex items-center justify-center flex-shrink-0" data-id="' + f.id + '" style="min-width:40px;min-height:44px;padding:0.5rem" title="Ulubione">' +
+                    '<span class="favorite-icon text-lg">' + starEmoji + '</span>' +
+                '</button>' +
                 '<button class="like-btn flex flex-col items-center justify-center gap-0.5 flex-shrink-0" data-id="' + f.id + '" style="min-width:48px;min-height:44px;padding:0.5rem">' +
                     '<span class="like-icon text-lg">' + heartEmoji + '</span>' +
                     '<span class="like-count text-sm ' + (f.likes_count > 0 ? 'text-gray-300 underline underline-offset-2 cursor-pointer' : 'text-gray-400') + '">' + (f.likes_count || 0) + '</span>' +
@@ -453,6 +471,31 @@
                 count.classList.add('text-gray-400');
             }
             updateCachedLike(findingId, data.is_liked, data.likes_count);
+        })
+        .catch(() => {});
+    });
+
+    // Favorite toggle (click on star icon)
+    list.addEventListener('click', function (e) {
+        const icon = e.target.closest('.favorite-icon');
+        if (!icon) { return; }
+        e.preventDefault();
+        e.stopPropagation();
+
+        const btn = icon.closest('.favorite-btn');
+        const findingId = btn.dataset.id;
+
+        fetch('/api/findings/' + findingId + '/favorite', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+        })
+        .then(r => r.json())
+        .then(data => {
+            icon.textContent = data.is_favorited ? '⭐' : '☆';
+            updateCachedFavorite(findingId, data.is_favorited);
         })
         .catch(() => {});
     });
