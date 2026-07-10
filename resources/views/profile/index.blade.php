@@ -626,7 +626,7 @@ function loadFavorites(page) {
             favoritesPage = res.meta?.current_page || page;
             favoritesLastPage = res.meta?.last_page || 1;
 
-            findings.forEach(finding => list.appendChild(buildFindingCard(finding)));
+            findings.forEach(finding => list.appendChild(buildFindingCard(finding, { linkToDetails: true })));
 
             if (!list.children.length) {
                 empty.style.display = 'block';
@@ -681,7 +681,7 @@ function loadCityFindings(cityEl, body) {
         });
 }
 
-function buildFindingCard(finding) {
+function buildFindingCard(finding, options = {}) {
     const card = document.createElement('div');
     card.className = 'finding-card';
     card.dataset.type = finding.type || '';
@@ -695,7 +695,12 @@ function buildFindingCard(finding) {
     card.dataset.likes = finding.likes_count || 0;
     card.dataset.liked = finding.is_liked ? '1' : '0';
     card.dataset.favorited = finding.is_favorited ? '1' : '0';
-    card.addEventListener('click', () => openFindingModal(card));
+
+    if (options.linkToDetails) {
+        card.addEventListener('click', () => { window.location.href = `/findings/${finding.id}`; });
+    } else {
+        card.addEventListener('click', () => openFindingModal(card));
+    }
 
     const coverPhoto = (finding.photos || [])[0];
     const coverSrc = coverPhoto
