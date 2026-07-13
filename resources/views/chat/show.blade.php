@@ -103,6 +103,13 @@
         transition: opacity 0.15s;
     }
     #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    #load-earlier-wrap { display: flex; justify-content: center; padding-bottom: 0.25rem; }
+    #load-earlier-btn {
+        background: #2a2a3e; color: #f59e0b; border: none;
+        border-radius: 1rem; padding: 0.375rem 0.875rem;
+        font-size: 0.72rem; font-weight: 600; cursor: pointer;
+    }
+    #load-earlier-btn:disabled { opacity: 0.5; cursor: default; }
 </style>
 @endpush
 
@@ -128,6 +135,9 @@
     {{-- Wiadomości --}}
     <div id="chat-messages">
         @php $myId = session('api_user.id') ?? session('api_user')['id'] ?? null; @endphp
+        <div id="load-earlier-wrap" style="{{ $hasMore ? '' : 'display:none' }}">
+            <button type="button" id="load-earlier-btn">Załaduj wcześniejsze wiadomości</button>
+        </div>
         @forelse($messages as $msg)
             @include('chat.partials.message', ['msg' => $msg, 'myId' => $myId])
         @empty
@@ -199,6 +209,8 @@ const recordingCancel = document.getElementById('recording-cancel');
 const audioPreviewBar = document.getElementById('audio-preview-bar');
 const audioPreviewPlayer = document.getElementById('audio-preview-player');
 const audioPreviewRemove = document.getElementById('audio-preview-remove');
+const loadEarlierWrap = document.getElementById('load-earlier-wrap');
+const loadEarlierBtn = document.getElementById('load-earlier-btn');
 
 let selectedPhoto = null;
 let selectedAudio = null;
@@ -295,11 +307,53 @@ audioPreviewRemove.addEventListener('click', () => {
 });
 
 let lastId = 0;
+let oldestId = 0;
+let hasMoreEarlier = {{ $hasMore ? 'true' : 'false' }};
+let loadingEarlier = false;
 document.querySelectorAll('[data-msg-id]').forEach(el => {
-    lastId = Math.max(lastId, parseInt(el.dataset.msgId, 10));
+    const id = parseInt(el.dataset.msgId, 10);
+    lastId = Math.max(lastId, id);
+    oldestId = oldestId === 0 ? id : Math.min(oldestId, id);
 });
 
 msgList.scrollTop = msgList.scrollHeight;
+
+loadEarlierBtn.addEventListener('click', loadEarlierMessages);
+
+function loadEarlierMessages() {
+    if (loadingEarlier || !hasMoreEarlier || !oldestId) { return; }
+    loadingEarlier = true;
+    loadEarlierBtn.disabled = true;
+    loadEarlierBtn.textContent = 'Ładowanie…';
+
+    fetch(POLL_URL + '?before_id=' + oldestId)
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => {
+            const earlier = data.data || [];
+            hasMoreEarlier = !!data.has_more;
+
+            const previousHeight = msgList.scrollHeight;
+            const previousScrollTop = msgList.scrollTop;
+
+            let insertAfter = loadEarlierWrap;
+            earlier.forEach(msg => {
+                if (!msg || !msg.id) { return; }
+                oldestId = oldestId === 0 ? msg.id : Math.min(oldestId, msg.id);
+                const el = buildMessageElement(msg);
+                insertAfter.insertAdjacentElement('afterend', el);
+                insertAfter = el;
+            });
+
+            msgList.scrollTop = previousScrollTop + (msgList.scrollHeight - previousHeight);
+            loadEarlierWrap.style.display = hasMoreEarlier ? '' : 'none';
+        })
+        .catch(() => {})
+        .finally(() => {
+            loadingEarlier = false;
+            loadEarlierBtn.disabled = false;
+            loadEarlierBtn.textContent = 'Załaduj wcześniejsze wiadomości';
+        });
+}
 
 input.addEventListener('input', () => {
     updateSendButtonState();
@@ -375,10 +429,7 @@ function poll() {
         .catch(() => {});
 }
 
-function appendMessage(msg) {
-    if (!msg || !msg.id || msg.id <= lastId) return;
-    lastId = msg.id;
-
+function buildMessageElement(msg) {
     const isMine = MY_ID !== null && String(msg.user_id) === String(MY_ID);
     const wrapper = document.createElement('div');
     wrapper.className = 'msg-line ' + (isMine ? 'mine' : '');
@@ -415,7 +466,15 @@ function appendMessage(msg) {
             <div class="bubble-time">${time}</div>
         </div>`;
 
-    msgList.appendChild(wrapper);
+    return wrapper;
+}
+
+function appendMessage(msg) {
+    if (!msg || !msg.id || msg.id <= lastId) return;
+    lastId = msg.id;
+    oldestId = oldestId === 0 ? msg.id : oldestId;
+
+    msgList.appendChild(buildMessageElement(msg));
     msgList.scrollTop = msgList.scrollHeight;
 }
 

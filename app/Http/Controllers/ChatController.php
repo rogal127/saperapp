@@ -18,8 +18,9 @@ class ChatController extends Controller
             ->get(config('services.api.url').'/chat/messages');
 
         $messages = $response->successful() ? $response->json('data', []) : [];
+        $hasMore = $response->successful() ? $response->json('has_more', false) : false;
 
-        return view('chat.show', compact('messages'));
+        return view('chat.show', compact('messages', 'hasMore'));
     }
 
     public function messages(Request $request)
@@ -27,11 +28,13 @@ class ChatController extends Controller
         $response = Http::withToken($this->apiToken($request))
             ->get(config('services.api.url').'/chat/messages', [
                 'after_id' => $request->query('after_id'),
+                'before_id' => $request->query('before_id'),
             ]);
 
         $messages = $response->successful() ? $response->json('data', []) : [];
+        $hasMore = $response->successful() ? $response->json('has_more', false) : false;
 
-        return response()->json(['data' => $messages]);
+        return response()->json(['data' => $messages, 'has_more' => $hasMore]);
     }
 
     public function send(Request $request)
