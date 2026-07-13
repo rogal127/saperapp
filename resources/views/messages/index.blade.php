@@ -43,7 +43,7 @@
             <div class="conv-avatar group">💬</div>
             <div class="flex-1 min-w-0">
                 <div class="conv-name">Czat ogólny</div>
-                <div class="conv-last">Rozmowa dla wszystkich zalogowanych użytkowników</div>
+                <div class="conv-last">🕗 Spotkania codziennie o 20:00</div>
             </div>
             <span id="chat-unread-badge" class="unread-badge" style="display:none"></span>
         </div>

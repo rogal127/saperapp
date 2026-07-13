@@ -99,6 +99,12 @@
         </div>
     </div>
 
+    {{-- Informacja o spotkaniach --}}
+    <div class="flex items-center gap-2 px-4 py-2 text-xs text-amber-400 bg-surface-card border-b border-surface-card flex-shrink-0">
+        <span>🕗</span>
+        <span>Spotkania na czacie codziennie o godzinie 20:00</span>
+    </div>
+
     {{-- Wiadomości --}}
     <div id="chat-messages">
         @php $myId = session('api_user.id') ?? session('api_user')['id'] ?? null; @endphp
