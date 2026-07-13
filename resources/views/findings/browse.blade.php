@@ -155,7 +155,7 @@
             </div>
             <div class="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
                 <div class="relative" id="shareSearchWrap">
-                    <input type="text" id="shareUserInput" class="input-field text-sm" placeholder="🔍 Wpisz nick znajomego..." autocomplete="off">
+                    <input type="text" id="shareUserInput" class="input-field text-sm" placeholder="🔍 Wpisz nick znajomego lub „Czat”..." autocomplete="off">
                     <div id="shareAutocomplete" class="autocomplete-list" style="display:none"></div>
                 </div>
 
@@ -669,9 +669,11 @@
             input.value = '';
             selectedWrap.classList.remove('hidden');
             selectedWrap.classList.add('flex');
-            selectedAvatar.innerHTML = u.avatar_url
-                ? '<img src="' + u.avatar_url + '" alt="" style="width:100%;height:100%;object-fit:cover">'
-                : (u.name ? u.name.charAt(0).toUpperCase() : '?');
+            selectedAvatar.innerHTML = u.isChat
+                ? '💬'
+                : (u.avatar_url
+                    ? '<img src="' + u.avatar_url + '" alt="" style="width:100%;height:100%;object-fit:cover">'
+                    : (u.name ? u.name.charAt(0).toUpperCase() : '?'));
             selectedName.textContent = u.name;
             sendBtn.disabled = false;
         }
@@ -689,25 +691,46 @@
         });
         clearUserBtn.addEventListener('click', clearSelectedUser);
 
+        function renderAutocomplete(users, showChatOption) {
+            ac.innerHTML = '';
+
+            if (showChatOption) {
+                const chatItem = document.createElement('div');
+                chatItem.className = 'autocomplete-item';
+                chatItem.textContent = '💬 Czat ogólny';
+                chatItem.addEventListener('click', () => selectUser({ id: null, name: 'Czat ogólny', isChat: true }));
+                ac.appendChild(chatItem);
+            }
+
+            users.forEach(u => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.textContent = u.name;
+                item.addEventListener('click', () => selectUser(u));
+                ac.appendChild(item);
+            });
+
+            if (!showChatOption && !users.length) { ac.style.display = 'none'; return; }
+            ac.style.display = 'block';
+        }
+
         input.addEventListener('input', function () {
             clearTimeout(deb);
             const q = this.value.trim();
-            if (q.length < 2) { ac.style.display = 'none'; return; }
+            if (q.length < 1) { ac.style.display = 'none'; return; }
+
+            const showChatOption = 'czat'.startsWith(q.toLowerCase()) || 'chat'.startsWith(q.toLowerCase());
+
+            if (q.length < 2) {
+                if (showChatOption) { renderAutocomplete([], true); } else { ac.style.display = 'none'; }
+                return;
+            }
+
             deb = setTimeout(() => {
                 fetch("{{ route('users.search') }}?q=" + encodeURIComponent(q))
                     .then(r => r.json())
-                    .then(users => {
-                        ac.innerHTML = '';
-                        if (!users.length) { ac.style.display = 'none'; return; }
-                        users.forEach(u => {
-                            const item = document.createElement('div');
-                            item.className = 'autocomplete-item';
-                            item.textContent = u.name;
-                            item.addEventListener('click', () => selectUser(u));
-                            ac.appendChild(item);
-                        });
-                        ac.style.display = 'block';
-                    }).catch(() => { ac.style.display = 'none'; });
+                    .then(users => renderAutocomplete(users, showChatOption))
+                    .catch(() => { ac.style.display = 'none'; });
             }, 300);
         });
 
@@ -719,17 +742,23 @@
             sendBtn.disabled = true;
             sendBtn.textContent = 'Wysyłanie...';
 
+            const payload = selectedUser.isChat
+                ? { body: body, chat: true }
+                : { body: body, user_id: selectedUser.id };
+
             fetch(MESSAGE_BASE + '/' + activeShareFindingId + '/message', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
-                body: JSON.stringify({ body: body, user_id: selectedUser.id }),
+                body: JSON.stringify(payload),
             })
             .then(r => {
                 if (!r.ok) { return r.json().then(d => Promise.reject(d)); }
                 return r.json();
             })
             .then(data => {
-                window.location.href = "{{ url('/messages') }}/" + data.conversation_id;
+                window.location.href = data.chat_message_id
+                    ? "{{ route('chat.show') }}"
+                    : "{{ url('/messages') }}/" + data.conversation_id;
             })
             .catch(err => {
                 sendBtn.disabled = false;

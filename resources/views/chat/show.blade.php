@@ -174,9 +174,14 @@ const POLL_URL = "{{ route('chat.messages') }}";
 const CSRF_TOKEN = '{{ csrf_token() }}';
 const MY_ID = {{ $myId !== null ? (int) $myId : 'null' }};
 const USER_URL_TEMPLATE = "{{ route('users.show', ['id' => '__ID__']) }}";
+const FINDING_URL_TEMPLATE = "{{ route('findings.show', ['finding' => '__ID__']) }}";
 
 function userUrl(id) {
     return USER_URL_TEMPLATE.replace('__ID__', id);
+}
+
+function findingUrl(id) {
+    return FINDING_URL_TEMPLATE.replace('__ID__', id);
 }
 
 const input       = document.getElementById('chat-input');
@@ -393,11 +398,19 @@ function appendMessage(msg) {
         ? `<audio controls src="${msg.audio_url}" class="bubble-audio"></audio>`
         : '';
     const bodyHtml = msg.body ? `<div class="bubble-text">${escHtml(msg.body)}</div>` : '';
+    const findingHtml = msg.finding
+        ? `<a href="${findingUrl(msg.finding.id)}" style="display:flex;align-items:center;gap:0.5rem;background:#2a2a3e;border:1px solid #f59e0b33;border-radius:0.875rem;padding:0.5rem 0.75rem;margin-bottom:0.25rem;text-decoration:none;max-width:78%">
+            <span style="font-size:1rem">🪙</span>
+            <span style="font-size:0.75rem;font-weight:700;color:#f59e0b;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(msg.finding.name)}</span>
+            <span style="font-size:0.7rem;color:#6b7280;flex-shrink:0">›</span>
+        </a>`
+        : '';
 
     wrapper.innerHTML = `
         ${!isMine ? `<a href="${profileUrl}" class="msg-avatar">${avatarUrl ? `<img src="${avatarUrl}" alt="">` : escHtml(initials)}</a>` : ''}
         <div class="bubble-row ${isMine ? 'mine' : 'other'}">
             ${!isMine ? `<a href="${profileUrl}" class="bubble-sender">${escHtml(senderName)}</a>` : ''}
+            ${findingHtml}
             <div class="bubble ${isMine ? 'bubble-mine' : 'bubble-other'}">${photoHtml}${audioHtml}${bodyHtml}</div>
             <div class="bubble-time">${time}</div>
         </div>`;

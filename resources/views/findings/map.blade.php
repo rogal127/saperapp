@@ -433,7 +433,7 @@
             <div id="share-sheet-body">
                 <div class="modal-body">
                     <div class="relative" id="shareSearchWrap">
-                        <input type="text" id="shareUserInput" class="modal-textarea" style="resize:none" placeholder="🔍 Wpisz nick znajomego..." autocomplete="off">
+                        <input type="text" id="shareUserInput" class="modal-textarea" style="resize:none" placeholder="🔍 Wpisz nick znajomego lub „Czat”..." autocomplete="off">
                         <div id="shareAutocomplete" class="autocomplete-list" style="display:none"></div>
                     </div>
                     <div id="shareSelectedUser" style="display:none;align-items:center;gap:0.5rem;background:#2a2a3e;border-radius:0.75rem;padding:0.6rem 0.75rem;margin-top:0.6rem">
@@ -1004,9 +1004,11 @@ function selectShareUser(u) {
 
     const wrap = document.getElementById('shareSelectedUser');
     wrap.style.display = 'flex';
-    document.getElementById('shareSelectedAvatar').innerHTML = u.avatar_url
-        ? `<img src="${escHtml(u.avatar_url)}" alt="" style="width:100%;height:100%;object-fit:cover">`
-        : (u.name ? u.name.charAt(0).toUpperCase() : '?');
+    document.getElementById('shareSelectedAvatar').innerHTML = u.isChat
+        ? '💬'
+        : (u.avatar_url
+            ? `<img src="${escHtml(u.avatar_url)}" alt="" style="width:100%;height:100%;object-fit:cover">`
+            : (u.name ? u.name.charAt(0).toUpperCase() : '?'));
     document.getElementById('shareSelectedName').textContent = u.name;
     document.getElementById('shareSendBtn').disabled = false;
 }
@@ -1017,26 +1019,48 @@ document.getElementById('shareClearUserBtn').addEventListener('click', function 
     document.getElementById('shareSendBtn').disabled = true;
 });
 
+function renderShareAutocomplete(users, showChatOption) {
+    const ac = document.getElementById('shareAutocomplete');
+    ac.innerHTML = '';
+
+    if (showChatOption) {
+        const chatItem = document.createElement('div');
+        chatItem.className = 'autocomplete-item';
+        chatItem.textContent = '💬 Czat ogólny';
+        chatItem.addEventListener('click', () => selectShareUser({ id: null, name: 'Czat ogólny', isChat: true }));
+        ac.appendChild(chatItem);
+    }
+
+    users.forEach(u => {
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.textContent = u.name;
+        item.addEventListener('click', () => selectShareUser(u));
+        ac.appendChild(item);
+    });
+
+    if (!showChatOption && !users.length) { ac.style.display = 'none'; return; }
+    ac.style.display = 'block';
+}
+
 document.getElementById('shareUserInput').addEventListener('input', function () {
     clearTimeout(shareDeb);
     const q = this.value.trim();
     const ac = document.getElementById('shareAutocomplete');
-    if (q.length < 2) { ac.style.display = 'none'; return; }
+    if (q.length < 1) { ac.style.display = 'none'; return; }
+
+    const showChatOption = 'czat'.startsWith(q.toLowerCase()) || 'chat'.startsWith(q.toLowerCase());
+
+    if (q.length < 2) {
+        if (showChatOption) { renderShareAutocomplete([], true); } else { ac.style.display = 'none'; }
+        return;
+    }
+
     shareDeb = setTimeout(() => {
         fetch(USERS_SEARCH_URL + '?q=' + encodeURIComponent(q))
             .then(r => r.json())
-            .then(users => {
-                ac.innerHTML = '';
-                if (!users.length) { ac.style.display = 'none'; return; }
-                users.forEach(u => {
-                    const item = document.createElement('div');
-                    item.className = 'autocomplete-item';
-                    item.textContent = u.name;
-                    item.addEventListener('click', () => selectShareUser(u));
-                    ac.appendChild(item);
-                });
-                ac.style.display = 'block';
-            }).catch(() => { ac.style.display = 'none'; });
+            .then(users => renderShareAutocomplete(users, showChatOption))
+            .catch(() => { ac.style.display = 'none'; });
     }, 300);
 });
 
@@ -1052,15 +1076,21 @@ function sendShareMessage() {
     btn.disabled = true;
     btn.textContent = 'Wysyłanie…';
 
+    const payload = shareSelectedUser.isChat
+        ? { body, chat: true }
+        : { body, user_id: shareSelectedUser.id };
+
     fetch(`${MESSAGE_BASE}/${activeShareFindingId}/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
-        body: JSON.stringify({ body, user_id: shareSelectedUser.id }),
+        body: JSON.stringify(payload),
     })
     .then(r => r.json().then(data => ({ ok: r.ok, data })))
     .then(({ ok, data }) => {
         if (ok) {
-            window.location.href = "{{ url('/messages') }}/" + data.conversation_id;
+            window.location.href = data.chat_message_id
+                ? "{{ route('chat.show') }}"
+                : "{{ url('/messages') }}/" + data.conversation_id;
         } else {
             status.textContent = data.message ?? 'Nie udało się wysłać.';
             status.style.color = '#f87171';
