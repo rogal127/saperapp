@@ -392,6 +392,14 @@ class ExpeditionController extends Controller
         return response()->json($response->json());
     }
 
+    public function removeFinding(Request $request, int $id, int $findingId)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->delete($this->base()."/expeditions/{$id}/findings/{$findingId}");
+
+        return $this->passthrough($response);
+    }
+
     public function invite(Request $request, int $id)
     {
         $request->validate(['user_id' => ['required', 'integer']]);

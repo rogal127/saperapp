@@ -52,6 +52,7 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/api/expeditions/pending-count', [ExpeditionController::class, 'pendingCount'])->name('expeditions.pending-count');
     Route::post('/api/expeditions/join', [ExpeditionController::class, 'joinByCode'])->name('expeditions.join-code');
     Route::get('/api/expeditions/{id}/findings', [ExpeditionController::class, 'findings'])->name('expeditions.findings');
+    Route::delete('/api/expeditions/{id}/findings/{findingId}', [ExpeditionController::class, 'removeFinding'])->name('expeditions.findings.remove');
     Route::post('/api/expeditions/{id}/participants', [ExpeditionController::class, 'invite'])->name('expeditions.invite');
     Route::post('/api/expeditions/{id}/join', [ExpeditionController::class, 'requestJoin'])->name('expeditions.request-join');
     Route::post('/api/expeditions/{id}/participants/{participant}/accept', [ExpeditionController::class, 'acceptParticipant'])->name('expeditions.participants.accept');

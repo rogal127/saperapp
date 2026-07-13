@@ -338,13 +338,16 @@
             : '<div style="width:64px;height:64px;border-radius:0.75rem;background:#323248;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">📷</div>';
         const loc = [f.city, f.voivodeship].filter(Boolean).join(', ');
         const priv = f.is_private ? '<span class="text-xs text-purple-400 ml-1">🔒 prywatne</span>' : '';
-        return '<a href="/findings/' + f.id + '" class="card flex gap-3 items-center" style="padding:0.75rem">' + photo +
+        return '<div class="card flex gap-3 items-center" style="padding:0.75rem">' +
+            '<a href="/findings/' + f.id + '" class="flex gap-3 items-center flex-1 min-w-0">' + photo +
             '<div class="flex-1 min-w-0">' +
             '<h3 class="font-bold text-white text-sm truncate">' + (f.name || '') + priv + '</h3>' +
             (loc ? '<p class="text-xs text-gray-400 mt-0.5 truncate">📍 ' + loc + '</p>' : '') +
             '<p class="text-xs text-gray-500 mt-0.5">📅 ' + (f.found_at || '') + '</p>' +
             (f.finder ? '<p class="text-xs text-amber-400 mt-0.5">' + f.finder.name + '</p>' : '') +
-            '</div></a>';
+            '</div></a>' +
+            '<button class="text-xs text-red-400 font-semibold px-2 flex-shrink-0" data-remove-finding="' + f.id + '">Usuń</button>' +
+            '</div>';
     }
 
     function loadFindings() {
@@ -358,6 +361,20 @@
                     return;
                 }
                 list.innerHTML = items.map(findingCard).join('');
+                list.querySelectorAll('[data-remove-finding]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        if (!confirm('Usunąć to znalezisko z poszukiwania? Samo znalezisko zostanie zachowane w aplikacji.')) { return; }
+                        const findingId = btn.dataset.removeFinding;
+                        btn.disabled = true;
+                        fetch("/api/expeditions/" + EXP_ID + "/findings/" + findingId, { method: 'DELETE', headers: jsonHeaders })
+                            .then(async r => ({ ok: r.ok, data: await r.json().catch(() => ({})) }))
+                            .then(({ ok, data }) => {
+                                if (!ok) { alert(data.message || 'Błąd.'); btn.disabled = false; return; }
+                                btn.closest('.card').remove();
+                            })
+                            .catch(() => { alert('Błąd.'); btn.disabled = false; });
+                    });
+                });
             })
             .catch(() => { list.innerHTML = '<p class="text-red-400 text-sm text-center py-6">Błąd ładowania.</p>'; });
     }
