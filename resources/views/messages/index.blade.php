@@ -25,6 +25,7 @@
         background: #f59e0b; color: #1a1a2e; border-radius: 999px;
         font-size: 0.65rem; font-weight: 700; padding: 1px 7px; flex-shrink: 0;
     }
+    .conv-avatar.group { background: linear-gradient(135deg, #f59e0b, #d97706); color: #1a1a2e; }
 </style>
 @endpush
 
@@ -38,6 +39,13 @@
 
     {{-- Lista konwersacji --}}
     <div class="flex-1 overflow-y-auto px-6 pb-4">
+        <div class="conv-item mb-3" onclick="window.location='{{ route('chat.show') }}'">
+            <div class="conv-avatar group">💬</div>
+            <div class="flex-1 min-w-0">
+                <div class="conv-name">Czat ogólny</div>
+                <div class="conv-last">Rozmowa dla wszystkich zalogowanych użytkowników</div>
+            </div>
+        </div>
         @if(count($conversations) === 0)
             <div class="text-center py-16 text-gray-500">
                 <div class="text-4xl mb-3">💬</div>
