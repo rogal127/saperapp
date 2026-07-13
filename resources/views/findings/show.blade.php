@@ -60,6 +60,12 @@
             if (empty($photos) && !empty($finding['photo_url'])) {
                 $photos = [['url' => $finding['photo_url']]];
             }
+            $photoUrls = [];
+            foreach ($photos as $photo) {
+                $photoUrls[] = (! empty($photo['is_private']) && ! empty($photo['id']))
+                    ? route('findings.photo', [$finding['id'], $photo['id']])
+                    : $photo['url'];
+            }
         @endphp
         @if(!empty($photos))
         <div style="background:#0d0d1a;position:relative">
@@ -74,7 +80,7 @@
                 <div style="flex:0 0 100%;scroll-snap-align:center;position:relative">
                     <img src="{{ $photoSrc }}" alt=""
                          style="width:100%;max-height:55vh;object-fit:contain;cursor:pointer"
-                         onclick="openLightbox(this.src)">
+                         onclick="openLightbox(this.src, findingPhotoUrls, {{ $loop->index }})">
                     @if($photoPrivate)
                     <span style="position:absolute;bottom:10px;right:10px;background:#a855f7;color:#fff;font-size:0.7rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:0.5rem">🔒 Prywatne</span>
                     @endif
@@ -82,6 +88,10 @@
                 @endforeach
             </div>
             @if(count($photos) > 1)
+            <button type="button" onclick="scrollPhotoCarousel(-1)"
+                    style="position:absolute;top:50%;left:8px;transform:translateY(-50%);background:rgba(0,0,0,0.5);border:none;color:#fff;border-radius:50%;width:36px;height:36px;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">‹</button>
+            <button type="button" onclick="scrollPhotoCarousel(1)"
+                    style="position:absolute;top:50%;right:8px;transform:translateY(-50%);background:rgba(0,0,0,0.5);border:none;color:#fff;border-radius:50%;width:36px;height:36px;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">›</button>
             <div id="photoCounter"
                  style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.75rem;font-weight:600;padding:0.2rem 0.6rem;border-radius:1rem">
                 1 / {{ count($photos) }}
@@ -339,6 +349,14 @@
 
 @push('scripts')
 <script>
+    const findingPhotoUrls = @json($photoUrls);
+
+    function scrollPhotoCarousel(direction) {
+        const carousel = document.getElementById('photoCarousel');
+        if (!carousel) { return; }
+        carousel.scrollBy({ left: direction * carousel.clientWidth, behavior: 'smooth' });
+    }
+
     (function () {
         const carousel = document.getElementById('photoCarousel');
         const counter = document.getElementById('photoCounter');

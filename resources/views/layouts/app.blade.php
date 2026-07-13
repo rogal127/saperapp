@@ -160,7 +160,9 @@ dbamy o jej zachowanie.
     <!-- Lightbox -->
     <div id="lightbox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.93);align-items:center;justify-content:center;" onclick="closeLightbox()">
         <img id="lightbox-img" style="max-width:100%;max-height:100%;object-fit:contain;padding:8px;" alt="">
-        <button style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:16px;background:rgba(255,255,255,0.18);border:none;color:#fff;border-radius:50%;width:40px;height:40px;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="closeLightbox()">✕</button>
+        <button id="lightbox-prev" style="display:none;position:absolute;top:50%;left:12px;transform:translateY(-50%);background:rgba(255,255,255,0.18);border:none;color:#fff;border-radius:50%;width:44px;height:44px;font-size:1.5rem;cursor:pointer;align-items:center;justify-content:center;" onclick="event.stopPropagation();lightboxNav(-1)">‹</button>
+        <button id="lightbox-next" style="display:none;position:absolute;top:50%;right:12px;transform:translateY(-50%);background:rgba(255,255,255,0.18);border:none;color:#fff;border-radius:50%;width:44px;height:44px;font-size:1.5rem;cursor:pointer;align-items:center;justify-content:center;" onclick="event.stopPropagation();lightboxNav(1)">›</button>
+        <button style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:16px;background:rgba(255,255,255,0.18);border:none;color:#fff;border-radius:50%;width:40px;height:40px;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="event.stopPropagation();closeLightbox()">✕</button>
     </div>
     @stack('scripts')
     <script>
@@ -172,14 +174,35 @@ dbamy o jej zachowanie.
     }
     </script>
     <script>
-    function openLightbox(src) {
+    let lightboxPhotos = [];
+    let lightboxIndex = 0;
+
+    function openLightbox(src, photos, index) {
+        lightboxPhotos = Array.isArray(photos) ? photos : [];
+        lightboxIndex = Number.isInteger(index) ? index : lightboxPhotos.indexOf(src);
         document.getElementById('lightbox-img').src = src;
         document.getElementById('lightbox').style.display = 'flex';
+
+        const showNav = lightboxPhotos.length > 1;
+        document.getElementById('lightbox-prev').style.display = showNav ? 'flex' : 'none';
+        document.getElementById('lightbox-next').style.display = showNav ? 'flex' : 'none';
     }
     function closeLightbox() {
         document.getElementById('lightbox').style.display = 'none';
         document.getElementById('lightbox-img').src = '';
+        lightboxPhotos = [];
     }
+    function lightboxNav(direction) {
+        if (!lightboxPhotos.length) { return; }
+        lightboxIndex = (lightboxIndex + direction + lightboxPhotos.length) % lightboxPhotos.length;
+        document.getElementById('lightbox-img').src = lightboxPhotos[lightboxIndex];
+    }
+    document.addEventListener('keydown', function (e) {
+        if (document.getElementById('lightbox').style.display !== 'flex') { return; }
+        if (e.key === 'ArrowLeft') { lightboxNav(-1); }
+        else if (e.key === 'ArrowRight') { lightboxNav(1); }
+        else if (e.key === 'Escape') { closeLightbox(); }
+    });
     </script>
     <script>
     (function () {
