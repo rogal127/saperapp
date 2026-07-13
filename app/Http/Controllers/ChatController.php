@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class ChatController extends Controller
@@ -25,16 +26,27 @@ class ChatController extends Controller
 
     public function messages(Request $request)
     {
-        $response = Http::withToken($this->apiToken($request))
-            ->get(config('services.api.url').'/chat/messages', [
-                'after_id' => $request->query('after_id'),
-                'before_id' => $request->query('before_id'),
-            ]);
+        $afterId = $request->query('after_id');
+        $beforeId = $request->query('before_id');
 
-        $messages = $response->successful() ? $response->json('data', []) : [];
-        $hasMore = $response->successful() ? $response->json('has_more', false) : false;
+        $result = Cache::remember(
+            'chat.messages.after.'.($afterId ?? 'none').'.before.'.($beforeId ?? 'none'),
+            2,
+            function () use ($request, $afterId, $beforeId) {
+                $response = Http::withToken($this->apiToken($request))
+                    ->get(config('services.api.url').'/chat/messages', [
+                        'after_id' => $afterId,
+                        'before_id' => $beforeId,
+                    ]);
 
-        return response()->json(['data' => $messages, 'has_more' => $hasMore]);
+                return [
+                    'messages' => $response->successful() ? $response->json('data', []) : [],
+                    'has_more' => $response->successful() ? $response->json('has_more', false) : false,
+                ];
+            }
+        );
+
+        return response()->json(['data' => $result['messages'], 'has_more' => $result['has_more']]);
     }
 
     public function send(Request $request)
