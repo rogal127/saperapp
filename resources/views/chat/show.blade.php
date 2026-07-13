@@ -174,7 +174,7 @@ const POLL_URL = "{{ route('chat.messages') }}";
 const CSRF_TOKEN = '{{ csrf_token() }}';
 const MY_ID = {{ $myId !== null ? (int) $myId : 'null' }};
 const USER_URL_TEMPLATE = "{{ route('users.show', ['id' => '__ID__']) }}";
-const FINDING_URL_TEMPLATE = "{{ route('findings.show', ['finding' => '__ID__']) }}";
+const FINDING_URL_TEMPLATE = "{{ route('findings.show', ['id' => '__ID__']) }}";
 
 function userUrl(id) {
     return USER_URL_TEMPLATE.replace('__ID__', id);
