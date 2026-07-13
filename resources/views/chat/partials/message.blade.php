@@ -22,6 +22,9 @@
             @if(!empty($msg['photo_url']))
             <img src="{{ $msg['photo_url'] }}" class="bubble-photo" onclick="openLightbox(this.src)">
             @endif
+            @if(!empty($msg['audio_url']))
+            <audio controls src="{{ $msg['audio_url'] }}" class="bubble-audio"></audio>
+            @endif
             @if(!empty($msg['body']))
             <div class="bubble-text">{{ $msg['body'] }}</div>
             @endif

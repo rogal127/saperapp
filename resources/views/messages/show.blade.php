@@ -26,17 +26,35 @@
         border-radius: 0.75rem; cursor: pointer; object-fit: cover;
     }
     .bubble-photo + .bubble-text { margin-top: 0.375rem; }
-    #photo-preview-bar {
+    .bubble-audio { width: 220px; height: 36px; display: block; }
+    .bubble-audio + .bubble-text { margin-top: 0.375rem; }
+    #photo-preview-bar, #audio-preview-bar {
         display: none; align-items: center; gap: 0.625rem;
         padding: 0.625rem 1rem 0; background: #13131f; flex-shrink: 0;
     }
-    #photo-preview-bar.active { display: flex; }
+    #photo-preview-bar.active, #audio-preview-bar.active { display: flex; }
     #photo-preview-bar img {
         width: 52px; height: 52px; object-fit: cover; border-radius: 0.625rem;
     }
-    #photo-preview-remove {
+    #audio-preview-bar audio { flex: 1; height: 36px; }
+    #photo-preview-remove, #audio-preview-remove {
         background: #2a2a3e; color: #e2e8f0; border: none; border-radius: 50%;
-        width: 26px; height: 26px; font-size: 0.9rem; cursor: pointer;
+        width: 26px; height: 26px; font-size: 0.9rem; cursor: pointer; flex-shrink: 0;
+    }
+    #recording-bar {
+        display: none; align-items: center; gap: 0.625rem;
+        padding: 0.625rem 1rem 0; background: #13131f; flex-shrink: 0;
+        color: #f87171; font-size: 0.8rem;
+    }
+    #recording-bar.active { display: flex; }
+    #recording-dot {
+        width: 8px; height: 8px; border-radius: 50%; background: #ef4444;
+        animation: recording-pulse 1s infinite; flex-shrink: 0;
+    }
+    @keyframes recording-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    #recording-cancel {
+        background: #2a2a3e; color: #e2e8f0; border: none; border-radius: 50%;
+        width: 26px; height: 26px; font-size: 0.9rem; cursor: pointer; margin-left: auto; flex-shrink: 0;
     }
     #chat-input-bar {
         border-top: 1px solid #2a2a3e;
@@ -44,12 +62,14 @@
         display: flex; gap: 0.625rem; align-items: flex-end;
         background: #13131f; flex-shrink: 0;
     }
-    #attach-btn {
+    #attach-btn, #record-btn {
         width: 42px; height: 42px; border-radius: 50%;
         background: #2a2a3e; color: #e2e8f0; border: none;
         font-size: 1.2rem; cursor: pointer; flex-shrink: 0;
         display: flex; align-items: center; justify-content: center;
+        transition: background 0.15s;
     }
+    #record-btn.recording { background: #ef4444; color: #fff; }
     #chat-input {
         flex: 1; background: #2a2a3e; border: 1px solid #404060;
         border-radius: 1.25rem; color: #e2e8f0;
@@ -114,6 +134,9 @@
                 @if(!empty($msg['photo_url']))
                 <img src="{{ $msg['photo_url'] }}" class="bubble-photo" onclick="openLightbox(this.src)">
                 @endif
+                @if(!empty($msg['audio_url']))
+                <audio controls src="{{ $msg['audio_url'] }}" class="bubble-audio"></audio>
+                @endif
                 @if(!empty($msg['body']))
                 <div class="bubble-text">{{ $msg['body'] }}</div>
                 @endif
@@ -135,10 +158,24 @@
         <button type="button" id="photo-preview-remove">✕</button>
     </div>
 
+    {{-- Trwające nagrywanie głosu --}}
+    <div id="recording-bar">
+        <span id="recording-dot"></span>
+        <span>Nagrywanie… <span id="recording-timer">00:00</span></span>
+        <button type="button" id="recording-cancel">✕</button>
+    </div>
+
+    {{-- Podgląd nagranej wiadomości głosowej --}}
+    <div id="audio-preview-bar">
+        <audio id="audio-preview-player" controls></audio>
+        <button type="button" id="audio-preview-remove">✕</button>
+    </div>
+
     {{-- Pole wpisywania --}}
     <div id="chat-input-bar" class="safe-bottom">
         <input type="file" id="photo-input" accept="image/*" style="display:none">
         <button type="button" id="attach-btn">📷</button>
+        <button type="button" id="record-btn">🎤</button>
         <textarea id="chat-input" rows="1" placeholder="Napisz wiadomość…"></textarea>
         <button id="send-btn" disabled>➤</button>
     </div>
@@ -158,8 +195,107 @@ const photoInput  = document.getElementById('photo-input');
 const previewBar  = document.getElementById('photo-preview-bar');
 const previewImg  = document.getElementById('photo-preview-img');
 const previewRemove = document.getElementById('photo-preview-remove');
+const recordBtn   = document.getElementById('record-btn');
+const recordingBar = document.getElementById('recording-bar');
+const recordingTimerEl = document.getElementById('recording-timer');
+const recordingCancel = document.getElementById('recording-cancel');
+const audioPreviewBar = document.getElementById('audio-preview-bar');
+const audioPreviewPlayer = document.getElementById('audio-preview-player');
+const audioPreviewRemove = document.getElementById('audio-preview-remove');
 
 let selectedPhoto = null;
+let selectedAudio = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingCancelled = false;
+let recordingStartedAt = 0;
+let recordingTimerInterval = null;
+
+const AUDIO_MIME_CANDIDATES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+
+function pickAudioMimeType() {
+    return AUDIO_MIME_CANDIDATES.find(type => window.MediaRecorder && MediaRecorder.isTypeSupported(type)) || '';
+}
+
+recordBtn.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        return;
+    }
+    startRecording();
+});
+
+async function startRecording() {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+        appendSystemMsg('Nagrywanie głosu nie jest wspierane w tej przeglądarce.');
+        return;
+    }
+
+    let stream;
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+        appendSystemMsg('Brak dostępu do mikrofonu.');
+        return;
+    }
+
+    const mimeType = pickAudioMimeType();
+    mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+    recordedChunks = [];
+    recordingCancelled = false;
+
+    mediaRecorder.addEventListener('dataavailable', e => {
+        if (e.data.size > 0) { recordedChunks.push(e.data); }
+    });
+
+    mediaRecorder.addEventListener('stop', () => {
+        stream.getTracks().forEach(track => track.stop());
+        clearInterval(recordingTimerInterval);
+        recordingBar.classList.remove('active');
+        recordBtn.classList.remove('recording');
+
+        if (recordingCancelled) {
+            recordingCancelled = false;
+            return;
+        }
+
+        const blobType = mediaRecorder.mimeType || 'audio/webm';
+        const extension = blobType.includes('mp4') ? 'm4a' : (blobType.includes('ogg') ? 'ogg' : 'webm');
+        const blob = new Blob(recordedChunks, { type: blobType });
+        if (blob.size === 0) { return; }
+
+        selectedAudio = new File([blob], `voice-message.${extension}`, { type: blobType });
+        audioPreviewPlayer.src = URL.createObjectURL(selectedAudio);
+        audioPreviewBar.classList.add('active');
+        updateSendButtonState();
+    });
+
+    mediaRecorder.start();
+    recordBtn.classList.add('recording');
+    recordingStartedAt = Date.now();
+    recordingBar.classList.add('active');
+    updateRecordingTimer();
+    recordingTimerInterval = setInterval(updateRecordingTimer, 250);
+}
+
+function updateRecordingTimer() {
+    const seconds = Math.floor((Date.now() - recordingStartedAt) / 1000);
+    recordingTimerEl.textContent = String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
+}
+
+recordingCancel.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        recordingCancelled = true;
+        mediaRecorder.stop();
+    }
+});
+
+audioPreviewRemove.addEventListener('click', () => {
+    selectedAudio = null;
+    audioPreviewPlayer.src = '';
+    audioPreviewBar.classList.remove('active');
+    updateSendButtonState();
+});
 
 msgList.scrollTop = msgList.scrollHeight;
 
@@ -195,26 +331,37 @@ previewRemove.addEventListener('click', () => {
 });
 
 function updateSendButtonState() {
-    sendBtn.disabled = input.value.trim().length === 0 && !selectedPhoto;
+    sendBtn.disabled = input.value.trim().length === 0 && !selectedPhoto && !selectedAudio;
 }
 
 function sendMessage() {
     const body = input.value.trim();
     const photo = selectedPhoto;
-    if (!body && !photo) return;
+    const audio = selectedAudio;
+    if (!body && !photo && !audio) return;
 
     sendBtn.disabled = true;
     input.value = '';
     input.style.height = 'auto';
     selectedPhoto = null;
+    selectedAudio = null;
     photoInput.value = '';
     previewBar.classList.remove('active');
+    audioPreviewBar.classList.remove('active');
+    audioPreviewPlayer.src = '';
 
-    appendBubble(body, photo ? URL.createObjectURL(photo) : null, true, new Date().toISOString());
+    appendBubble(
+        body,
+        photo ? URL.createObjectURL(photo) : null,
+        audio ? URL.createObjectURL(audio) : null,
+        true,
+        new Date().toISOString(),
+    );
 
     const formData = new FormData();
     if (body) { formData.append('body', body); }
     if (photo) { formData.append('photo', photo); }
+    if (audio) { formData.append('audio', audio); }
 
     fetch(SEND_URL, {
         method: 'POST',
@@ -225,15 +372,16 @@ function sendMessage() {
     .catch(() => appendSystemMsg('Nie udało się wysłać wiadomości.'));
 }
 
-function appendBubble(text, photoUrl, isMine, iso) {
+function appendBubble(text, photoUrl, audioUrl, isMine, iso) {
     const wrapper = document.createElement('div');
     wrapper.style.cssText = `display:flex;flex-direction:column;align-items:${isMine ? 'flex-end' : 'flex-start'}`;
     const d = new Date(iso);
     const time = d.toLocaleDateString('pl', {day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('pl', {hour:'2-digit',minute:'2-digit'});
     const photoHtml = photoUrl ? `<img src="${photoUrl}" class="bubble-photo" onclick="openLightbox(this.src)">` : '';
+    const audioHtml = audioUrl ? `<audio controls src="${audioUrl}" class="bubble-audio"></audio>` : '';
     const bodyHtml = text ? `<div class="bubble-text">${escHtml(text)}</div>` : '';
     wrapper.innerHTML = `
-        <div class="bubble ${isMine ? 'bubble-mine' : 'bubble-other'}">${photoHtml}${bodyHtml}</div>
+        <div class="bubble ${isMine ? 'bubble-mine' : 'bubble-other'}">${photoHtml}${audioHtml}${bodyHtml}</div>
         <div class="bubble-time">${time}</div>`;
     msgList.appendChild(wrapper);
     msgList.scrollTop = msgList.scrollHeight;

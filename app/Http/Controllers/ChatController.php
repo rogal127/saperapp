@@ -39,10 +39,15 @@ class ChatController extends Controller
         $request->validate([
             'body' => ['nullable', 'string', 'max:1000'],
             'photo' => ['nullable', 'image', 'max:10240'],
+            'audio' => ['nullable', 'file', 'max:10240', function ($attribute, $value, $fail) {
+                if (! in_array(strtolower($value->getClientOriginalExtension()), ['webm', 'ogg', 'oga', 'm4a', 'mp4', 'mp3', 'wav'])) {
+                    $fail('Pole audio musi być plikiem audio (webm, ogg, m4a, mp4, mp3 lub wav).');
+                }
+            }],
         ]);
 
-        if (! $request->filled('body') && ! $request->hasFile('photo')) {
-            return response()->json(['message' => 'Wiadomość musi zawierać tekst lub zdjęcie.'], 422);
+        if (! $request->filled('body') && ! $request->hasFile('photo') && ! $request->hasFile('audio')) {
+            return response()->json(['message' => 'Wiadomość musi zawierać tekst, zdjęcie lub nagranie głosowe.'], 422);
         }
 
         $httpRequest = Http::withToken($this->apiToken($request));
@@ -50,6 +55,11 @@ class ChatController extends Controller
         if ($request->hasFile('photo')) {
             $photo = $request->file('photo');
             $httpRequest = $httpRequest->attach('photo', file_get_contents($photo->getRealPath()), $photo->getClientOriginalName());
+        }
+
+        if ($request->hasFile('audio')) {
+            $audio = $request->file('audio');
+            $httpRequest = $httpRequest->attach('audio', file_get_contents($audio->getRealPath()), $audio->getClientOriginalName());
         }
 
         $response = $httpRequest->post(config('services.api.url').'/chat/messages', [
