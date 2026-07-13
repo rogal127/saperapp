@@ -82,6 +82,7 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/chat', [ChatController::class, 'show'])->name('chat.show');
     Route::get('/api/chat/messages', [ChatController::class, 'messages'])->name('chat.messages');
     Route::post('/api/chat/messages', [ChatController::class, 'send'])->name('chat.send');
+    Route::get('/api/chat/unread-count', [ChatController::class, 'unreadCount'])->name('chat.unread');
 
     Route::get('/users/{id}', [UserProfileController::class, 'show'])->name('users.show');
     Route::get('/users/{id}/findings', [UserProfileController::class, 'findings'])->name('users.findings');

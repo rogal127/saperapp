@@ -142,10 +142,11 @@
         <div class="welcome-modal-card" onclick="event.stopPropagation()">
             <img src="https://pub-8be7d8ab5bcc40f697863889aedf500f.r2.dev/avatars/9HUg1ygBiANnT5K6g8bZK0nPNLuXjENknbw3tie8.jpg" alt="Historius" class="welcome-modal-img">
             <div class="welcome-modal-body">
-                <p class="welcome-modal-title">Witaj w świecie Historius!</p>
+                <p class="welcome-modal-title">HISTORIUS!</p>
                 <p class="welcome-modal-text">
-                    Aplikacja została stworzona z myślą o poszukiwaczach, archeologach oraz konserwatorach.
-                    <a href="https://info.r-dev.pl" target="_blank" rel="noopener" class="welcome-modal-link">Kliknij TUTAJ</a>, aby dowiedzieć się więcej.
+                    Tu dzielimy się informacjami o naszych odkryciach, wspólnie z naukowcami odkrywamy historie i 
+dbamy o jej zachowanie. 
+                    <a href="https://info.r-dev.pl" target="_blank" rel="noopener" class="welcome-modal-link">Kliknij TUTAJ</a> i poczytaj jak działa Historius.
                 </p>
                 <button type="button" class="btn-primary" onclick="closeWelcomeModal()">Rozumiem</button>
             </div>
@@ -178,20 +179,21 @@
     </script>
     <script>
     (function () {
-        fetch("{{ route('messages.unread') }}")
-            .then(r => r.json())
-            .then(data => {
-                if (data.count > 0) {
-                    const link = document.getElementById('nav-messages');
-                    if (!link) { return; }
-                    link.style.position = 'relative';
-                    const badge = document.createElement('span');
-                    badge.style.cssText = 'position:absolute;top:6px;right:calc(50% - 18px);background:#f59e0b;color:#1a1a2e;border-radius:999px;font-size:0.55rem;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;';
-                    badge.textContent = data.count > 99 ? '99+' : data.count;
-                    link.appendChild(badge);
-                }
-            })
-            .catch(() => {});
+        Promise.all([
+            fetch("{{ route('messages.unread') }}").then(r => r.json()).catch(() => ({count: 0})),
+            fetch("{{ route('chat.unread') }}").then(r => r.json()).catch(() => ({count: 0})),
+        ]).then(([conversations, chat]) => {
+            const count = (conversations.count || 0) + (chat.count || 0);
+            if (count > 0) {
+                const link = document.getElementById('nav-messages');
+                if (!link) { return; }
+                link.style.position = 'relative';
+                const badge = document.createElement('span');
+                badge.style.cssText = 'position:absolute;top:6px;right:calc(50% - 18px);background:#f59e0b;color:#1a1a2e;border-radius:999px;font-size:0.55rem;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;';
+                badge.textContent = count > 99 ? '99+' : count;
+                link.appendChild(badge);
+            }
+        });
     })();
     </script>
     <script>

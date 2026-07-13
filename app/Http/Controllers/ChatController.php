@@ -51,4 +51,14 @@ class ChatController extends Controller
 
         return response()->json($response->json('data'), 201);
     }
+
+    public function unreadCount(Request $request)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url').'/chat/unread-count');
+
+        $count = $response->successful() ? $response->json('data.unread_count', 0) : 0;
+
+        return response()->json(['count' => $count]);
+    }
 }

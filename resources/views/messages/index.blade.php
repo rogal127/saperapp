@@ -45,6 +45,7 @@
                 <div class="conv-name">Czat ogólny</div>
                 <div class="conv-last">Rozmowa dla wszystkich zalogowanych użytkowników</div>
             </div>
+            <span id="chat-unread-badge" class="unread-badge" style="display:none"></span>
         </div>
         @if(count($conversations) === 0)
             <div class="text-center py-16 text-gray-500">
@@ -103,4 +104,19 @@
 
 
 </div>
+
+@push('scripts')
+<script>
+fetch("{{ route('chat.unread') }}")
+    .then(r => r.json())
+    .then(data => {
+        if (data.count > 0) {
+            const badge = document.getElementById('chat-unread-badge');
+            badge.textContent = data.count > 99 ? '99+' : data.count;
+            badge.style.display = '';
+        }
+    })
+    .catch(() => {});
+</script>
+@endpush
 @endsection
