@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="icon" href="/favicon.ico" sizes="any">
     <title>@yield('title', 'Historius')</title>
@@ -28,7 +32,7 @@
     <style>
         * { -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; }
-        .screen { height: 100dvh; display: flex; flex-direction: column; background: #1e1e2e; color: #e2e8f0; }
+        .screen { height: 100vh; height: 100dvh; display: flex; flex-direction: column; background: #1e1e2e; color: #e2e8f0; }
         .safe-top { padding-top: env(safe-area-inset-top, 0px); }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
         .leaflet-container { background: #2a2a3e !important; }
