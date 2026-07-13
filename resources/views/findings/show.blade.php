@@ -114,7 +114,7 @@
                    class="flex items-center gap-2 text-sm text-amber-400 font-semibold">
                     <div class="w-7 h-7 rounded-full bg-surface-card flex items-center justify-center text-xs font-bold overflow-hidden flex-shrink-0">
                         @if(!empty($finder['avatar_url']))
-                            <img src="{{ $finder['avatar_url'] }}" alt="" style="width:100%;height:100%;object-fit:cover">
+                            <img src="{{ $finder['avatar_thumb_url'] ?? $finder['avatar_url'] }}" alt="" style="width:100%;height:100%;object-fit:cover">
                         @else
                             {{ strtoupper(substr($finder['name'] ?? '?', 0, 1)) }}
                         @endif
@@ -452,7 +452,7 @@
             }
             list.innerHTML = users.map(u => {
                 const avatar = u.avatar_url
-                    ? '<img src="' + u.avatar_url + '" alt="" style="width:100%;height:100%;object-fit:cover">'
+                    ? '<img src="' + (u.avatar_thumb_url || u.avatar_url) + '" alt="" style="width:100%;height:100%;object-fit:cover">'
                     : '<span class="text-xs font-bold">' + (u.name ? u.name.charAt(0).toUpperCase() : '?') + '</span>';
                 return '<a href="/users/' + u.id + '" class="flex items-center gap-3 py-2">'
                     + '<div class="w-9 h-9 rounded-full bg-surface-card flex items-center justify-center overflow-hidden flex-shrink-0 text-gray-300">' + avatar + '</div>'
@@ -716,14 +716,14 @@
     function renderComment(c) {
         const user = c.user || {};
         const avatar = user.avatar_url
-            ? '<img src="' + user.avatar_url + '" alt="" style="width:100%;height:100%;object-fit:cover">'
+            ? '<img src="' + (user.avatar_thumb_url || user.avatar_url) + '" alt="" style="width:100%;height:100%;object-fit:cover">'
             : '<span class="text-xs font-bold">' + ((user.name || '?').charAt(0).toUpperCase()) + '</span>';
 
         let photosHtml = '';
         if (c.photos && c.photos.length) {
             photosHtml = '<div class="flex gap-2 mt-2 flex-wrap">' +
                 c.photos.map(p =>
-                    '<img src="' + p.url + '" alt="" onclick="openLightbox(this.src)" ' +
+                    '<img src="' + (p.thumb_url || p.url) + '" alt="" onclick="openLightbox(\'' + p.url + '\')" ' +
                     'style="width:80px;height:80px;object-fit:cover;border-radius:0.5rem;cursor:pointer">'
                 ).join('') +
                 '</div>';

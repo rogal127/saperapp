@@ -383,11 +383,11 @@ function appendMessage(msg) {
     const time = d.toLocaleDateString('pl', {day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('pl', {hour:'2-digit',minute:'2-digit'});
     const senderName = msg.user?.name ?? 'Użytkownik';
     const initials = senderName.trim().charAt(0).toUpperCase() || '?';
-    const avatarUrl = msg.user?.avatar_url;
+    const avatarUrl = msg.user?.avatar_thumb_url ?? msg.user?.avatar_url;
     const profileUrl = userUrl(msg.user_id);
 
     const photoHtml = msg.photo_url
-        ? `<img src="${msg.photo_url}" class="bubble-photo" onclick="openLightbox(this.src)">`
+        ? `<img src="${msg.photo_thumb_url ?? msg.photo_url}" class="bubble-photo" onclick="openLightbox('${escHtml(msg.photo_url)}')">`
         : '';
     const audioHtml = msg.audio_url
         ? `<audio controls src="${msg.audio_url}" class="bubble-audio"></audio>`

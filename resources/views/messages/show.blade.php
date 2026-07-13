@@ -102,7 +102,7 @@
         <a href="{{ route('users.show', $other['id']) }}" class="flex items-center gap-3 flex-1 min-w-0">
             <div class="w-10 h-10 rounded-full bg-surface-card flex items-center justify-center font-bold text-amber-400 flex-shrink-0 overflow-hidden">
                 @if(!empty($other['avatar_url']))
-                    <img src="{{ $other['avatar_url'] }}" alt="" style="width:100%;height:100%;object-fit:cover">
+                    <img src="{{ $other['avatar_thumb_url'] ?? $other['avatar_url'] }}" alt="" style="width:100%;height:100%;object-fit:cover">
                 @else
                     {{ $initials }}
                 @endif
@@ -132,7 +132,7 @@
             @endif
             <div class="bubble {{ $isMine ? 'bubble-mine' : 'bubble-other' }}">
                 @if(!empty($msg['photo_url']))
-                <img src="{{ $msg['photo_url'] }}" class="bubble-photo" onclick="openLightbox(this.src)">
+                <img src="{{ $msg['photo_thumb_url'] ?? $msg['photo_url'] }}" class="bubble-photo" onclick="openLightbox('{{ $msg['photo_url'] }}')">
                 @endif
                 @if(!empty($msg['audio_url']))
                 <audio controls src="{{ $msg['audio_url'] }}" class="bubble-audio"></audio>

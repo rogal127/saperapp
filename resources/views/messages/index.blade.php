@@ -66,7 +66,7 @@
                     @if(!empty($other['id']))
                     <a href="{{ route('users.show', $other['id']) }}" onclick="event.stopPropagation()" class="conv-avatar">
                         @if(!empty($other['avatar_url']))
-                            <img src="{{ $other['avatar_url'] }}" alt="">
+                            <img src="{{ $other['avatar_thumb_url'] ?? $other['avatar_url'] }}" alt="">
                         @else
                             {{ $initials }}
                         @endif
@@ -74,7 +74,7 @@
                     @else
                     <div class="conv-avatar">
                         @if(!empty($other['avatar_url']))
-                            <img src="{{ $other['avatar_url'] }}" alt="">
+                            <img src="{{ $other['avatar_thumb_url'] ?? $other['avatar_url'] }}" alt="">
                         @else
                             {{ $initials }}
                         @endif

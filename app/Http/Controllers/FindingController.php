@@ -200,6 +200,25 @@ class FindingController extends Controller
         ]);
     }
 
+    public function photoThumb(Request $request, int $id, int $photoId)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url')."/findings/{$id}/photos/{$photoId}/thumb");
+
+        if (in_array($response->status(), [403, 404], true)) {
+            abort($response->status());
+        }
+
+        if ($response->failed()) {
+            abort(502);
+        }
+
+        return response($response->body(), 200, [
+            'Content-Type' => $response->header('Content-Type') ?: 'image/jpeg',
+            'Cache-Control' => 'private, max-age=300',
+        ]);
+    }
+
     public function report(Request $request, int $id)
     {
         $response = Http::withToken($this->apiToken($request))

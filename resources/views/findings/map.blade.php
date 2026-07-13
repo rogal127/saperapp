@@ -793,15 +793,18 @@ function openCityFindingsModal(cluster) {
 function photosHtml(f) {
     const photos = (Array.isArray(f.photos) && f.photos.length)
         ? f.photos.map(p => {
-            if (typeof p === 'string') { return p; }
+            if (typeof p === 'string') { return { thumb: p, full: p }; }
             // Prywatne zdjęcia idą przez własny proxy — URL API wymaga nagłówka Bearer, którego <img> nie wyśle.
-            return p.is_private ? `/findings/${f.id}/photos/${p.id}` : p.url;
+            const full = p.is_private ? `/findings/${f.id}/photos/${p.id}` : p.url;
+            const thumb = p.is_private ? `/findings/${f.id}/photos/${p.id}/thumb` : (p.thumb_url || p.url);
+            return { thumb, full };
         })
-        : (f.photo_url ? [f.photo_url] : []);
+        : (f.photo_url ? [{ thumb: f.photo_thumb_url || f.photo_url, full: f.photo_url }] : []);
     if (!photos.length) { return ''; }
-    const imgs = photos.map(u => {
-        const e = escHtml(u);
-        return `<img class="pin-finding-photo" src="${e}" alt="" onclick="openLightbox('${e}')">`;
+    const imgs = photos.map(({ thumb, full }) => {
+        const t = escHtml(thumb);
+        const fu = escHtml(full);
+        return `<img class="pin-finding-photo" src="${t}" alt="" onclick="openLightbox('${fu}')">`;
     }).join('');
     return photos.length === 1 ? imgs : `<div class="pin-finding-gallery">${imgs}</div>`;
 }

@@ -428,12 +428,12 @@ function buildFindingCard(finding) {
     card.addEventListener('click', () => openFindingModal(card));
 
     const coverPhoto = (finding.photos || [])[0];
-    const coverSrc = coverPhoto
-        ? (coverPhoto.is_private ? `/findings/${finding.id}/photos/${coverPhoto.id}` : (coverPhoto.url || ''))
-        : (finding.photo_url || '');
+    const coverThumbSrc = coverPhoto
+        ? (coverPhoto.is_private ? `/findings/${finding.id}/photos/${coverPhoto.id}/thumb` : (coverPhoto.thumb_url || coverPhoto.url || ''))
+        : (finding.photo_thumb_url || finding.photo_url || '');
 
-    const thumbHtml = coverSrc
-        ? `<img src="${escapeHtml(coverSrc)}" alt="" class="finding-thumb">`
+    const thumbHtml = coverThumbSrc
+        ? `<img src="${escapeHtml(coverThumbSrc)}" alt="" class="finding-thumb">`
         : '<div class="finding-thumb-placeholder">🪙</div>';
 
     const descHtml = finding.description

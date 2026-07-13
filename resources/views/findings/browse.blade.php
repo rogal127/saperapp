@@ -322,7 +322,7 @@
 
     function renderCard(f) {
         const photoHtml = f.photo_url
-            ? '<img src="' + f.photo_url + '" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:0.75rem;flex-shrink:0">'
+            ? '<img src="' + (f.photo_thumb_url || f.photo_url) + '" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:0.75rem;flex-shrink:0">'
             : '<div style="width:72px;height:72px;border-radius:0.75rem;background:#323248;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">📷</div>';
 
         const locationParts = [];

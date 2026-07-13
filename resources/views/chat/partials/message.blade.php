@@ -1,7 +1,7 @@
 @php
     $isMine = (string) ($msg['user_id'] ?? '') === (string) $myId;
     $senderName = $msg['user']['name'] ?? 'Użytkownik';
-    $avatarUrl = $msg['user']['avatar_url'] ?? null;
+    $avatarUrl = $msg['user']['avatar_thumb_url'] ?? $msg['user']['avatar_url'] ?? null;
     $initials = strtoupper(substr($senderName, 0, 1));
 @endphp
 <div class="msg-line {{ $isMine ? 'mine' : '' }}" data-msg-id="{{ $msg['id'] }}">
@@ -20,7 +20,7 @@
         @endunless
         <div class="bubble {{ $isMine ? 'bubble-mine' : 'bubble-other' }}">
             @if(!empty($msg['photo_url']))
-            <img src="{{ $msg['photo_url'] }}" class="bubble-photo" onclick="openLightbox(this.src)">
+            <img src="{{ $msg['photo_thumb_url'] ?? $msg['photo_url'] }}" class="bubble-photo" onclick="openLightbox('{{ $msg['photo_url'] }}')">
             @endif
             @if(!empty($msg['audio_url']))
             <audio controls src="{{ $msg['audio_url'] }}" class="bubble-audio"></audio>

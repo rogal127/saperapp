@@ -334,7 +334,7 @@
     // --- Findings (leader) ---
     function findingCard(f) {
         const photo = f.photo_url
-            ? '<img src="' + f.photo_url + '" style="width:64px;height:64px;object-fit:cover;border-radius:0.75rem;flex-shrink:0">'
+            ? '<img src="' + (f.photo_thumb_url || f.photo_url) + '" style="width:64px;height:64px;object-fit:cover;border-radius:0.75rem;flex-shrink:0">'
             : '<div style="width:64px;height:64px;border-radius:0.75rem;background:#323248;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">📷</div>';
         const loc = [f.city, f.voivodeship].filter(Boolean).join(', ');
         const priv = f.is_private ? '<span class="text-xs text-purple-400 ml-1">🔒 prywatne</span>' : '';
