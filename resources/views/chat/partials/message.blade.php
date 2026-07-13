@@ -19,7 +19,12 @@
         <a href="{{ route('users.show', $msg['user_id']) }}" class="bubble-sender">{{ $senderName }}</a>
         @endunless
         <div class="bubble {{ $isMine ? 'bubble-mine' : 'bubble-other' }}">
-            {{ $msg['body'] ?? '' }}
+            @if(!empty($msg['photo_url']))
+            <img src="{{ $msg['photo_url'] }}" class="bubble-photo" onclick="openLightbox(this.src)">
+            @endif
+            @if(!empty($msg['body']))
+            <div class="bubble-text">{{ $msg['body'] }}</div>
+            @endif
         </div>
         <div class="bubble-time">
             {{ \Carbon\Carbon::parse($msg['created_at'])->format('d.m H:i') }}

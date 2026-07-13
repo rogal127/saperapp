@@ -41,13 +41,24 @@ class ConversationController extends Controller
     public function send(Request $request, int $id)
     {
         $request->validate([
-            'body' => ['required', 'string', 'min:1', 'max:2000'],
+            'body' => ['nullable', 'string', 'max:2000'],
+            'photo' => ['nullable', 'image', 'max:10240'],
         ]);
 
-        $response = Http::withToken($this->apiToken($request))
-            ->post(config('services.api.url')."/conversations/{$id}/messages", [
-                'body' => $request->body,
-            ]);
+        if (! $request->filled('body') && ! $request->hasFile('photo')) {
+            return response()->json(['message' => 'Wiadomość musi zawierać tekst lub zdjęcie.'], 422);
+        }
+
+        $httpRequest = Http::withToken($this->apiToken($request));
+
+        if ($request->hasFile('photo')) {
+            $photo = $request->file('photo');
+            $httpRequest = $httpRequest->attach('photo', file_get_contents($photo->getRealPath()), $photo->getClientOriginalName());
+        }
+
+        $response = $httpRequest->post(config('services.api.url')."/conversations/{$id}/messages", [
+            'body' => $request->body,
+        ]);
 
         if ($response->failed()) {
             return response()->json(['message' => 'Błąd wysyłania wiadomości.'], 502);

@@ -21,11 +21,34 @@
         align-self: flex-start; border-bottom-left-radius: 0.25rem;
     }
     .bubble-time { font-size: 0.6rem; color: #6b7280; margin-top: 2px; }
+    .bubble-photo {
+        max-width: 220px; max-height: 220px; display: block;
+        border-radius: 0.75rem; cursor: pointer; object-fit: cover;
+    }
+    .bubble-photo + .bubble-text { margin-top: 0.375rem; }
+    #photo-preview-bar {
+        display: none; align-items: center; gap: 0.625rem;
+        padding: 0.625rem 1rem 0; background: #13131f; flex-shrink: 0;
+    }
+    #photo-preview-bar.active { display: flex; }
+    #photo-preview-bar img {
+        width: 52px; height: 52px; object-fit: cover; border-radius: 0.625rem;
+    }
+    #photo-preview-remove {
+        background: #2a2a3e; color: #e2e8f0; border: none; border-radius: 50%;
+        width: 26px; height: 26px; font-size: 0.9rem; cursor: pointer;
+    }
     #chat-input-bar {
         border-top: 1px solid #2a2a3e;
         padding: 0.75rem 1rem;
         display: flex; gap: 0.625rem; align-items: flex-end;
         background: #13131f; flex-shrink: 0;
+    }
+    #attach-btn {
+        width: 42px; height: 42px; border-radius: 50%;
+        background: #2a2a3e; color: #e2e8f0; border: none;
+        font-size: 1.2rem; cursor: pointer; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
     }
     #chat-input {
         flex: 1; background: #2a2a3e; border: 1px solid #404060;
@@ -88,7 +111,12 @@
             </a>
             @endif
             <div class="bubble {{ $isMine ? 'bubble-mine' : 'bubble-other' }}">
-                {{ $msg['body'] ?? '' }}
+                @if(!empty($msg['photo_url']))
+                <img src="{{ $msg['photo_url'] }}" class="bubble-photo" onclick="openLightbox(this.src)">
+                @endif
+                @if(!empty($msg['body']))
+                <div class="bubble-text">{{ $msg['body'] }}</div>
+                @endif
             </div>
             <div class="bubble-time">
                 {{ \Carbon\Carbon::parse($msg['created_at'])->format('d.m H:i') }}
@@ -101,8 +129,16 @@
         @endforelse
     </div>
 
+    {{-- Podgląd wybranego zdjęcia --}}
+    <div id="photo-preview-bar">
+        <img id="photo-preview-img" src="" alt="">
+        <button type="button" id="photo-preview-remove">✕</button>
+    </div>
+
     {{-- Pole wpisywania --}}
     <div id="chat-input-bar" class="safe-bottom">
+        <input type="file" id="photo-input" accept="image/*" style="display:none">
+        <button type="button" id="attach-btn">📷</button>
         <textarea id="chat-input" rows="1" placeholder="Napisz wiadomość…"></textarea>
         <button id="send-btn" disabled>➤</button>
     </div>
@@ -114,14 +150,21 @@
 const SEND_URL   = "{{ route('messages.send', $conversation['id']) }}";
 const CSRF_TOKEN = '{{ csrf_token() }}';
 
-const input   = document.getElementById('chat-input');
-const sendBtn = document.getElementById('send-btn');
-const msgList = document.getElementById('chat-messages');
+const input       = document.getElementById('chat-input');
+const sendBtn     = document.getElementById('send-btn');
+const msgList     = document.getElementById('chat-messages');
+const attachBtn   = document.getElementById('attach-btn');
+const photoInput  = document.getElementById('photo-input');
+const previewBar  = document.getElementById('photo-preview-bar');
+const previewImg  = document.getElementById('photo-preview-img');
+const previewRemove = document.getElementById('photo-preview-remove');
+
+let selectedPhoto = null;
 
 msgList.scrollTop = msgList.scrollHeight;
 
 input.addEventListener('input', () => {
-    sendBtn.disabled = input.value.trim().length === 0;
+    updateSendButtonState();
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 100) + 'px';
 });
@@ -132,32 +175,65 @@ input.addEventListener('keydown', e => {
 
 sendBtn.addEventListener('click', sendMessage);
 
+attachBtn.addEventListener('click', () => photoInput.click());
+
+photoInput.addEventListener('change', () => {
+    const file = photoInput.files[0];
+    if (!file) return;
+
+    selectedPhoto = file;
+    previewImg.src = URL.createObjectURL(file);
+    previewBar.classList.add('active');
+    updateSendButtonState();
+});
+
+previewRemove.addEventListener('click', () => {
+    selectedPhoto = null;
+    photoInput.value = '';
+    previewBar.classList.remove('active');
+    updateSendButtonState();
+});
+
+function updateSendButtonState() {
+    sendBtn.disabled = input.value.trim().length === 0 && !selectedPhoto;
+}
+
 function sendMessage() {
     const body = input.value.trim();
-    if (!body) return;
+    const photo = selectedPhoto;
+    if (!body && !photo) return;
 
     sendBtn.disabled = true;
     input.value = '';
     input.style.height = 'auto';
+    selectedPhoto = null;
+    photoInput.value = '';
+    previewBar.classList.remove('active');
 
-    appendBubble(body, true, new Date().toISOString());
+    appendBubble(body, photo ? URL.createObjectURL(photo) : null, true, new Date().toISOString());
+
+    const formData = new FormData();
+    if (body) { formData.append('body', body); }
+    if (photo) { formData.append('photo', photo); }
 
     fetch(SEND_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
-        body: JSON.stringify({ body }),
+        headers: { 'X-CSRF-TOKEN': CSRF_TOKEN },
+        body: formData,
     })
     .then(r => r.ok ? r.json() : Promise.reject())
     .catch(() => appendSystemMsg('Nie udało się wysłać wiadomości.'));
 }
 
-function appendBubble(text, isMine, iso) {
+function appendBubble(text, photoUrl, isMine, iso) {
     const wrapper = document.createElement('div');
     wrapper.style.cssText = `display:flex;flex-direction:column;align-items:${isMine ? 'flex-end' : 'flex-start'}`;
     const d = new Date(iso);
     const time = d.toLocaleDateString('pl', {day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('pl', {hour:'2-digit',minute:'2-digit'});
+    const photoHtml = photoUrl ? `<img src="${photoUrl}" class="bubble-photo" onclick="openLightbox(this.src)">` : '';
+    const bodyHtml = text ? `<div class="bubble-text">${escHtml(text)}</div>` : '';
     wrapper.innerHTML = `
-        <div class="bubble ${isMine ? 'bubble-mine' : 'bubble-other'}">${escHtml(text)}</div>
+        <div class="bubble ${isMine ? 'bubble-mine' : 'bubble-other'}">${photoHtml}${bodyHtml}</div>
         <div class="bubble-time">${time}</div>`;
     msgList.appendChild(wrapper);
     msgList.scrollTop = msgList.scrollHeight;
