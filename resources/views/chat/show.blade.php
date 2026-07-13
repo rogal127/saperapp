@@ -7,10 +7,23 @@
         flex: 1; overflow-y: auto; padding: 1rem;
         display: flex; flex-direction: column; gap: 0.625rem;
     }
+    .msg-line { display: flex; align-items: flex-end; gap: 0.5rem; }
+    .msg-line.mine { justify-content: flex-end; }
+    .msg-avatar {
+        width: 30px; height: 30px; border-radius: 50%;
+        background: #323248; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 0.7rem; color: #f59e0b;
+        overflow: hidden; text-decoration: none;
+    }
+    .msg-avatar img { width: 100%; height: 100%; object-fit: cover; }
     .bubble-row { display: flex; flex-direction: column; max-width: 78%; }
     .bubble-row.mine { align-self: flex-end; align-items: flex-end; }
     .bubble-row.other { align-self: flex-start; align-items: flex-start; }
-    .bubble-sender { font-size: 0.7rem; font-weight: 700; color: #f59e0b; margin-bottom: 2px; padding: 0 0.25rem; }
+    .bubble-sender {
+        font-size: 0.7rem; font-weight: 700; color: #f59e0b; margin-bottom: 2px;
+        padding: 0 0.25rem; text-decoration: none;
+    }
     .bubble {
         padding: 0.625rem 0.875rem;
         border-radius: 1.125rem; font-size: 0.875rem; line-height: 1.4;
@@ -89,6 +102,11 @@ const SEND_URL = "{{ route('chat.send') }}";
 const POLL_URL = "{{ route('chat.messages') }}";
 const CSRF_TOKEN = '{{ csrf_token() }}';
 const MY_ID = {{ $myId !== null ? (int) $myId : 'null' }};
+const USER_URL_TEMPLATE = "{{ route('users.show', ['id' => '__ID__']) }}";
+
+function userUrl(id) {
+    return USER_URL_TEMPLATE.replace('__ID__', id);
+}
 
 const input   = document.getElementById('chat-input');
 const sendBtn = document.getElementById('send-btn');
@@ -145,17 +163,23 @@ function appendMessage(msg) {
 
     const isMine = MY_ID !== null && String(msg.user_id) === String(MY_ID);
     const wrapper = document.createElement('div');
-    wrapper.className = 'bubble-row ' + (isMine ? 'mine' : 'other');
+    wrapper.className = 'msg-line ' + (isMine ? 'mine' : '');
     wrapper.dataset.msgId = msg.id;
 
     const d = new Date(msg.created_at);
     const time = d.toLocaleDateString('pl', {day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('pl', {hour:'2-digit',minute:'2-digit'});
     const senderName = msg.user?.name ?? 'Użytkownik';
+    const initials = senderName.trim().charAt(0).toUpperCase() || '?';
+    const avatarUrl = msg.user?.avatar_url;
+    const profileUrl = userUrl(msg.user_id);
 
     wrapper.innerHTML = `
-        ${!isMine ? `<div class="bubble-sender">${escHtml(senderName)}</div>` : ''}
-        <div class="bubble ${isMine ? 'bubble-mine' : 'bubble-other'}">${escHtml(msg.body)}</div>
-        <div class="bubble-time">${time}</div>`;
+        ${!isMine ? `<a href="${profileUrl}" class="msg-avatar">${avatarUrl ? `<img src="${avatarUrl}" alt="">` : escHtml(initials)}</a>` : ''}
+        <div class="bubble-row ${isMine ? 'mine' : 'other'}">
+            ${!isMine ? `<a href="${profileUrl}" class="bubble-sender">${escHtml(senderName)}</a>` : ''}
+            <div class="bubble ${isMine ? 'bubble-mine' : 'bubble-other'}">${escHtml(msg.body)}</div>
+            <div class="bubble-time">${time}</div>
+        </div>`;
 
     msgList.appendChild(wrapper);
     msgList.scrollTop = msgList.scrollHeight;
