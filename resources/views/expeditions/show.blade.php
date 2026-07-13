@@ -81,6 +81,7 @@
             @unless($isLeader)
                 @if($myStatus === 'accepted')
                 <div class="card text-center text-sm text-green-400">✓ Uczestniczysz w tym poszukiwaniu</div>
+                <button id="leaveExpeditionBtn" class="btn-secondary text-red-400">Wypisz się z poszukiwania</button>
                 @elseif($myStatus === 'invited')
                 <div class="card flex flex-col gap-2">
                     <p class="text-sm text-blue-300 text-center">Zostałeś zaproszony do tego poszukiwania.</p>
@@ -198,6 +199,24 @@
                 .then(r => r.json()).then(() => location.reload()).catch(() => alert('Błąd.'));
         });
     });
+
+    // --- Leave expedition (self) ---
+    const leaveBtn = document.getElementById('leaveExpeditionBtn');
+    if (leaveBtn) {
+        leaveBtn.addEventListener('click', () => {
+            if (!confirm('Na pewno chcesz wypisać się z tego poszukiwania?')) { return; }
+            const mine = (EXP.participants || []).find(p => p.user && p.user.id === CURRENT_USER_ID && p.status === 'accepted');
+            if (!mine) { location.reload(); return; }
+            leaveBtn.disabled = true;
+            fetch("/api/expeditions/" + EXP_ID + "/participants/" + mine.id, { method: 'DELETE', headers: jsonHeaders })
+                .then(async r => ({ ok: r.ok, data: await r.json().catch(() => ({})) }))
+                .then(({ ok, data }) => {
+                    if (!ok) { alert(data.message || 'Błąd.'); leaveBtn.disabled = false; return; }
+                    window.location.href = "{{ route('expeditions.index') }}";
+                })
+                .catch(() => { alert('Błąd.'); leaveBtn.disabled = false; });
+        });
+    }
 
     // --- Delete expedition ---
     const delBtn = document.getElementById('deleteExpeditionBtn');
