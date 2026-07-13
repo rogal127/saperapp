@@ -119,7 +119,7 @@
                 @endif
             </div>
             <div class="bubble-time">
-                {{ \Carbon\Carbon::parse($msg['created_at'])->format('d.m H:i') }}
+                {{ \Carbon\Carbon::parse($msg['created_at'])->setTimezone('Europe/Warsaw')->format('d.m H:i') }}
             </div>
         </div>
         @empty
