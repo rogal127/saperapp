@@ -164,6 +164,23 @@ dbamy o jej zachowanie.
         <button id="lightbox-next" style="display:none;position:absolute;top:50%;right:12px;transform:translateY(-50%);background:rgba(255,255,255,0.18);border:none;color:#fff;border-radius:50%;width:44px;height:44px;font-size:1.5rem;cursor:pointer;align-items:center;justify-content:center;" onclick="event.stopPropagation();lightboxNav(1)">›</button>
         <button style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:16px;background:rgba(255,255,255,0.18);border:none;color:#fff;border-radius:50%;width:40px;height:40px;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" onclick="event.stopPropagation();closeLightbox()">✕</button>
     </div>
+    @if(session('api_user'))
+    <script src="https://unpkg.com/pusher-js@8/dist/web/pusher.min.js"></script>
+    <script src="https://unpkg.com/laravel-echo@2/dist/echo.iife.js"></script>
+    <script>
+        window.Echo = new Echo.default({
+            broadcaster: 'reverb',
+            key: @json(config('services.reverb.key')),
+            wsHost: @json(config('services.reverb.host')),
+            wsPort: {{ (int) config('services.reverb.port') }},
+            wssPort: {{ (int) config('services.reverb.port') }},
+            forceTLS: {{ config('services.reverb.scheme') === 'https' ? 'true' : 'false' }},
+            enabledTransports: ['ws', 'wss'],
+            authEndpoint: @json(route('broadcasting.auth')),
+            auth: { headers: { 'X-CSRF-TOKEN': @json(csrf_token()) } },
+        });
+    </script>
+    @endif
     @stack('scripts')
     <script>
     function closeWelcomeModal() {
@@ -205,21 +222,6 @@ dbamy o jej zachowanie.
     });
     </script>
     @if(session('api_user'))
-    <script src="https://unpkg.com/pusher-js@8/dist/web/pusher.min.js"></script>
-    <script src="https://unpkg.com/laravel-echo@2/dist/echo.iife.js"></script>
-    <script>
-        window.Echo = new Echo({
-            broadcaster: 'reverb',
-            key: @json(config('services.reverb.key')),
-            wsHost: @json(config('services.reverb.host')),
-            wsPort: {{ (int) config('services.reverb.port') }},
-            wssPort: {{ (int) config('services.reverb.port') }},
-            forceTLS: {{ config('services.reverb.scheme') === 'https' ? 'true' : 'false' }},
-            enabledTransports: ['ws', 'wss'],
-            authEndpoint: @json(route('broadcasting.auth')),
-            auth: { headers: { 'X-CSRF-TOKEN': @json(csrf_token()) } },
-        });
-    </script>
     <script>
     (function () {
         const MY_ID = {{ (int) (session('api_user.id') ?? session('api_user')['id'] ?? 0) }};
