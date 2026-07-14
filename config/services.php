@@ -15,7 +15,14 @@ return [
     */
 
     'api' => [
-        'url' => rtrim(env('API_URL', 'http://localhost:8000'), '/') . '/api',
+        'url' => rtrim(env('API_URL', 'http://localhost:8000'), '/').'/api',
+    ],
+
+    'reverb' => [
+        'key' => env('REVERB_APP_KEY'),
+        'host' => env('REVERB_HOST', 'localhost'),
+        'port' => env('REVERB_PORT', 8080),
+        'scheme' => env('REVERB_SCHEME', 'http'),
     ],
 
     'postmark' => [

@@ -186,6 +186,8 @@
 <script>
 const SEND_URL   = "{{ route('messages.send', $conversation['id']) }}";
 const CSRF_TOKEN = '{{ csrf_token() }}';
+const CONVERSATION_ID = {{ (int) $conversation['id'] }};
+const MY_ID = {{ (int) (session('api_user.id') ?? session('api_user')['id'] ?? 0) }};
 
 const input       = document.getElementById('chat-input');
 const sendBtn     = document.getElementById('send-btn');
@@ -400,6 +402,11 @@ function appendSystemMsg(text) {
 function escHtml(str) {
     return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+window.Echo.private('conversation.' + CONVERSATION_ID).listen('.ConversationMessageSent', (msg) => {
+    if (msg.sender_id === MY_ID) { return; }
+    appendBubble(msg.body, msg.photo_url, msg.audio_url, false, msg.created_at);
+});
 </script>
 @endpush
 @endsection

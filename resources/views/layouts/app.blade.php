@@ -204,25 +204,75 @@ dbamy o jej zachowanie.
         else if (e.key === 'Escape') { closeLightbox(); }
     });
     </script>
+    @if(session('api_user'))
+    <script src="https://unpkg.com/pusher-js@8/dist/web/pusher.min.js"></script>
+    <script src="https://unpkg.com/laravel-echo@2/dist/echo.iife.js"></script>
+    <script>
+        window.Echo = new Echo({
+            broadcaster: 'reverb',
+            key: @json(config('services.reverb.key')),
+            wsHost: @json(config('services.reverb.host')),
+            wsPort: {{ (int) config('services.reverb.port') }},
+            wssPort: {{ (int) config('services.reverb.port') }},
+            forceTLS: {{ config('services.reverb.scheme') === 'https' ? 'true' : 'false' }},
+            enabledTransports: ['ws', 'wss'],
+            authEndpoint: @json(route('broadcasting.auth')),
+            auth: { headers: { 'X-CSRF-TOKEN': @json(csrf_token()) } },
+        });
+    </script>
     <script>
     (function () {
+        const MY_ID = {{ (int) (session('api_user.id') ?? session('api_user')['id'] ?? 0) }};
+        const ON_CHAT_PAGE = {{ request()->routeIs('chat.show') ? 'true' : 'false' }};
+        const OPEN_CONVERSATION_ID = {{ request()->routeIs('messages.show') ? (int) request()->route('id') : 'null' }};
+        let unreadCount = 0;
+
+        function renderBadge() {
+            const link = document.getElementById('nav-messages');
+            if (!link) { return; }
+            let badge = document.getElementById('nav-messages-badge');
+            if (unreadCount <= 0) {
+                if (badge) { badge.remove(); }
+                return;
+            }
+            if (!badge) {
+                link.style.position = 'relative';
+                badge = document.createElement('span');
+                badge.id = 'nav-messages-badge';
+                badge.style.cssText = 'position:absolute;top:6px;right:calc(50% - 18px);background:#f59e0b;color:#1a1a2e;border-radius:999px;font-size:0.55rem;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;';
+                link.appendChild(badge);
+            }
+            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+        }
+
         Promise.all([
             fetch("{{ route('messages.unread') }}").then(r => r.json()).catch(() => ({count: 0})),
             fetch("{{ route('chat.unread') }}").then(r => r.json()).catch(() => ({count: 0})),
         ]).then(([conversations, chat]) => {
-            const count = (conversations.count || 0) + (chat.count || 0);
-            if (count > 0) {
-                const link = document.getElementById('nav-messages');
-                if (!link) { return; }
-                link.style.position = 'relative';
-                const badge = document.createElement('span');
-                badge.style.cssText = 'position:absolute;top:6px;right:calc(50% - 18px);background:#f59e0b;color:#1a1a2e;border-radius:999px;font-size:0.55rem;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;';
-                badge.textContent = count > 99 ? '99+' : count;
-                link.appendChild(badge);
-            }
+            unreadCount = (conversations.count || 0) + (chat.count || 0);
+            renderBadge();
         });
+
+        if (!ON_CHAT_PAGE) {
+            window.Echo.channel('chat').listen('.ChatMessageSent', (e) => {
+                if (e.user_id !== MY_ID) {
+                    unreadCount++;
+                    renderBadge();
+                }
+            });
+        }
+
+        if (MY_ID) {
+            window.Echo.private('users.' + MY_ID).listen('.ConversationMessageSent', (e) => {
+                if (e.conversation_id !== OPEN_CONVERSATION_ID) {
+                    unreadCount++;
+                    renderBadge();
+                }
+            });
+        }
     })();
     </script>
+    @endif
     <script>
     (function () {
         fetch("{{ route('expeditions.pending-count') }}")

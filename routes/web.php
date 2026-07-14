@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\BroadcastAuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ExpeditionController;
@@ -85,6 +86,8 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/api/chat/messages', [ChatController::class, 'messages'])->name('chat.messages');
     Route::post('/api/chat/messages', [ChatController::class, 'send'])->name('chat.send');
     Route::get('/api/chat/unread-count', [ChatController::class, 'unreadCount'])->name('chat.unread');
+
+    Route::post('/broadcasting/auth', [BroadcastAuthController::class, 'authorize'])->name('broadcasting.auth');
 
     Route::get('/users/{id}', [UserProfileController::class, 'show'])->name('users.show');
     Route::get('/users/{id}/findings', [UserProfileController::class, 'findings'])->name('users.findings');

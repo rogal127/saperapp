@@ -490,7 +490,8 @@ function escHtml(str) {
     return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-const pollTimer = setInterval(poll, 4000);
+window.Echo.channel('chat').listen('.ChatMessageSent', appendMessage);
+
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden) { poll(); }
 });
