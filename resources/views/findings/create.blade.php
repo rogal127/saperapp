@@ -204,7 +204,7 @@
                         <input
                             type="number"
                             name="depth_cm"
-                            value="{{ old('depth_cm') }}"
+                            value="{{ old('depth_cm', 0) }}"
                             placeholder="0"
                             min="0"
                             max="9999"

@@ -56,7 +56,7 @@
                     <input
                         type="number"
                         name="depth_cm"
-                        value="{{ old('depth_cm', $finding['depth_cm'] ?? '') }}"
+                        value="{{ old('depth_cm', $finding['depth_cm'] ?? 0) }}"
                         placeholder="0"
                         min="0"
                         max="9999"
