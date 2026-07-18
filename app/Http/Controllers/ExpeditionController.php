@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 
@@ -53,14 +54,16 @@ class ExpeditionController extends Controller
 
     public function pendingCount(Request $request)
     {
-        $response = Http::withToken($this->apiToken($request))
-            ->get($this->base().'/expeditions/pending-count');
+        $token = $this->apiToken($request);
 
-        if ($response->failed()) {
-            return response()->json(['count' => 0]);
-        }
+        $data = Cache::remember('expeditions.pending_count.'.md5($token), 20, function () use ($token) {
+            $response = Http::withToken($token)
+                ->get($this->base().'/expeditions/pending-count');
 
-        return response()->json($response->json());
+            return $response->failed() ? ['count' => 0] : $response->json();
+        });
+
+        return response()->json($data);
     }
 
     public function apiIndex(Request $request)

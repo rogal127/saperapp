@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class ConversationController extends Controller
@@ -91,10 +92,14 @@ class ConversationController extends Controller
 
     public function unreadCount(Request $request)
     {
-        $response = Http::withToken($this->apiToken($request))
-            ->get(config('services.api.url').'/conversations/unread-count');
+        $token = $this->apiToken($request);
 
-        $count = $response->successful() ? $response->json('data.unread_count', 0) : 0;
+        $count = Cache::remember('conversations.unread_count.'.md5($token), 20, function () use ($token) {
+            $response = Http::withToken($token)
+                ->get(config('services.api.url').'/conversations/unread-count');
+
+            return $response->successful() ? $response->json('data.unread_count', 0) : 0;
+        });
 
         return response()->json(['count' => $count]);
     }
