@@ -490,7 +490,7 @@ function escHtml(str) {
     return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-const pollTimer = setInterval(poll, 4000);
+const pollTimer = setInterval(poll, 30000);
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden) { poll(); }
 });
