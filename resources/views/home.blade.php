@@ -100,6 +100,7 @@
 @push('scripts')
 <script>
 (function () {
+    if (true) { return; } // pending-count fetch temporarily disabled
     fetch("{{ route('expeditions.pending-count') }}")
         .then(r => r.json())
         .then(data => {

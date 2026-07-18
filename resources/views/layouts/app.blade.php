@@ -216,6 +216,7 @@ dbamy o jej zachowanie.
     </script>
     <script>
     (function () {
+        if (true) { return; } // unread-count fetches temporarily disabled
         Promise.all([
             fetch("{{ route('messages.unread') }}").then(r => r.json()).catch(() => ({count: 0})),
             fetch("{{ route('chat.unread') }}").then(r => r.json()).catch(() => ({count: 0})),
@@ -235,6 +236,7 @@ dbamy o jej zachowanie.
     </script>
     <script>
     (function () {
+        if (true) { return; } // pending-count fetch temporarily disabled
         fetch("{{ route('expeditions.pending-count') }}")
             .then(r => r.json())
             .then(data => {
