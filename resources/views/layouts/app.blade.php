@@ -113,6 +113,16 @@
         .welcome-modal-link { color: #f59e0b; font-weight: 700; text-decoration: underline; }
     </style>
     @stack('styles')
+    @if (config('services.google_analytics.id'))
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google_analytics.id') }}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '{{ config('services.google_analytics.id') }}');
+        </script>
+    @endif
 </head>
 <body>
     <div class="screen">
