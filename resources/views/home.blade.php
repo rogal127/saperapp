@@ -97,31 +97,4 @@
 
 </div>
 
-@push('scripts')
-<script>
-(function () {
-    if (true) { return; } // pending-count fetch temporarily disabled
-    fetch("{{ route('expeditions.pending-count') }}")
-        .then(r => r.json())
-        .then(data => {
-            const count = data.count || 0;
-            if (count <= 0) { return; }
-            const badge = document.getElementById('expeditionBadge');
-            if (badge) {
-                badge.textContent = count > 9 ? '9+' : count;
-                badge.classList.remove('hidden');
-            }
-            const subtitle = document.getElementById('expeditionSubtitle');
-            if (subtitle) {
-                subtitle.textContent = count === 1
-                    ? 'Masz 1 nowe zaproszenie do poszukiwań'
-                    : 'Masz ' + count + ' nowe zaproszenia do poszukiwań';
-                subtitle.classList.remove('text-gray-400');
-                subtitle.classList.add('text-amber-400', 'font-semibold');
-            }
-        })
-        .catch(() => {});
-})();
-</script>
-@endpush
 @endsection

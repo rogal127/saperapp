@@ -216,7 +216,6 @@ dbamy o jej zachowanie.
     </script>
     <script>
     (function () {
-        if (true) { return; } // unread-count fetches temporarily disabled
         Promise.all([
             fetch("{{ route('messages.unread') }}").then(r => r.json()).catch(() => ({count: 0})),
             fetch("{{ route('chat.unread') }}").then(r => r.json()).catch(() => ({count: 0})),
@@ -236,18 +235,33 @@ dbamy o jej zachowanie.
     </script>
     <script>
     (function () {
-        if (true) { return; } // pending-count fetch temporarily disabled
         fetch("{{ route('expeditions.pending-count') }}")
             .then(r => r.json())
             .then(data => {
-                if (data.count > 0) {
-                    const link = document.getElementById('nav-expeditions');
-                    if (!link) { return; }
+                const count = data.count || 0;
+                if (count <= 0) { return; }
+
+                const link = document.getElementById('nav-expeditions');
+                if (link) {
                     link.style.position = 'relative';
                     const badge = document.createElement('span');
                     badge.style.cssText = 'position:absolute;top:6px;right:calc(50% - 18px);background:#f59e0b;color:#1a1a2e;border-radius:999px;font-size:0.55rem;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;';
-                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    badge.textContent = count > 99 ? '99+' : count;
                     link.appendChild(badge);
+                }
+
+                const homeBadge = document.getElementById('expeditionBadge');
+                if (homeBadge) {
+                    homeBadge.textContent = count > 9 ? '9+' : count;
+                    homeBadge.classList.remove('hidden');
+                }
+                const subtitle = document.getElementById('expeditionSubtitle');
+                if (subtitle) {
+                    subtitle.textContent = count === 1
+                        ? 'Masz 1 nowe zaproszenie do poszukiwań'
+                        : 'Masz ' + count + ' nowe zaproszenia do poszukiwań';
+                    subtitle.classList.remove('text-gray-400');
+                    subtitle.classList.add('text-amber-400', 'font-semibold');
                 }
             })
             .catch(() => {});
