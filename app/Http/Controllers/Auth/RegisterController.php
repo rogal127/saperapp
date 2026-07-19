@@ -15,6 +15,11 @@ class RegisterController extends Controller
 
     public function store(Request $request)
     {
+        if (filled($request->input('website'))) {
+            // Honeypot field filled in — silently pretend it worked so the bot doesn't adapt.
+            return redirect()->route('login');
+        }
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],

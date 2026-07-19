@@ -24,6 +24,12 @@
         <form method="POST" action="{{ route('register') }}" class="flex flex-col gap-4">
             @csrf
 
+            {{-- Honeypot: hidden from real users, only bots fill it in --}}
+            <div class="absolute -left-[9999px]" aria-hidden="true">
+                <label for="website">Zostaw puste</label>
+                <input type="text" name="website" id="website" tabindex="-1" autocomplete="off">
+            </div>
+
             {{-- Name --}}
             <div>
                 <label class="block text-sm font-medium text-gray-300 mb-1.5 ml-1">Imię / Nick</label>
