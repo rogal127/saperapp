@@ -56,7 +56,7 @@ class ExpeditionController extends Controller
     {
         $token = $this->apiToken($request);
 
-        $data = Cache::remember('expeditions.pending_count.'.md5($token), 20, function () use ($token) {
+        $data = Cache::remember('expeditions.pending_count.'.md5($token), 300, function () use ($token) {
             $response = Http::withToken($token)
                 ->get($this->base().'/expeditions/pending-count');
 
