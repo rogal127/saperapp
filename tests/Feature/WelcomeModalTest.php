@@ -19,7 +19,7 @@ it('shows the welcome modal right after logging in', function () {
 
     $response->assertOk();
     $response->assertSee('Witaj w świecie Historius!');
-    $response->assertSee('https://info.r-dev.pl', escape: false);
+    $response->assertSee('https://info.historius.pl', escape: false);
 });
 
 it('does not show the welcome modal on a page visited without just logging in', function () {

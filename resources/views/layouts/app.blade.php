@@ -160,7 +160,7 @@
                 <p class="welcome-modal-text">
                     Tu dzielimy się informacjami o naszych odkryciach, wspólnie z naukowcami odkrywamy historie i 
 dbamy o jej zachowanie. 
-                    <a href="https://info.r-dev.pl" target="_blank" rel="noopener" class="welcome-modal-link">Kliknij TUTAJ</a> i poczytaj jak działa Historius.
+                    <a href="https://info.historius.pl" target="_blank" rel="noopener" class="welcome-modal-link">Kliknij TUTAJ</a> i poczytaj jak działa Historius.
                 </p>
                 <button type="button" class="btn-primary" onclick="closeWelcomeModal()">Rozumiem</button>
             </div>
