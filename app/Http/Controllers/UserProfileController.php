@@ -12,6 +12,25 @@ class UserProfileController extends Controller
         return $request->session()->get('api_token', '');
     }
 
+    public function index(Request $request)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get(config('services.api.url').'/users', $request->only(['q', 'page']));
+
+        if ($response->failed()) {
+            abort(502);
+        }
+
+        $data = $response->json();
+
+        return view('users.index', [
+            'users' => $data['data'] ?? [],
+            'currentPage' => $data['current_page'] ?? 1,
+            'lastPage' => $data['last_page'] ?? 1,
+            'query' => (string) $request->query('q', ''),
+        ]);
+    }
+
     public function show(Request $request, int $id)
     {
         $response = Http::withToken($this->apiToken($request))
