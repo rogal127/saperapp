@@ -15,7 +15,7 @@ class UserProfileController extends Controller
     public function index(Request $request)
     {
         $response = Http::withToken($this->apiToken($request))
-            ->get(config('services.api.url').'/users', $request->only(['q', 'page']));
+            ->get(config('services.api.url').'/users', $request->only(['q', 'page', 'letter']));
 
         if ($response->failed()) {
             abort(502);
@@ -27,7 +27,10 @@ class UserProfileController extends Controller
             'users' => $data['data'] ?? [],
             'currentPage' => $data['current_page'] ?? 1,
             'lastPage' => $data['last_page'] ?? 1,
+            'totalUsers' => $data['total_users'] ?? 0,
+            'availableLetters' => $data['available_letters'] ?? [],
             'query' => (string) $request->query('q', ''),
+            'letter' => (string) $request->query('letter', ''),
         ]);
     }
 

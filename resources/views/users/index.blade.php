@@ -18,6 +18,16 @@
     }
     .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
     .user-name { font-weight: 700; font-size: 0.9rem; color: #fff; }
+    .alphabet-strip { display: flex; gap: 0.375rem; overflow-x: auto; scrollbar-width: none; }
+    .alphabet-strip::-webkit-scrollbar { display: none; }
+    .alphabet-btn {
+        flex-shrink: 0; min-width: 2rem; height: 2rem; padding: 0 0.5rem;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 0.6rem; background: #2a2a3e; color: #e2e8f0;
+        font-size: 0.8rem; font-weight: 700; text-decoration: none;
+    }
+    .alphabet-btn.active { background: #f59e0b; color: #1a1a2e; }
+    .alphabet-btn.disabled { opacity: 0.3; }
 </style>
 @endpush
 
@@ -27,7 +37,10 @@
     {{-- Header --}}
     <div class="flex items-center gap-3 px-4 pt-4 pb-3 flex-shrink-0">
         <button onclick="history.back()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card text-gray-300 text-xl flex-shrink-0">‹</button>
-        <h1 class="text-lg font-bold text-white flex-1 truncate">Użytkownicy</h1>
+        <div class="flex-1 min-w-0">
+            <h1 class="text-lg font-bold text-white truncate">Użytkownicy</h1>
+            <p class="text-xs text-gray-400">{{ $totalUsers }} {{ $totalUsers === 1 ? 'użytkownik' : 'użytkowników' }}</p>
+        </div>
     </div>
 
     {{-- Wyszukiwarka --}}
@@ -42,6 +55,23 @@
                 oninput="clearTimeout(window.__usersSearchTimer); window.__usersSearchTimer = setTimeout(() => this.form.submit(), 400)"
             >
         </form>
+    </div>
+
+    {{-- Pasek alfabetu --}}
+    @php
+        $alphabet = ['A','Ą','B','C','Ć','D','E','Ę','F','G','H','I','J','K','L','Ł','M','N','Ń','O','Ó','P','Q','R','S','Ś','T','U','V','W','X','Y','Z','Ź','Ż'];
+    @endphp
+    <div class="px-4 pb-3 flex-shrink-0">
+        <div class="alphabet-strip">
+            <a href="{{ route('users.index') }}" class="alphabet-btn {{ $letter === '' ? 'active' : '' }}">Wszyscy</a>
+            @foreach($alphabet as $l)
+                @if(in_array($l, $availableLetters, true))
+                    <a href="{{ route('users.index', ['letter' => $l]) }}" class="alphabet-btn {{ $letter === $l ? 'active' : '' }}">{{ $l }}</a>
+                @else
+                    <span class="alphabet-btn disabled">{{ $l }}</span>
+                @endif
+            @endforeach
+        </div>
     </div>
 
     {{-- Lista użytkowników --}}
@@ -72,15 +102,18 @@
             </div>
 
             @if($lastPage > 1)
+            @php
+                $baseParams = array_filter(['q' => $query, 'letter' => $letter], fn ($value) => $value !== '');
+            @endphp
             <div class="flex items-center justify-between gap-3 mt-4">
                 <a
-                    href="{{ route('users.index', ['q' => $query, 'page' => max(1, $currentPage - 1)]) }}"
+                    href="{{ route('users.index', $baseParams + ['page' => max(1, $currentPage - 1)]) }}"
                     class="btn-secondary text-sm text-center {{ $currentPage <= 1 ? 'pointer-events-none opacity-40' : '' }}"
                     style="padding:0.5rem 1rem;width:auto"
                 >‹ Poprzednia</a>
                 <span class="text-sm text-gray-400">{{ $currentPage }} / {{ $lastPage }}</span>
                 <a
-                    href="{{ route('users.index', ['q' => $query, 'page' => min($lastPage, $currentPage + 1)]) }}"
+                    href="{{ route('users.index', $baseParams + ['page' => min($lastPage, $currentPage + 1)]) }}"
                     class="btn-secondary text-sm text-center {{ $currentPage >= $lastPage ? 'pointer-events-none opacity-40' : '' }}"
                     style="padding:0.5rem 1rem;width:auto"
                 >Następna ›</a>
