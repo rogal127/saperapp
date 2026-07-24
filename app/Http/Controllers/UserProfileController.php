@@ -80,4 +80,20 @@ class UserProfileController extends Controller
 
         return response()->json($response->json());
     }
+
+    public function destroy(Request $request, int $id)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->delete(config('services.api.url').'/users/'.$id);
+
+        if ($response->status() === 403) {
+            return response()->json(['message' => 'Brak uprawnień.'], 403);
+        }
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'Nie udało się usunąć użytkownika.'], 502);
+        }
+
+        return response()->json(['message' => 'Użytkownik usunięty.']);
+    }
 }

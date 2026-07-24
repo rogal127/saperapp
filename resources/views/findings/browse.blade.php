@@ -62,6 +62,33 @@
     .modal-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     #modal-status { text-align: center; margin-top: 0.5rem; font-size: 0.78rem; min-height: 1.1em; }
 
+    /* Modal usuwania znaleziska przez administratora */
+    #admin-delete-modal {
+        display: none; position: fixed; inset: 0; z-index: 2000;
+        background: rgba(0,0,0,0.75); align-items: flex-end; justify-content: center;
+    }
+    #admin-delete-modal.open { display: flex; }
+    #admin-delete-sheet {
+        background: #1a1a2e; border-radius: 1.25rem 1.25rem 0 0;
+        border: 1px solid #2a2a3e; width: 100%; max-width: 480px;
+        max-height: 90vh; display: flex; flex-direction: column;
+        animation: slideUp 0.25s ease;
+    }
+    .reason-template-btn {
+        display: block; width: 100%; text-align: left; margin-bottom: 0.5rem;
+        background: #2a2a3e; border: 1px solid #404060; color: #e2e8f0;
+        border-radius: 0.75rem; padding: 0.6rem 0.75rem; font-size: 0.8rem; cursor: pointer;
+    }
+    .reason-template-btn:active { border-color: #f59e0b; }
+    .modal-danger-btn {
+        margin-top: 0.75rem; width: 100%; padding: 0.8rem;
+        background: #ef4444; color: #fff; font-weight: 700;
+        border: none; border-radius: 0.75rem; cursor: pointer;
+        font-size: 0.9rem; transition: opacity 0.15s;
+    }
+    .modal-danger-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #admin-delete-status { text-align: center; margin-top: 0.5rem; font-size: 0.78rem; min-height: 1.1em; }
+
     #shareOverlay .autocomplete-list { position: static; margin-top: 2px; }
 </style>
 @endpush
@@ -141,6 +168,30 @@
                     <textarea id="modal-msg" class="modal-textarea" rows="3" placeholder="Napisz wiadomość do znalazcy…"></textarea>
                     <button id="modal-send" class="modal-send-btn" onclick="sendModalMessage()">Wyślij wiadomość</button>
                     <div id="modal-status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal usuwania znaleziska przez administratora --}}
+    <div id="admin-delete-modal" onclick="handleAdminDeleteBackdrop(event)">
+        <div id="admin-delete-sheet">
+            <div id="message-sheet-header">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <div class="modal-title">Usuń znalezisko</div>
+                    <button class="modal-close" onclick="closeAdminDeleteModal()">✕</button>
+                </div>
+            </div>
+            <div id="message-sheet-body">
+                <div class="modal-body">
+                    <p style="font-size:0.8rem;color:#9ca3af;margin-bottom:0.75rem">
+                        Podaj przyczynę usunięcia. Zostanie ona wysłana jako wiadomość do autora znaleziska.
+                    </p>
+                    <button type="button" class="reason-template-btn" onclick="applyReasonTemplate('Brak zdjęcia znaleziska.')">📷 Brak zdjęcia</button>
+                    <button type="button" class="reason-template-btn" onclick="applyReasonTemplate('Znalezisko nie przedstawia wartości historycznej.')">🏛️ Brak wartości historycznej</button>
+                    <textarea id="admin-delete-reason" class="modal-textarea" rows="3" placeholder="Przyczyna usunięcia…" style="margin-top:0.5rem"></textarea>
+                    <button id="admin-delete-confirm" class="modal-danger-btn" onclick="confirmAdminDelete()">Usuń znalezisko</button>
+                    <div id="admin-delete-status"></div>
                 </div>
             </div>
         </div>
@@ -347,6 +398,10 @@
 
         const shareBtnHtml = '<button class="card-action-btn" onclick="openShareSheet(' + f.id + ', ' + escHtml(JSON.stringify(f.name ?? '')) + ')">📨 Prześlij</button>';
 
+        const adminDeleteBtnHtml = (currentApiUser && currentApiUser.is_admin && !isOwner)
+            ? '<button class="card-action-btn" style="background:rgba(239,68,68,0.08);color:#f87171" onclick="openAdminDeleteModal(' + f.id + ', ' + escHtml(JSON.stringify(f.name ?? '')) + ')">🗑️ Usuń</button>'
+            : '';
+
         return '<div class="card flex flex-col gap-0" style="padding:0.875rem">' +
             '<div class="flex gap-3 items-center">' +
                 '<a href="/findings/' + f.id + '" class="flex gap-3 flex-1 min-w-0">' +
@@ -372,6 +427,7 @@
                 '<a href="/findings/' + f.id + '#comments" class="card-action-btn">💬 Skomentuj</a>' +
                 messageBtnHtml +
                 shareBtnHtml +
+                adminDeleteBtnHtml +
             '</div>' +
         '</div>';
     }
@@ -609,6 +665,92 @@
                 setTimeout(closeMessageModal, 1500);
             } else {
                 status.textContent = data.message || 'Nie udało się wysłać.';
+                status.style.color = '#f87171';
+                btn.disabled = false;
+            }
+        })
+        .catch(() => {
+            status.textContent = 'Błąd połączenia.';
+            status.style.color = '#f87171';
+            btn.disabled = false;
+        });
+    };
+
+    // Usuwanie znaleziska przez administratora
+    let activeAdminDeleteFindingId = null;
+
+    function removeCachedFinding(findingId) {
+        try {
+            Object.keys(sessionStorage).filter(k => k.startsWith('browse:')).forEach(key => {
+                const cached = JSON.parse(sessionStorage.getItem(key));
+                if (!cached || !cached.data) { return; }
+                const filtered = cached.data.filter(x => x.id != findingId);
+                if (filtered.length !== cached.data.length) {
+                    cached.data = filtered;
+                    sessionStorage.setItem(key, JSON.stringify(cached));
+                }
+            });
+        } catch {}
+    }
+
+    window.openAdminDeleteModal = function (findingId, findingName) {
+        activeAdminDeleteFindingId = findingId;
+        document.getElementById('admin-delete-reason').value = '';
+        document.getElementById('admin-delete-status').textContent = '';
+        document.getElementById('admin-delete-status').style.color = '';
+        document.getElementById('admin-delete-confirm').disabled = false;
+        document.getElementById('admin-delete-modal').classList.add('open');
+    };
+
+    window.applyReasonTemplate = function (text) {
+        const input = document.getElementById('admin-delete-reason');
+        input.value = text;
+        input.focus();
+    };
+
+    window.closeAdminDeleteModal = function () {
+        document.getElementById('admin-delete-modal').classList.remove('open');
+        activeAdminDeleteFindingId = null;
+    };
+
+    window.handleAdminDeleteBackdrop = function (e) {
+        if (e.target === document.getElementById('admin-delete-modal')) { closeAdminDeleteModal(); }
+    };
+
+    window.confirmAdminDelete = function () {
+        const findingId = activeAdminDeleteFindingId;
+        if (!findingId) { return; }
+
+        const reason = document.getElementById('admin-delete-reason').value.trim();
+        const status = document.getElementById('admin-delete-status');
+        if (!reason) {
+            status.textContent = 'Podaj przyczynę usunięcia.';
+            status.style.color = '#f87171';
+            return;
+        }
+
+        const btn = document.getElementById('admin-delete-confirm');
+        btn.disabled = true;
+        status.textContent = 'Usuwanie…';
+        status.style.color = '#9ca3af';
+
+        fetch('/findings/' + findingId, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+            body: JSON.stringify({ reason: reason }),
+        })
+        .then(r => r.json().then(data => ({ ok: r.ok, data: data })))
+        .then(({ ok, data }) => {
+            if (ok) {
+                status.textContent = '✓ Znalezisko usunięte.';
+                status.style.color = '#34d399';
+                removeCachedFinding(findingId);
+                const likeBtn = list.querySelector('.like-btn[data-id="' + findingId + '"]');
+                const card = likeBtn ? likeBtn.closest('.card') : null;
+                if (card) { card.remove(); }
+                setTimeout(closeAdminDeleteModal, 1000);
+            } else {
+                status.textContent = data.message || 'Nie udało się usunąć.';
                 status.style.color = '#f87171';
                 btn.disabled = false;
             }

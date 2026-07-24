@@ -89,6 +89,7 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/users', [UserProfileController::class, 'index'])->name('users.index');
     Route::get('/users/{id}', [UserProfileController::class, 'show'])->name('users.show');
     Route::get('/users/{id}/findings', [UserProfileController::class, 'findings'])->name('users.findings');
+    Route::delete('/users/{id}', [UserProfileController::class, 'destroy'])->name('users.destroy');
 
     Route::post('/logout', LogoutController::class)->name('logout');
 });

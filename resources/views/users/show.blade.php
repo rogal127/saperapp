@@ -184,6 +184,12 @@
                         💬 Napisz
                     </button>
                 </form>
+                @php($apiUser = session('api_user'))
+                @if(!empty($apiUser['is_admin']))
+                <button type="button" onclick="deleteUser()" style="background:rgba(239,68,68,0.15);color:#f87171;font-weight:700;font-size:0.75rem;padding:0.4rem 0.875rem;border-radius:0.75rem;border:none;cursor:pointer;white-space:nowrap">
+                    🗑️ Usuń
+                </button>
+                @endif
                 @endif
             </div>
         </div>
@@ -308,6 +314,30 @@ const CSRF_TOKEN    = '{{ csrf_token() }}';
 const MESSAGE_BASE  = "{{ url('/api/findings') }}";
 const IS_OWN_PROFILE = {{ ($profile['id'] ?? null) === $currentUserId ? 'true' : 'false' }};
 const FINDINGS_URL = '{{ route('users.findings', $profile['id'] ?? 0) }}';
+
+function deleteUser() {
+    const name = {{ \Illuminate\Support\Js::from($profile['name'] ?? 'tego użytkownika') }};
+    if (!confirm('Czy na pewno usunąć użytkownika „' + name + '”?\n\nSpowoduje to trwałe usunięcie konta wraz z jego znaleziskami i wiadomościami.')) {
+        return;
+    }
+
+    fetch('{{ route('users.destroy', $profile['id'] ?? 0) }}', {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': CSRF_TOKEN,
+            'Accept': 'application/json',
+        },
+    })
+    .then(r => r.json().then(data => ({ ok: r.ok, data: data })))
+    .then(({ ok, data }) => {
+        if (ok) {
+            window.location.href = '{{ route('users.index') }}';
+        } else {
+            alert(data.message || 'Nie udało się usunąć użytkownika.');
+        }
+    })
+    .catch(() => alert('Błąd połączenia.'));
+}
 
 function toggleLike(findingId, btn) {
     fetch(`/api/findings/${findingId}/like`, {

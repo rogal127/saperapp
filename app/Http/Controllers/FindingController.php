@@ -628,8 +628,10 @@ class FindingController extends Controller
 
     public function destroy(Request $request, int $id)
     {
+        $reason = trim((string) $request->input('reason', ''));
+
         $response = Http::withToken($this->apiToken($request))
-            ->delete(config('services.api.url')."/findings/{$id}");
+            ->delete(config('services.api.url')."/findings/{$id}", $reason !== '' ? ['reason' => $reason] : []);
 
         if (request()->expectsJson()) {
             if ($response->status() === 403) {
