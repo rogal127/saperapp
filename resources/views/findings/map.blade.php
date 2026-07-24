@@ -552,7 +552,7 @@ function bubbleIcon(count, level, name) {
     const size = Math.max(52, Math.min(90, 52 + Math.log(count + 1) * 13));
     const cls  = LEVEL_CLASS[level] ?? 'cb-city';
     const shortName = formatBubbleName(level, name, size);
-    const html = `<div class="cluster-bubble ${cls}" style="width:${size}px;height:${size}px"><span class="cb-count">${count}</span><span class="cb-label">${shortName}</span></div>`;
+    const html = `<div class="cluster-bubble ${cls}" style="width:${size}px;height:${size}px"><span class="cb-count">${count}</span><span class="cb-label">${escHtml(shortName)}</span></div>`;
     return L.divIcon({ html, iconSize: [size, size], iconAnchor: [size/2, size/2], className: '' });
 }
 
@@ -778,8 +778,8 @@ function openCityFindingsModal(cluster) {
                 ${photosHtml(f)}
                 <div class="pin-finding-actions">
                     <a href="/findings/${f.id}#comments" class="pin-msg-btn" style="margin:0;width:auto;flex:1;text-decoration:none;text-align:center">💬 Skomentuj</a>
-                    <button class="pin-msg-btn" style="margin:0;width:auto;flex:1" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">✉️ Wiadomość</button>
-                    <button class="pin-msg-btn" style="margin:0;width:auto;flex:1" onclick="openShareSheet(${f.id}, '${escHtml(f.name)}')">📨 Prześlij</button>
+                    <button class="pin-msg-btn" style="margin:0;width:auto;flex:1" onclick="openMessageModal(${f.id}, ${escHtml(JSON.stringify(f.name ?? ''))})">✉️ Wiadomość</button>
+                    <button class="pin-msg-btn" style="margin:0;width:auto;flex:1" onclick="openShareSheet(${f.id}, ${escHtml(JSON.stringify(f.name ?? ''))})">📨 Prześlij</button>
                 </div>
             `;
             list.appendChild(card);
@@ -803,8 +803,7 @@ function photosHtml(f) {
     if (!photos.length) { return ''; }
     const imgs = photos.map(({ thumb, full }) => {
         const t = escHtml(thumb);
-        const fu = escHtml(full);
-        return `<img class="pin-finding-photo" src="${t}" alt="" onclick="openLightbox('${fu}')">`;
+        return `<img class="pin-finding-photo" src="${t}" alt="" onclick="openLightbox(${escHtml(JSON.stringify(full ?? ''))})">`;
     }).join('');
     return photos.length === 1 ? imgs : `<div class="pin-finding-gallery">${imgs}</div>`;
 }
@@ -889,8 +888,8 @@ function openPinModal(pin) {
                     ${photosHtml(f)}
                     <div class="pin-finding-actions">
                         <a href="/findings/${f.id}#comments" class="pin-msg-btn" style="margin:0;width:auto;flex:1;text-decoration:none;text-align:center">💬 Skomentuj</a>
-                        ${!pin.is_mine ? `<button class="pin-msg-btn" style="margin:0;width:auto;flex:1" onclick="openMessageModal(${f.id}, '${escHtml(f.name)}')">✉️ Wiadomość</button>` : ''}
-                        <button class="pin-msg-btn" style="margin:0;width:auto;flex:1" onclick="openShareSheet(${f.id}, '${escHtml(f.name)}')">📨 Prześlij</button>
+                        ${!pin.is_mine ? `<button class="pin-msg-btn" style="margin:0;width:auto;flex:1" onclick="openMessageModal(${f.id}, ${escHtml(JSON.stringify(f.name ?? ''))})">✉️ Wiadomość</button>` : ''}
+                        <button class="pin-msg-btn" style="margin:0;width:auto;flex:1" onclick="openShareSheet(${f.id}, ${escHtml(JSON.stringify(f.name ?? ''))})">📨 Prześlij</button>
                     </div>
                 `;
                 list.appendChild(card);
@@ -1144,7 +1143,7 @@ function togglePanel() {
 
 function escHtml(str) {
     return String(str ?? '')
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 function toggleLike(findingId, btn) {

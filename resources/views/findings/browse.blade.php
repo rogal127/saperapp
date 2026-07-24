@@ -304,9 +304,12 @@
     }
 
     function escHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str ?? '';
-        return div.innerHTML.replace(/'/g, '&#39;');
+        return String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     function typeBadgeHtml(type) {
@@ -322,7 +325,7 @@
 
     function renderCard(f) {
         const photoHtml = f.photo_url
-            ? '<img src="' + (f.photo_thumb_url || f.photo_url) + '" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:0.75rem;flex-shrink:0">'
+            ? '<img src="' + escHtml(f.photo_thumb_url || f.photo_url) + '" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:0.75rem;flex-shrink:0">'
             : '<div style="width:72px;height:72px;border-radius:0.75rem;background:#323248;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">📷</div>';
 
         const locationParts = [];
@@ -339,21 +342,21 @@
             : '';
 
         const messageBtnHtml = !isOwner
-            ? '<button class="card-action-btn" onclick="openMessageModal(' + f.id + ', \'' + escHtml(f.name) + '\')">✉️ Wiadomość</button>'
+            ? '<button class="card-action-btn" onclick="openMessageModal(' + f.id + ', ' + escHtml(JSON.stringify(f.name ?? '')) + ')">✉️ Wiadomość</button>'
             : '';
 
-        const shareBtnHtml = '<button class="card-action-btn" onclick="openShareSheet(' + f.id + ', \'' + escHtml(f.name) + '\')">📨 Prześlij</button>';
+        const shareBtnHtml = '<button class="card-action-btn" onclick="openShareSheet(' + f.id + ', ' + escHtml(JSON.stringify(f.name ?? '')) + ')">📨 Prześlij</button>';
 
         return '<div class="card flex flex-col gap-0" style="padding:0.875rem">' +
             '<div class="flex gap-3 items-center">' +
                 '<a href="/findings/' + f.id + '" class="flex gap-3 flex-1 min-w-0">' +
                     photoHtml +
                     '<div class="flex-1 min-w-0">' +
-                        '<h3 class="font-bold text-white text-sm truncate">' + (f.name || '') + '</h3>' +
+                        '<h3 class="font-bold text-white text-sm truncate">' + escHtml(f.name || '') + '</h3>' +
                         (f.type ? '<div class="mt-1">' + typeBadgeHtml(f.type) + '</div>' : '') +
-                        (location ? '<p class="text-xs text-gray-400 mt-1 truncate">📍 ' + location + '</p>' : '') +
-                        '<p class="text-xs text-gray-500 mt-0.5">📅 ' + (f.found_at || '') + '</p>' +
-                        (f.finder ? '<p class="text-xs text-amber-400 mt-0.5">' + f.finder.name + '</p>' : '') +
+                        (location ? '<p class="text-xs text-gray-400 mt-1 truncate">📍 ' + escHtml(location) + '</p>' : '') +
+                        '<p class="text-xs text-gray-500 mt-0.5">📅 ' + escHtml(f.found_at || '') + '</p>' +
+                        (f.finder ? '<p class="text-xs text-amber-400 mt-0.5">' + escHtml(f.finder.name) + '</p>' : '') +
                     '</div>' +
                 '</a>' +
                 editBtnHtml +
@@ -536,11 +539,11 @@
             }
             likersList.innerHTML = users.map(u => {
                 const avatar = u.avatar_url
-                    ? '<img src="' + u.avatar_url + '" alt="" style="width:100%;height:100%;object-fit:cover">'
-                    : '<span class="text-xs font-bold">' + (u.name ? u.name.charAt(0).toUpperCase() : '?') + '</span>';
+                    ? '<img src="' + escHtml(u.avatar_url) + '" alt="" style="width:100%;height:100%;object-fit:cover">'
+                    : '<span class="text-xs font-bold">' + escHtml(u.name ? u.name.charAt(0).toUpperCase() : '?') + '</span>';
                 return '<a href="/users/' + u.id + '" class="flex items-center gap-3 py-2">'
                     + '<div class="w-9 h-9 rounded-full bg-surface-card flex items-center justify-center overflow-hidden flex-shrink-0 text-gray-300">' + avatar + '</div>'
-                    + '<span class="text-sm font-semibold text-white">' + (u.name || 'Anonim') + '</span>'
+                    + '<span class="text-sm font-semibold text-white">' + escHtml(u.name || 'Anonim') + '</span>'
                     + '</a>';
             }).join('');
         })
@@ -672,8 +675,8 @@
             selectedAvatar.innerHTML = u.isChat
                 ? '💬'
                 : (u.avatar_url
-                    ? '<img src="' + u.avatar_url + '" alt="" style="width:100%;height:100%;object-fit:cover">'
-                    : (u.name ? u.name.charAt(0).toUpperCase() : '?'));
+                    ? '<img src="' + escHtml(u.avatar_url) + '" alt="" style="width:100%;height:100%;object-fit:cover">'
+                    : escHtml(u.name ? u.name.charAt(0).toUpperCase() : '?'));
             selectedName.textContent = u.name;
             sendBtn.disabled = false;
         }
@@ -816,7 +819,7 @@
 
     function showUserTag() {
         const name = selectedUserName || ('Użytkownik #' + selectedUserId);
-        userTag.innerHTML = '<span class="user-tag">👤 ' + name + ' <button onclick="clearUserFilter()">✕</button></span>';
+        userTag.innerHTML = '<span class="user-tag">👤 ' + escHtml(name) + ' <button onclick="clearUserFilter()">✕</button></span>';
         userTag.style.display = 'block';
         filterUserInput.style.display = 'none';
     }

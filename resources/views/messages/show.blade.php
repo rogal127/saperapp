@@ -377,8 +377,8 @@ function appendBubble(text, photoUrl, audioUrl, isMine, iso) {
     wrapper.style.cssText = `display:flex;flex-direction:column;align-items:${isMine ? 'flex-end' : 'flex-start'}`;
     const d = new Date(iso);
     const time = d.toLocaleDateString('pl', {day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('pl', {hour:'2-digit',minute:'2-digit'});
-    const photoHtml = photoUrl ? `<img src="${photoUrl}" class="bubble-photo" onclick="openLightbox(this.src)">` : '';
-    const audioHtml = audioUrl ? `<audio controls src="${audioUrl}" class="bubble-audio"></audio>` : '';
+    const photoHtml = photoUrl ? `<img src="${escHtml(photoUrl)}" class="bubble-photo" onclick="openLightbox(this.src)">` : '';
+    const audioHtml = audioUrl ? `<audio controls src="${escHtml(audioUrl)}" class="bubble-audio"></audio>` : '';
     const bodyHtml = text ? `<div class="bubble-text">${escHtml(text)}</div>` : '';
     wrapper.innerHTML = `
         <div class="bubble ${isMine ? 'bubble-mine' : 'bubble-other'}">${photoHtml}${audioHtml}${bodyHtml}</div>
@@ -398,7 +398,7 @@ function appendSystemMsg(text) {
 }
 
 function escHtml(str) {
-    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 </script>
 @endpush

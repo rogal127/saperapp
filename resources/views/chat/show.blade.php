@@ -443,10 +443,10 @@ function buildMessageElement(msg) {
     const profileUrl = userUrl(msg.user_id);
 
     const photoHtml = msg.photo_url
-        ? `<img src="${msg.photo_thumb_url ?? msg.photo_url}" class="bubble-photo" onclick="openLightbox('${escHtml(msg.photo_url)}')">`
+        ? `<img src="${escHtml(msg.photo_thumb_url ?? msg.photo_url)}" class="bubble-photo" onclick="openLightbox(${escHtml(JSON.stringify(msg.photo_url ?? ''))})">`
         : '';
     const audioHtml = msg.audio_url
-        ? `<audio controls src="${msg.audio_url}" class="bubble-audio"></audio>`
+        ? `<audio controls src="${escHtml(msg.audio_url)}" class="bubble-audio"></audio>`
         : '';
     const bodyHtml = msg.body ? `<div class="bubble-text">${escHtml(msg.body)}</div>` : '';
     const findingHtml = msg.finding
