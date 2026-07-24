@@ -184,8 +184,7 @@
                         💬 Napisz
                     </button>
                 </form>
-                @php($apiUser = session('api_user'))
-                @if(!empty($apiUser['is_admin']))
+                @if(session('api_user.is_admin'))
                 <button type="button" onclick="deleteUser()" style="background:rgba(239,68,68,0.15);color:#f87171;font-weight:700;font-size:0.75rem;padding:0.4rem 0.875rem;border-radius:0.75rem;border:none;cursor:pointer;white-space:nowrap">
                     🗑️ Usuń
                 </button>

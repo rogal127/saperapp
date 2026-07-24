@@ -226,8 +226,7 @@
                         <span class="text-sm font-semibold text-gray-300">Prześlij</span>
                     </button>
 
-                    @php($apiUser = session('api_user'))
-                    @if(!empty($apiUser['is_admin']) && empty($finding['is_mine']))
+                    @if(session('api_user.is_admin') && empty($finding['is_mine']))
                     <button id="adminDeleteBtn"
                             class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all active:scale-95"
                             style="background:rgba(239,68,68,0.15)">
@@ -239,7 +238,7 @@
             </div>
 
             {{-- Modal usuwania znaleziska przez administratora --}}
-            @if(!empty($apiUser['is_admin']) && empty($finding['is_mine']))
+            @if(session('api_user.is_admin') && empty($finding['is_mine']))
             <div id="admin-delete-modal" onclick="handleAdminDeleteBackdrop(event)">
                 <div id="admin-delete-sheet">
                     <div id="message-sheet-header">
