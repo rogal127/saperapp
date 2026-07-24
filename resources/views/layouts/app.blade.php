@@ -150,22 +150,41 @@
         </div>
         @endunless
     </div>
-    @if (session('show_welcome_modal'))
-    <!-- Welcome modal -->
+    @if ($showWelcomeNotice ?? false)
+    <!-- Welcome modal (shown once ever per user account) -->
     <div id="welcome-modal" class="welcome-modal open" onclick="handleWelcomeModalBackdrop(event)">
         <div class="welcome-modal-card" onclick="event.stopPropagation()">
             <img src="https://pub-8be7d8ab5bcc40f697863889aedf500f.r2.dev/avatars/9HUg1ygBiANnT5K6g8bZK0nPNLuXjENknbw3tie8.jpg" alt="Historius" class="welcome-modal-img">
             <div class="welcome-modal-body">
                 <p class="welcome-modal-title">HISTORIUS!</p>
                 <p class="welcome-modal-text">
-                    Tu dzielimy się informacjami o naszych odkryciach, wspólnie z naukowcami odkrywamy historie i 
-dbamy o jej zachowanie. 
+                    Tu dzielimy się informacjami o naszych odkryciach, wspólnie z naukowcami odkrywamy historie i
+dbamy o jej zachowanie.
                     <a href="https://info.historius.pl" target="_blank" rel="noopener" class="welcome-modal-link">Kliknij TUTAJ</a> i poczytaj jak działa Historius.
                 </p>
                 <button type="button" class="btn-primary" onclick="closeWelcomeModal()">Rozumiem</button>
             </div>
         </div>
     </div>
+    @php \App\Models\SeenNotice::markSeen(session('api_user.id'), 'welcome'); @endphp
+    @endif
+    @if ($showCoffeeNotice ?? false)
+    <!-- Support / coffee modal (shown once ever per user account) -->
+    <div id="coffee-modal" class="welcome-modal" data-pending="true" onclick="handleCoffeeModalBackdrop(event)">
+        <div class="welcome-modal-card" onclick="event.stopPropagation()">
+            <div class="welcome-modal-body" style="padding-top:1.75rem;text-align:center;">
+                <div style="font-size:2.75rem;margin-bottom:0.5rem;">☕</div>
+                <p class="welcome-modal-title">Wesprzyj Historiusa</p>
+                <p class="welcome-modal-text">
+                    Z góry dziękuję za wsparcie (serwery itd.). Chcę, aby Historius był darmowym projektem, a zgromadzona tu wiedza służyła każdemu zainteresowanemu.
+                    <br><br>
+                    <a href="https://buycoffee.to/undergroundpassion" target="_blank" rel="noopener" class="welcome-modal-link">buycoffee.to/undergroundpassion</a>
+                </p>
+                <button type="button" class="btn-primary" onclick="closeCoffeeModal()">Rozumiem</button>
+            </div>
+        </div>
+    </div>
+    @php \App\Models\SeenNotice::markSeen(session('api_user.id'), 'coffee'); @endphp
     @endif
     <!-- Lightbox -->
     <div id="lightbox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.93);align-items:center;justify-content:center;" onclick="closeLightbox()">
@@ -178,10 +197,32 @@ dbamy o jej zachowanie.
     <script>
     function closeWelcomeModal() {
         document.getElementById('welcome-modal').classList.remove('open');
+        maybeShowCoffeeModal();
     }
     function handleWelcomeModalBackdrop(e) {
         if (e.target === document.getElementById('welcome-modal')) { closeWelcomeModal(); }
     }
+    </script>
+    <script>
+    function closeCoffeeModal() {
+        const modal = document.getElementById('coffee-modal');
+        if (modal) { modal.classList.remove('open'); }
+    }
+    function handleCoffeeModalBackdrop(e) {
+        if (e.target === document.getElementById('coffee-modal')) { closeCoffeeModal(); }
+    }
+    function maybeShowCoffeeModal() {
+        const modal = document.getElementById('coffee-modal');
+        if (!modal || modal.dataset.pending !== 'true') { return; }
+        modal.dataset.pending = 'false';
+        modal.classList.add('open');
+    }
+    (function () {
+        const welcomeModal = document.getElementById('welcome-modal');
+        if (!welcomeModal || !welcomeModal.classList.contains('open')) {
+            maybeShowCoffeeModal();
+        }
+    })();
     </script>
     <script>
     let lightboxPhotos = [];

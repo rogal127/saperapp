@@ -44,7 +44,6 @@ class LoginController extends Controller
         $request->session()->regenerate();
         $request->session()->put('api_token', $token);
         $request->session()->put('api_user', $user);
-        $request->session()->flash('show_welcome_modal', true);
 
         $redirect = redirect()->intended(route('home'));
 
