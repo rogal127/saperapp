@@ -51,6 +51,7 @@ Route::middleware('api.auth')->group(function () {
     Route::post('/api/expeditions/import-mymaps', [ExpeditionController::class, 'importGoogleMyMaps'])->name('expeditions.import-mymaps');
     Route::get('/api/expeditions', [ExpeditionController::class, 'apiIndex'])->name('expeditions.api');
     Route::get('/api/expeditions/pending-count', [ExpeditionController::class, 'pendingCount'])->name('expeditions.pending-count');
+    Route::get('/api/expeditions/map', [ExpeditionController::class, 'mapAreas'])->name('expeditions.map-areas');
     Route::post('/api/expeditions/join', [ExpeditionController::class, 'joinByCode'])->name('expeditions.join-code');
     Route::get('/api/expeditions/{id}/findings', [ExpeditionController::class, 'findings'])->name('expeditions.findings');
     Route::delete('/api/expeditions/{id}/findings/{findingId}', [ExpeditionController::class, 'removeFinding'])->name('expeditions.findings.remove');

@@ -80,6 +80,45 @@
     #layer-btn  { bottom: 140px; }
     #locate-btn:active, #layer-btn:active { opacity: 0.7; }
 
+    /* Przełącznik trybu mapy */
+    #mode-switch {
+        display: inline-flex; background: #2a2a3e;
+        border-radius: 0.75rem; padding: 3px; gap: 3px;
+    }
+    .mode-btn {
+        padding: 0.35rem 0.75rem; border: none; border-radius: 0.6rem;
+        background: transparent; color: #9ca3af;
+        font-size: 0.78rem; font-weight: 700; cursor: pointer;
+        touch-action: manipulation; transition: background 0.15s, color 0.15s;
+    }
+    .mode-btn.active { background: #f59e0b; color: #1a1a2e; }
+
+    /* Legenda ról w trybie poszukiwań */
+    #exp-legend {
+        display: none;
+        position: absolute; left: 12px; bottom: 90px; z-index: 800;
+        background: rgba(26,26,46,0.92);
+        border: 1px solid #323248; border-radius: 0.875rem;
+        padding: 0.5rem 0.7rem;
+        font-size: 0.68rem; font-weight: 600; color: #e2e8f0;
+        line-height: 1.6; pointer-events: none;
+    }
+    #exp-legend.visible { display: block; }
+    .legend-dot {
+        display: inline-block; width: 9px; height: 9px;
+        border-radius: 50%; margin-right: 5px; vertical-align: middle;
+    }
+
+    /* Pozycje ról na liście panelu */
+    .exp-role-dot {
+        display: inline-block; width: 9px; height: 9px;
+        border-radius: 50%; margin-right: 5px; vertical-align: middle;
+    }
+    .exp-phase-badge {
+        font-size: 0.62rem; font-weight: 700; padding: 1px 6px;
+        border-radius: 1rem; margin-left: 4px; white-space: nowrap;
+    }
+
     /* Pasek info o poziomie zoom */
     #zoom-info {
         position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
@@ -321,13 +360,16 @@
     {{-- Header --}}
     <div class="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-surface-card flex-shrink-0">
         <a href="{{ route('home') }}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card text-gray-300 text-xl flex-shrink-0">‹</a>
-        <div class="flex-1">
-            <h1 class="text-lg font-bold text-white">Dodane znaleziska</h1>
+        <div class="flex-1 min-w-0">
+            <div id="mode-switch">
+                <button type="button" class="mode-btn active" data-mode="findings">Znaleziska</button>
+                <button type="button" class="mode-btn" data-mode="expeditions">Poszukiwania</button>
+            </div>
             @if($findingsCount !== null)
-                <p class="text-xs text-gray-400">Łącznie dodano: {{ number_format($findingsCount, 0, ',', ' ') }}</p>
+                <p id="findings-total" class="text-xs text-gray-400 mt-1">Łącznie dodano: {{ number_format($findingsCount, 0, ',', ' ') }}</p>
             @endif
         </div>
-        <a href="{{ route('findings.create') }}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 text-xl flex-shrink-0">➕</a>
+        <a id="header-add-btn" href="{{ route('findings.create') }}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 text-xl flex-shrink-0">➕</a>
     </div>
 
     {{-- Mapa --}}
@@ -338,6 +380,12 @@
 
         <button id="locate-btn">🎯 Moja pozycja</button>
         <button id="layer-btn" onclick="toggleLayer()">🛰️ Ortofoto</button>
+
+        <div id="exp-legend">
+            <div><span class="legend-dot" style="background:#22c55e"></span>Publiczne</div>
+            <div><span class="legend-dot" style="background:#eab308"></span>Uczestniczysz</div>
+            <div><span class="legend-dot" style="background:#ef4444"></span>Twoje</div>
+        </div>
 
         {{-- Overlay przenoszenia pinezki --}}
         <div id="relocate-overlay">
@@ -456,6 +504,9 @@
 @push('scripts')
 <script>
 const CLUSTERS_URL  = "{{ route('findings.api') }}";
+const EXPEDITIONS_MAP_URL = "{{ route('expeditions.map-areas') }}";
+const EXPEDITION_CREATE_URL = "{{ route('expeditions.create') }}";
+const FINDINGS_CREATE_URL   = "{{ route('findings.create') }}";
 const PINS_API_BASE = "{{ url('/api/pins') }}";
 const MESSAGE_BASE  = "{{ url('/api/findings') }}";
 const CREATE_URL    = "{{ route('findings.create') }}";
@@ -502,6 +553,21 @@ let allPins         = [];
 let lastLevel       = null;
 let panelTotalCount = 0;
 
+// 'findings' (klastry i pinezki) albo 'expeditions' (obszary poszukiwań)
+let mapMode = 'findings';
+
+const ROLE_COLORS = { owner: '#ef4444', member: '#eab308', public: '#22c55e' };
+const ROLE_LABELS = { owner: 'Twoje poszukiwanie', member: 'Uczestniczysz', public: 'Publiczne' };
+
+// Poniżej tego zoomu obszary są rysowane jako punkt — API nie wysyła wtedy geometrii.
+const EXPEDITION_POLYGON_ZOOM = 10;
+
+const PHASE_STYLES = {
+    upcoming: { label: 'Nadchodzące', bg: 'rgba(96,165,250,0.15)', color: '#60a5fa' },
+    active:   { label: 'W trakcie',   bg: 'rgba(52,211,153,0.15)', color: '#34d399' },
+    finished: { label: 'Zakończone',  bg: 'rgba(148,163,184,0.15)', color: '#94a3b8' },
+};
+
 const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
 const orthoLayer = L.tileLayer(
     'https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMTS/StandardResolution'
@@ -517,6 +583,8 @@ const map = L.map('browse-map', {
     layers: [osmLayer],
 });
 L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+const expeditionLayer = L.layerGroup().addTo(map);
 
 function toggleLayer() {
     const btn = document.getElementById('layer-btn');
@@ -573,7 +641,9 @@ let countyBbox = null;
 
 function scheduleFetch() {
     clearTimeout(loadTimer);
-    loadTimer = setTimeout(fetchClusters, 350);
+    loadTimer = setTimeout(() => {
+        if (mapMode === 'expeditions') { fetchExpeditions(); } else { fetchClusters(); }
+    }, 350);
 }
 
 function fetchClusters() {
@@ -594,9 +664,147 @@ function fetchClusters() {
     const params = new URLSearchParams({ zoom, sw_lat, sw_lng, ne_lat, ne_lng });
     fetch(`${CLUSTERS_URL}?${params}`)
         .then(r => r.json())
-        .then(data => renderData(data, zoom))
+        .then(data => {
+            // Odpowiedź mogła dotrzeć po przełączeniu na tryb poszukiwań.
+            if (mapMode !== 'findings') { return; }
+            renderData(data, zoom);
+        })
         .catch(() => {});
 }
+
+// --- Tryb poszukiwań ---
+
+function fetchExpeditions() {
+    const zoom = map.getZoom();
+    const bounds = map.getBounds();
+
+    const params = new URLSearchParams({
+        zoom,
+        sw_lat: bounds.getSouth().toFixed(6),
+        sw_lng: bounds.getWest().toFixed(6),
+        ne_lat: bounds.getNorth().toFixed(6),
+        ne_lng: bounds.getEast().toFixed(6),
+    });
+
+    fetch(`${EXPEDITIONS_MAP_URL}?${params}`)
+        .then(r => r.json())
+        .then(res => {
+            // Odpowiedź mogła dotrzeć po przełączeniu z powrotem na znaleziska.
+            if (mapMode !== 'expeditions') { return; }
+            renderExpeditions(res.data ?? [], zoom);
+        })
+        .catch(() => {});
+}
+
+function renderExpeditions(items, zoom) {
+    expeditionLayer.clearLayers();
+
+    items.forEach(item => {
+        const color = ROLE_COLORS[item.role] ?? ROLE_COLORS.public;
+        const layer = (zoom >= EXPEDITION_POLYGON_ZOOM && item.area)
+            ? L.geoJSON(item.area, {
+                style: { color, weight: 2, fillColor: color, fillOpacity: 0.2 },
+            })
+            : L.circleMarker([item.center_lat, item.center_lng], {
+                radius: 7, color: '#1a1a2e', weight: 2,
+                fillColor: color, fillOpacity: 0.9,
+            });
+
+        layer.bindTooltip(escHtml(item.name ?? 'Poszukiwanie'), { direction: 'top', opacity: 0.9 });
+        layer.on('click', () => { window.location.href = `/expeditions/${item.id}`; });
+        expeditionLayer.addLayer(layer);
+    });
+
+    updateExpeditionPanel(items);
+}
+
+function updateExpeditionPanel(items) {
+    panelTotalCount = items.length;
+
+    document.getElementById('panel-level').textContent = 'Poszukiwania';
+    document.getElementById('toggle-count').textContent = items.length > 0 ? items.length : '—';
+    document.getElementById('findings-count').textContent = items.length > 0
+        ? `${items.length} ${expeditionNoun(items.length)} w widoku`
+        : 'Brak poszukiwań w widoku';
+    document.getElementById('panel-toggle').classList.toggle('has-findings', items.length > 0 && !panelOpen);
+
+    const list = document.getElementById('findings-list');
+
+    if (!items.length) {
+        list.innerHTML = '<div id="empty-state">Brak poszukiwań w tym widoku</div>';
+        return;
+    }
+
+    list.innerHTML = '';
+    items.forEach(item => {
+        const color = ROLE_COLORS[item.role] ?? ROLE_COLORS.public;
+        const el = document.createElement('div');
+        el.className = 'finding-item';
+        el.innerHTML = `
+            <div class="finding-item-name">
+                <span class="exp-role-dot" style="background:${color}"></span>${escHtml(item.name ?? 'Poszukiwanie')}
+                ${phaseBadge(item.phase)}
+            </div>
+            <div class="finding-item-meta">📅 ${escHtml(item.starts_at ?? '')} — ${escHtml(item.ends_at ?? '')}</div>
+            <div class="finding-item-meta">${ROLE_LABELS[item.role] ?? ''} · 👥 ${item.participants_count ?? 0} · ⚒️ ${item.findings_count ?? 0}</div>
+        `;
+        el.addEventListener('click', () => {
+            highlightItem(el);
+            const b = item.bounds;
+            if (b) {
+                map.fitBounds([[b.min_lat, b.min_lng], [b.max_lat, b.max_lng]], { padding: [30, 30] });
+            }
+        });
+        list.appendChild(el);
+    });
+}
+
+function phaseBadge(phase) {
+    const p = PHASE_STYLES[phase];
+    if (!p) { return ''; }
+    return `<span class="exp-phase-badge" style="background:${p.bg};color:${p.color}">● ${p.label}</span>`;
+}
+
+function expeditionNoun(count) {
+    return count === 1 ? 'poszukiwanie' : 'poszukiwań';
+}
+
+function setMapMode(mode) {
+    if (mode === mapMode) { return; }
+    mapMode = mode;
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+
+    const isExpeditions = mode === 'expeditions';
+    const addBtn = document.getElementById('header-add-btn');
+    const total  = document.getElementById('findings-total');
+
+    addBtn.href = isExpeditions ? EXPEDITION_CREATE_URL : FINDINGS_CREATE_URL;
+    if (total) { total.style.display = isExpeditions ? 'none' : ''; }
+    document.getElementById('exp-legend').classList.toggle('visible', isExpeditions);
+    document.getElementById('zoom-info').style.display = isExpeditions ? 'none' : '';
+
+    closeModal();
+    clearTimeout(loadTimer);
+
+    if (isExpeditions) {
+        clearMarkers();
+        allPins = [];
+        lastLevel = null;
+        document.getElementById('findings-list').innerHTML = '<div id="empty-state">Ładowanie…</div>';
+        fetchExpeditions();
+    } else {
+        expeditionLayer.clearLayers();
+        document.getElementById('findings-list').innerHTML = '<div id="empty-state">Ładowanie…</div>';
+        fetchClusters();
+    }
+}
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => setMapMode(btn.dataset.mode));
+});
 
 function clearMarkers() {
     markers.forEach(m => map.removeLayer(m));

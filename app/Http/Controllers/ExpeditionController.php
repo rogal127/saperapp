@@ -78,6 +78,30 @@ class ExpeditionController extends Controller
         return response()->json($response->json());
     }
 
+    /**
+     * Expeditions overlapping the current map viewport, used by the
+     * "Poszukiwania" mode of the findings map.
+     */
+    public function mapAreas(Request $request)
+    {
+        $request->validate([
+            'zoom' => ['required', 'integer', 'min:0', 'max:19'],
+            'sw_lat' => ['required', 'numeric'],
+            'sw_lng' => ['required', 'numeric'],
+            'ne_lat' => ['required', 'numeric'],
+            'ne_lng' => ['required', 'numeric'],
+        ]);
+
+        $response = Http::withToken($this->apiToken($request))
+            ->get($this->base().'/expeditions/map', $request->only('zoom', 'sw_lat', 'sw_lng', 'ne_lat', 'ne_lng'));
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Błąd API'], 502);
+        }
+
+        return response()->json($response->json());
+    }
+
     public function store(Request $request)
     {
         // This endpoint is always called via fetch (see expeditions/create.blade.php),
