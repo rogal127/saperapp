@@ -110,6 +110,7 @@
                 <option value="newest">Najnowsze</option>
                 <option value="oldest">Najstarsze</option>
                 <option value="most_liked">Najpopularniejsze</option>
+                <option value="latest_comment">Ostatnio komentowane</option>
             </select>
         </div>
         <div class="flex gap-2">
