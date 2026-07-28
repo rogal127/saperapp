@@ -21,6 +21,12 @@
             <p class="text-gray-400 mt-2">Zaloguj się na swoje konto</p>
         </div>
 
+        @if (session('status'))
+            <div class="mb-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-4 py-3">
+                <p class="text-emerald-300 text-sm">{{ session('status') }}</p>
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('login') }}" class="flex flex-col gap-4">
             @csrf
 
@@ -57,10 +63,13 @@
             </div>
 
             {{-- Remember --}}
-            <label class="flex items-center gap-3 px-1 cursor-pointer">
-                <input type="checkbox" name="remember" class="w-5 h-5 rounded accent-amber-500">
-                <span class="text-sm text-gray-300">Pamiętaj mnie</span>
-            </label>
+            <div class="flex items-center justify-between">
+                <label class="flex items-center gap-3 px-1 cursor-pointer">
+                    <input type="checkbox" name="remember" class="w-5 h-5 rounded accent-amber-500">
+                    <span class="text-sm text-gray-300">Pamiętaj mnie</span>
+                </label>
+                <a href="{{ route('password.request') }}" class="text-sm text-amber-400 px-1">Nie pamiętam hasła</a>
+            </div>
 
             <button type="submit" class="btn-primary mt-2">
                 Zaloguj się
