@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AssociationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -43,6 +44,12 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/api/pins', [FindingController::class, 'pins'])->name('pins.index');
     Route::put('/api/pins/{pinId}', [FindingController::class, 'updatePin'])->name('pins.update');
     Route::get('/api/pins/{pinId}/findings', [FindingController::class, 'pinFindings'])->name('pins.findings');
+    // Stowarzyszenia (warstwa mapy widoczna tylko dla administratorów)
+    Route::get('/api/associations', [AssociationController::class, 'index'])->name('associations.index');
+    Route::post('/api/associations', [AssociationController::class, 'store'])->name('associations.store');
+    Route::put('/api/associations/{associationId}', [AssociationController::class, 'update'])->name('associations.update');
+    Route::delete('/api/associations/{associationId}', [AssociationController::class, 'destroy'])->name('associations.destroy');
+
     Route::get('/api/wkz-consents', [FindingController::class, 'wkzConsents'])->name('wkz-consents.index');
     Route::get('/api/finding-categories', [FindingController::class, 'findingCategories'])->name('finding-categories.index');
 

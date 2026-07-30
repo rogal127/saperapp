@@ -84,17 +84,22 @@
     #mode-switch {
         display: inline-flex; background: #2a2a3e;
         border-radius: 0.75rem; padding: 3px; gap: 3px;
+        max-width: 100%; overflow-x: auto; flex-wrap: nowrap;
+        scrollbar-width: none;
     }
+    #mode-switch::-webkit-scrollbar { display: none; }
     .mode-btn {
         padding: 0.35rem 0.75rem; border: none; border-radius: 0.6rem;
         background: transparent; color: #9ca3af;
-        font-size: 0.78rem; font-weight: 700; cursor: pointer;
+        font-size: 0.78rem; font-weight: 700; cursor: pointer; white-space: nowrap;
         touch-action: manipulation; transition: background 0.15s, color 0.15s;
     }
+    /* Trzy tryby (widok administratora) nie mieszczą się na wąskich ekranach */
+    #mode-switch.three-modes .mode-btn { padding: 0.35rem 0.5rem; font-size: 0.7rem; }
     .mode-btn.active { background: #f59e0b; color: #1a1a2e; }
 
-    /* Legenda ról w trybie poszukiwań */
-    #exp-legend {
+    /* Legenda ról w trybie poszukiwań / stowarzyszeń */
+    #exp-legend, #assoc-legend {
         display: none;
         position: absolute; left: 12px; bottom: 90px; z-index: 800;
         background: rgba(26,26,46,0.92);
@@ -103,7 +108,7 @@
         font-size: 0.68rem; font-weight: 600; color: #e2e8f0;
         line-height: 1.6; pointer-events: none;
     }
-    #exp-legend.visible { display: block; }
+    #exp-legend.visible, #assoc-legend.visible { display: block; }
     .legend-dot {
         display: inline-block; width: 9px; height: 9px;
         border-radius: 50%; margin-right: 5px; vertical-align: middle;
@@ -196,32 +201,32 @@
     #empty-state { text-align: center; padding: 2rem 1rem; color: #6b7280; font-size: 0.8rem; }
 
     /* Modals */
-    #pin-modal, #message-modal, #share-modal {
+    #pin-modal, #message-modal, #share-modal, #assoc-modal {
         display: none; position: fixed; inset: 0; z-index: 2000;
         background: rgba(0,0,0,0.75); align-items: flex-end;
         justify-content: center;
     }
-    #pin-modal.open, #message-modal.open, #share-modal.open { display: flex; }
-    #modal-sheet, #message-sheet, #share-sheet {
+    #pin-modal.open, #message-modal.open, #share-modal.open, #assoc-modal.open { display: flex; }
+    #modal-sheet, #message-sheet, #share-sheet, #assoc-sheet {
         background: #1a1a2e; border-radius: 1.25rem 1.25rem 0 0;
         border: 1px solid #2a2a3e; width: 100%; max-width: 480px;
         max-height: 90vh; display: flex; flex-direction: column;
         animation: slideUp 0.25s ease;
     }
-    #modal-sheet-header, #message-sheet-header, #share-sheet-header {
+    #modal-sheet-header, #message-sheet-header, #share-sheet-header, #assoc-sheet-header {
         flex-shrink: 0;
         padding: 1rem 1rem 0.75rem;
         border-bottom: 1px solid #2a2a3e;
         border-radius: 1.25rem 1.25rem 0 0;
     }
-    #modal-sheet-body, #message-sheet-body, #share-sheet-body {
+    #modal-sheet-body, #message-sheet-body, #share-sheet-body, #assoc-sheet-body {
         flex: 1; overflow-y: auto;
     }
     @media (min-width: 768px) {
-        #modal-sheet, #message-sheet, #share-sheet { max-width: 640px; }
+        #modal-sheet, #message-sheet, #share-sheet, #assoc-sheet { max-width: 640px; }
     }
     @media (min-width: 1280px) {
-        #modal-sheet, #message-sheet, #share-sheet { max-width: 820px; }
+        #modal-sheet, #message-sheet, #share-sheet, #assoc-sheet { max-width: 820px; }
     }
     .autocomplete-list {
         position: relative; z-index: 50; background: #2a2a3e; border: 1px solid #404060;
@@ -351,6 +356,56 @@
     #relocate-confirm-btns button { flex: 1; padding: 0.5rem; border: none; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
     .relocate-save { background: #34d399; color: #1a1a2e; }
     .relocate-retry { background: #3b3b58; color: #e2e8f0; }
+
+    /* Tryb stowarzyszeń (tylko administratorzy) */
+    .assoc-pin {
+        width: 24px; height: 24px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 2px solid #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    }
+    .assoc-pin.known   { background: #22c55e; }
+    .assoc-pin.unknown { background: #ef4444; }
+
+    #assoc-place-overlay {
+        display: none; position: absolute; inset: 0; z-index: 900;
+        pointer-events: none;
+    }
+    #assoc-place-overlay.active { display: block; }
+    #assoc-place-bar {
+        position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+        z-index: 901; pointer-events: auto;
+        background: rgba(26,26,46,0.95); border: 1px solid #f59e0b;
+        border-radius: 1rem; padding: 0.5rem 1rem;
+        display: flex; align-items: center; gap: 0.75rem;
+        box-shadow: 0 4px 20px rgba(245,158,11,0.3);
+    }
+    #assoc-place-bar span { color: #f59e0b; font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+    #assoc-place-cancel {
+        background: #3b3b58; color: #e2e8f0; border: none; border-radius: 0.5rem;
+        padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    }
+
+    .assoc-field { margin-top: 0.75rem; }
+    .assoc-field:first-child { margin-top: 0; }
+    .assoc-label { display: block; font-size: 0.7rem; font-weight: 700; color: #9ca3af; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .assoc-known-btns { display: flex; gap: 0.5rem; }
+    .assoc-known-btn {
+        flex: 1; padding: 0.6rem; border-radius: 0.75rem; cursor: pointer;
+        background: #2a2a3e; border: 1px solid #404060; color: #9ca3af;
+        font-size: 0.82rem; font-weight: 700; touch-action: manipulation;
+    }
+    .assoc-known-btn.active[data-known="1"] { background: #22c55e; border-color: #22c55e; color: #1a1a2e; }
+    .assoc-known-btn.active[data-known="0"] { background: #ef4444; border-color: #ef4444; color: #1a1a2e; }
+    .assoc-delete-btn {
+        margin-top: 0.5rem; width: 100%; padding: 0.6rem;
+        background: transparent; border: 1px solid #f87171; color: #f87171;
+        border-radius: 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600;
+    }
+    .assoc-delete-btn:active { opacity: 0.7; }
+    #assoc-status { font-size: 0.75rem; margin-top: 0.5rem; text-align: center; color: #f87171; }
+    .assoc-known-badge { font-size: 0.62rem; font-weight: 700; padding: 1px 6px; border-radius: 1rem; margin-left: 4px; white-space: nowrap; }
 </style>
 @endpush
 
@@ -361,9 +416,12 @@
     <div class="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-surface-card flex-shrink-0">
         <a href="{{ route('home') }}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card text-gray-300 text-xl flex-shrink-0">‹</a>
         <div class="flex-1 min-w-0">
-            <div id="mode-switch">
+            <div id="mode-switch" class="{{ session('api_user.is_admin') ? 'three-modes' : '' }}">
                 <button type="button" class="mode-btn active" data-mode="findings">Znaleziska</button>
                 <button type="button" class="mode-btn" data-mode="expeditions">Poszukiwania</button>
+                @if(session('api_user.is_admin'))
+                    <button type="button" class="mode-btn" data-mode="associations">Stowarzyszenia</button>
+                @endif
             </div>
             @if($findingsCount !== null)
                 <p id="findings-total" class="text-xs text-gray-400 mt-1">Łącznie dodano: {{ number_format($findingsCount, 0, ',', ' ') }}</p>
@@ -386,6 +444,21 @@
             <div><span class="legend-dot" style="background:#eab308"></span>Uczestniczysz</div>
             <div><span class="legend-dot" style="background:#ef4444"></span>Twoje</div>
         </div>
+
+        @if(session('api_user.is_admin'))
+            <div id="assoc-legend">
+                <div><span class="legend-dot" style="background:#22c55e"></span>Znamy się</div>
+                <div><span class="legend-dot" style="background:#ef4444"></span>Nie znamy się</div>
+            </div>
+
+            {{-- Overlay wskazywania miejsca dla nowego stowarzyszenia --}}
+            <div id="assoc-place-overlay">
+                <div id="assoc-place-bar">
+                    <span>📍 Kliknij miejsce stowarzyszenia</span>
+                    <button id="assoc-place-cancel" onclick="cancelAssociationPlacement()">Anuluj</button>
+                </div>
+            </div>
+        @endif
 
         {{-- Overlay przenoszenia pinezki --}}
         <div id="relocate-overlay">
@@ -497,6 +570,42 @@
         </div>
     </div>
 
+    @if(session('api_user.is_admin'))
+        {{-- Modal stowarzyszenia (dodawanie / edycja) --}}
+        <div id="assoc-modal" onclick="handleAssociationBackdrop(event)">
+            <div id="assoc-sheet">
+                <div id="assoc-sheet-header">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <div class="modal-title" id="assoc-modal-title">Dodaj stowarzyszenie</div>
+                        <button class="modal-close" onclick="closeAssociationModal()">✕</button>
+                    </div>
+                </div>
+                <div id="assoc-sheet-body">
+                    <div class="modal-body">
+                        <div class="assoc-field">
+                            <label class="assoc-label" for="assoc-name">Nazwa</label>
+                            <input type="text" id="assoc-name" class="modal-textarea" maxlength="255" placeholder="Nazwa stowarzyszenia" autocomplete="off">
+                        </div>
+                        <div class="assoc-field">
+                            <label class="assoc-label" for="assoc-phone">Numer kontaktowy</label>
+                            <input type="tel" id="assoc-phone" class="modal-textarea" maxlength="50" placeholder="np. 600 100 200" autocomplete="off">
+                        </div>
+                        <div class="assoc-field">
+                            <span class="assoc-label">Czy się znamy?</span>
+                            <div class="assoc-known-btns">
+                                <button type="button" class="assoc-known-btn" data-known="1" onclick="setAssociationKnown(true)">Tak</button>
+                                <button type="button" class="assoc-known-btn active" data-known="0" onclick="setAssociationKnown(false)">Nie</button>
+                            </div>
+                        </div>
+                        <button id="assoc-save" class="modal-send-btn" onclick="saveAssociation()">Zapisz</button>
+                        <button id="assoc-delete" class="assoc-delete-btn" style="display:none" onclick="deleteAssociation()">🗑️ Usuń stowarzyszenie</button>
+                        <div id="assoc-status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
 
 </div>
 @endsection
@@ -512,6 +621,8 @@ const MESSAGE_BASE  = "{{ url('/api/findings') }}";
 const CREATE_URL    = "{{ route('findings.create') }}";
 const CSRF_TOKEN    = '{{ csrf_token() }}';
 const USERS_SEARCH_URL = "{{ route('users.search') }}";
+const ASSOCIATIONS_URL = "{{ url('/api/associations') }}";
+const IS_ADMIN = @json((bool) session('api_user.is_admin'));
 
 async function deleteFinding(id, btn) {
     if (!confirm('Usunąć to znalezisko? Tej operacji nie można cofnąć.')) { return; }
@@ -553,7 +664,8 @@ let allPins         = [];
 let lastLevel       = null;
 let panelTotalCount = 0;
 
-// 'findings' (klastry i pinezki) albo 'expeditions' (obszary poszukiwań)
+// 'findings' (klastry i pinezki), 'expeditions' (obszary poszukiwań)
+// albo 'associations' (stowarzyszenia — wyłącznie dla administratorów)
 let mapMode = 'findings';
 
 const ROLE_COLORS = { owner: '#ef4444', member: '#eab308', public: '#22c55e' };
@@ -585,6 +697,7 @@ const map = L.map('browse-map', {
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 const expeditionLayer = L.layerGroup().addTo(map);
+const associationLayer = L.layerGroup().addTo(map);
 
 function toggleLayer() {
     const btn = document.getElementById('layer-btn');
@@ -642,7 +755,9 @@ let countyBbox = null;
 function scheduleFetch() {
     clearTimeout(loadTimer);
     loadTimer = setTimeout(() => {
-        if (mapMode === 'expeditions') { fetchExpeditions(); } else { fetchClusters(); }
+        if (mapMode === 'expeditions') { fetchExpeditions(); }
+        else if (mapMode === 'associations') { updateAssociationPanel(); }
+        else { fetchClusters(); }
     }, 350);
 }
 
@@ -769,6 +884,273 @@ function expeditionNoun(count) {
     return count === 1 ? 'poszukiwanie' : 'poszukiwań';
 }
 
+// --- Tryb stowarzyszeń (tylko administratorzy) ---
+
+let allAssociations   = [];
+let associationDraft  = null;   // { latitude, longitude } dla nowej pinezki
+let editedAssociation = null;   // edytowane stowarzyszenie albo null przy dodawaniu
+let associationKnown  = false;
+
+function assocPinIcon(isKnown) {
+    return L.divIcon({
+        html: `<div class="assoc-pin ${isKnown ? 'known' : 'unknown'}"></div>`,
+        iconSize: [24, 24], iconAnchor: [12, 24], popupAnchor: [0, -26],
+        className: '',
+    });
+}
+
+function fetchAssociations() {
+    fetch(ASSOCIATIONS_URL)
+        .then(r => {
+            if (!r.ok) { throw new Error(); }
+            return r.json();
+        })
+        .then(res => {
+            // Odpowiedź mogła dotrzeć po przełączeniu na inny tryb mapy.
+            if (mapMode !== 'associations') { return; }
+            allAssociations = res.data ?? [];
+            renderAssociations();
+        })
+        .catch(() => {
+            if (mapMode !== 'associations') { return; }
+            document.getElementById('findings-list').innerHTML =
+                '<div id="empty-state">Nie udało się wczytać stowarzyszeń.</div>';
+        });
+}
+
+function renderAssociations() {
+    associationLayer.clearLayers();
+
+    allAssociations.forEach(item => {
+        const marker = L.marker([item.latitude, item.longitude], { icon: assocPinIcon(item.is_known) });
+        marker.bindPopup(associationPopupHtml(item), { className: 'popup-dark' });
+        associationLayer.addLayer(marker);
+    });
+
+    updateAssociationPanel();
+}
+
+function associationPopupHtml(item) {
+    const phone = item.phone
+        ? `<div style="font-size:0.78rem;margin-top:3px">📞 <a href="tel:${escHtml(item.phone)}" style="color:#60a5fa">${escHtml(item.phone)}</a></div>`
+        : '<div style="font-size:0.78rem;margin-top:3px;color:#9ca3af">📞 brak numeru</div>';
+
+    return `
+        <div style="font-weight:700;font-size:0.85rem">${escHtml(item.name)}</div>
+        ${phone}
+        <div style="font-size:0.78rem;margin-top:3px">
+            ${item.is_known
+                ? '<span style="color:#22c55e">🤝 Znamy się</span>'
+                : '<span style="color:#ef4444">❔ Nie znamy się</span>'}
+        </div>
+        <button type="button" onclick="openAssociationModal(${item.id})"
+            style="margin-top:0.5rem;width:100%;padding:0.4rem;border:1px solid #f59e0b;background:transparent;color:#f59e0b;border-radius:0.5rem;font-size:0.75rem;font-weight:700;cursor:pointer">
+            ✏️ Edytuj
+        </button>
+    `;
+}
+
+/**
+ * Panel listuje stowarzyszenia widoczne w bieżącym wycinku mapy — dane są
+ * pobierane raz, więc przy przesuwaniu mapy filtrujemy je lokalnie.
+ */
+function updateAssociationPanel() {
+    if (mapMode !== 'associations') { return; }
+
+    const bounds = map.getBounds();
+    const items = allAssociations.filter(item => bounds.contains([item.latitude, item.longitude]));
+
+    panelTotalCount = items.length;
+
+    document.getElementById('panel-level').textContent = 'Stowarzyszenia';
+    document.getElementById('toggle-count').textContent = items.length > 0 ? items.length : '—';
+    document.getElementById('findings-count').textContent = items.length > 0
+        ? `${items.length} ${associationNoun(items.length)} w widoku`
+        : 'Brak stowarzyszeń w widoku';
+    document.getElementById('panel-toggle').classList.toggle('has-findings', items.length > 0 && !panelOpen);
+
+    const list = document.getElementById('findings-list');
+
+    if (!items.length) {
+        list.innerHTML = allAssociations.length
+            ? '<div id="empty-state">Brak stowarzyszeń w tym widoku</div>'
+            : '<div id="empty-state">Nie dodano jeszcze żadnego stowarzyszenia.<br>Użyj przycisku ➕, aby dodać pierwsze.</div>';
+        return;
+    }
+
+    list.innerHTML = '';
+    items.forEach(item => {
+        const color = item.is_known ? '#22c55e' : '#ef4444';
+        const el = document.createElement('div');
+        el.className = 'finding-item';
+        el.innerHTML = `
+            <div class="finding-item-name">
+                <span class="exp-role-dot" style="background:${color}"></span>${escHtml(item.name)}
+                <span class="assoc-known-badge" style="background:${color}22;color:${color}">
+                    ${item.is_known ? 'Znamy się' : 'Nie znamy się'}
+                </span>
+            </div>
+            <div class="finding-item-meta">📞 ${item.phone ? escHtml(item.phone) : 'brak numeru'}</div>
+        `;
+        el.addEventListener('click', () => {
+            highlightItem(el);
+            map.setView([item.latitude, item.longitude], Math.max(map.getZoom(), 12));
+        });
+        list.appendChild(el);
+    });
+}
+
+function associationNoun(count) {
+    return count === 1 ? 'stowarzyszenie' : 'stowarzyszeń';
+}
+
+function startAssociationPlacement() {
+    closeAssociationModal();
+    document.getElementById('assoc-place-overlay').classList.add('active');
+    map.getContainer().style.cursor = 'crosshair';
+    map.once('click', onAssociationPlaceClick);
+}
+
+function cancelAssociationPlacement() {
+    const overlay = document.getElementById('assoc-place-overlay');
+    if (!overlay) { return; }
+
+    map.off('click', onAssociationPlaceClick);
+    overlay.classList.remove('active');
+    map.getContainer().style.cursor = '';
+}
+
+function onAssociationPlaceClick(e) {
+    cancelAssociationPlacement();
+    associationDraft = { latitude: e.latlng.lat, longitude: e.latlng.lng };
+    openAssociationModal(null);
+}
+
+/**
+ * Otwiera formularz stowarzyszenia — z podanym id w trybie edycji, bez id
+ * w trybie dodawania nowej pinezki (współrzędne trzyma associationDraft).
+ */
+function openAssociationModal(associationId) {
+    editedAssociation = associationId
+        ? allAssociations.find(item => item.id === associationId) ?? null
+        : null;
+
+    if (associationId && !editedAssociation) { return; }
+
+    map.closePopup();
+
+    document.getElementById('assoc-modal-title').textContent =
+        editedAssociation ? 'Edytuj stowarzyszenie' : 'Dodaj stowarzyszenie';
+    document.getElementById('assoc-name').value = editedAssociation?.name ?? '';
+    document.getElementById('assoc-phone').value = editedAssociation?.phone ?? '';
+    document.getElementById('assoc-delete').style.display = editedAssociation ? '' : 'none';
+    document.getElementById('assoc-status').textContent = '';
+    document.getElementById('assoc-save').disabled = false;
+
+    setAssociationKnown(editedAssociation?.is_known ?? false);
+
+    document.getElementById('assoc-modal').classList.add('open');
+}
+
+function closeAssociationModal() {
+    const modal = document.getElementById('assoc-modal');
+    if (modal) { modal.classList.remove('open'); }
+}
+
+function handleAssociationBackdrop(e) {
+    if (e.target === document.getElementById('assoc-modal')) { closeAssociationModal(); }
+}
+
+function setAssociationKnown(isKnown) {
+    associationKnown = isKnown;
+    document.querySelectorAll('.assoc-known-btn').forEach(btn => {
+        btn.classList.toggle('active', (btn.dataset.known === '1') === isKnown);
+    });
+}
+
+function saveAssociation() {
+    const name = document.getElementById('assoc-name').value.trim();
+    const status = document.getElementById('assoc-status');
+
+    if (!name) {
+        status.textContent = 'Podaj nazwę stowarzyszenia.';
+        return;
+    }
+
+    const payload = {
+        name,
+        phone: document.getElementById('assoc-phone').value.trim() || null,
+        is_known: associationKnown,
+    };
+
+    if (!editedAssociation) {
+        if (!associationDraft) { return; }
+        payload.latitude = associationDraft.latitude;
+        payload.longitude = associationDraft.longitude;
+    }
+
+    const btn = document.getElementById('assoc-save');
+    btn.disabled = true;
+    btn.textContent = 'Zapisywanie…';
+    status.textContent = '';
+
+    fetch(editedAssociation ? `${ASSOCIATIONS_URL}/${editedAssociation.id}` : ASSOCIATIONS_URL, {
+        method: editedAssociation ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+        body: JSON.stringify(payload),
+    })
+    .then(r => {
+        if (!r.ok) { throw new Error(); }
+        return r.json();
+    })
+    .then(() => {
+        associationDraft = null;
+        closeAssociationModal();
+        fetchAssociations();
+    })
+    .catch(() => {
+        status.textContent = 'Nie udało się zapisać stowarzyszenia.';
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.textContent = 'Zapisz';
+    });
+}
+
+function deleteAssociation() {
+    if (!editedAssociation) { return; }
+    if (!confirm(`Usunąć stowarzyszenie „${editedAssociation.name}”?`)) { return; }
+
+    const btn = document.getElementById('assoc-delete');
+    btn.disabled = true;
+
+    fetch(`${ASSOCIATIONS_URL}/${editedAssociation.id}`, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+    })
+    .then(r => {
+        if (!r.ok) { throw new Error(); }
+        closeAssociationModal();
+        fetchAssociations();
+    })
+    .catch(() => {
+        document.getElementById('assoc-status').textContent = 'Nie udało się usunąć stowarzyszenia.';
+    })
+    .finally(() => {
+        btn.disabled = false;
+    });
+}
+
+if (IS_ADMIN) {
+    // W trybie stowarzyszeń przycisk ➕ w nagłówku wskazuje miejsce na mapie
+    // zamiast przechodzić do formularza znaleziska.
+    document.getElementById('header-add-btn').addEventListener('click', e => {
+        if (mapMode !== 'associations') { return; }
+        e.preventDefault();
+        startAssociationPlacement();
+    });
+}
+
 function setMapMode(mode) {
     if (mode === mapMode) { return; }
     mapMode = mode;
@@ -777,27 +1159,40 @@ function setMapMode(mode) {
         btn.classList.toggle('active', btn.dataset.mode === mode);
     });
 
-    const isExpeditions = mode === 'expeditions';
+    const isExpeditions  = mode === 'expeditions';
+    const isAssociations = mode === 'associations';
     const addBtn = document.getElementById('header-add-btn');
     const total  = document.getElementById('findings-total');
 
     addBtn.href = isExpeditions ? EXPEDITION_CREATE_URL : FINDINGS_CREATE_URL;
-    if (total) { total.style.display = isExpeditions ? 'none' : ''; }
+    if (total) { total.style.display = isExpeditions || isAssociations ? 'none' : ''; }
     document.getElementById('exp-legend').classList.toggle('visible', isExpeditions);
-    document.getElementById('zoom-info').style.display = isExpeditions ? 'none' : '';
+    document.getElementById('zoom-info').style.display = isExpeditions || isAssociations ? 'none' : '';
+
+    const assocLegend = document.getElementById('assoc-legend');
+    if (assocLegend) { assocLegend.classList.toggle('visible', isAssociations); }
 
     closeModal();
+    cancelAssociationPlacement();
     clearTimeout(loadTimer);
+
+    document.getElementById('findings-list').innerHTML = '<div id="empty-state">Ładowanie…</div>';
 
     if (isExpeditions) {
         clearMarkers();
+        associationLayer.clearLayers();
         allPins = [];
         lastLevel = null;
-        document.getElementById('findings-list').innerHTML = '<div id="empty-state">Ładowanie…</div>';
         fetchExpeditions();
+    } else if (isAssociations) {
+        clearMarkers();
+        expeditionLayer.clearLayers();
+        allPins = [];
+        lastLevel = null;
+        fetchAssociations();
     } else {
         expeditionLayer.clearLayers();
-        document.getElementById('findings-list').innerHTML = '<div id="empty-state">Ładowanie…</div>';
+        associationLayer.clearLayers();
         fetchClusters();
     }
 }
