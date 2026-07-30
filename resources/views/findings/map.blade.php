@@ -368,6 +368,18 @@
     .assoc-pin.known   { background: #22c55e; }
     .assoc-pin.unknown { background: #ef4444; }
 
+    #assoc-add-btn {
+        display: none;
+        position: absolute; right: 12px; bottom: 190px; z-index: 800;
+        background: #f59e0b; border: none; border-radius: 0.875rem;
+        padding: 0.6rem 0.875rem; color: #1a1a2e;
+        font-size: 0.8rem; font-weight: 800;
+        cursor: pointer; touch-action: manipulation;
+        box-shadow: 0 4px 16px rgba(245,158,11,0.45);
+    }
+    #assoc-add-btn.visible { display: flex; align-items: center; gap: 0.4rem; }
+    #assoc-add-btn:active { opacity: 0.75; }
+
     #assoc-place-overlay {
         display: none; position: absolute; inset: 0; z-index: 900;
         pointer-events: none;
@@ -450,6 +462,8 @@
                 <div><span class="legend-dot" style="background:#22c55e"></span>Znamy się</div>
                 <div><span class="legend-dot" style="background:#ef4444"></span>Nie znamy się</div>
             </div>
+
+            <button id="assoc-add-btn" onclick="startAssociationPlacement()">➕ Dodaj stowarzyszenie</button>
 
             {{-- Overlay wskazywania miejsca dla nowego stowarzyszenia --}}
             <div id="assoc-place-overlay">
@@ -974,7 +988,7 @@ function updateAssociationPanel() {
     if (!items.length) {
         list.innerHTML = allAssociations.length
             ? '<div id="empty-state">Brak stowarzyszeń w tym widoku</div>'
-            : '<div id="empty-state">Nie dodano jeszcze żadnego stowarzyszenia.<br>Użyj przycisku ➕, aby dodać pierwsze.</div>';
+            : '<div id="empty-state">Nie dodano jeszcze żadnego stowarzyszenia.<br>Użyj przycisku „➕ Dodaj stowarzyszenie”, aby dodać pierwsze.</div>';
         return;
     }
 
@@ -1171,6 +1185,9 @@ function setMapMode(mode) {
 
     const assocLegend = document.getElementById('assoc-legend');
     if (assocLegend) { assocLegend.classList.toggle('visible', isAssociations); }
+
+    const assocAddBtn = document.getElementById('assoc-add-btn');
+    if (assocAddBtn) { assocAddBtn.classList.toggle('visible', isAssociations); }
 
     closeModal();
     cancelAssociationPlacement();
