@@ -419,6 +419,58 @@ class ExpeditionController extends Controller
         return response()->json($response->json());
     }
 
+    public function startFindingsExport(Request $request, int $id)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->post($this->base()."/expeditions/{$id}/findings-export");
+
+        if ($response->status() === 403) {
+            return response()->json(['error' => 'Brak uprawnień.'], 403);
+        }
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Nie udało się rozpocząć eksportu.'], 500);
+        }
+
+        return response()->json($response->json());
+    }
+
+    public function findingsExportProgress(Request $request, int $id, string $exportId)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get($this->base()."/expeditions/{$id}/findings-export/{$exportId}/progress");
+
+        if ($response->failed()) {
+            return response()->json([
+                'percent' => 0,
+                'message' => 'Nie udało się sprawdzić postępu eksportu.',
+                'done' => false,
+                'failed' => true,
+            ], 200);
+        }
+
+        return response()->json($response->json());
+    }
+
+    public function findingsExportDownload(Request $request, int $id, string $exportId)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get($this->base()."/expeditions/{$id}/findings-export/{$exportId}/download");
+
+        if ($response->failed()) {
+            return redirect()->route('expeditions.show', $id)
+                ->withErrors(['export' => 'Nie udało się pobrać eksportu.']);
+        }
+
+        $disposition = $response->header('Content-Disposition')
+            ?: 'attachment; filename="znaleziska-poszukiwania.pdf"';
+
+        return response($response->body(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => $disposition,
+        ]);
+    }
+
     public function removeFinding(Request $request, int $id, int $findingId)
     {
         $response = Http::withToken($this->apiToken($request))

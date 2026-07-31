@@ -16,6 +16,50 @@
     .autocomplete-list { position:absolute; top:100%; left:0; right:0; z-index:50; background:#323248; border:1px solid #404060; border-top:none; border-radius:0 0 0.875rem 0.875rem; max-height:200px; overflow-y:auto; }
     .autocomplete-item { padding:0.5rem 0.75rem; font-size:0.85rem; color:#e2e8f0; cursor:pointer; }
     .autocomplete-item:active { background:#404060; }
+
+    /* Export modal */
+    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    #export-modal {
+        display: none; position: fixed; inset: 0; z-index: 2000;
+        background: rgba(0,0,0,0.75); align-items: center; justify-content: center;
+    }
+    #export-modal.open { display: flex; }
+    .export-sheet {
+        background: #1a1a2e; border-radius: 1.25rem;
+        border: 1px solid #2a2a3e; width: 90%; max-width: 380px;
+        padding: 1.5rem; text-align: center;
+        animation: slideUp 0.25s ease;
+    }
+    .export-title { font-weight: 700; font-size: 1rem; color: #fff; margin-bottom: 1rem; }
+    .export-progress-wrap {
+        background: #323248; border-radius: 999px; height: 12px;
+        overflow: hidden; margin-bottom: 0.5rem;
+    }
+    .export-progress-bar {
+        height: 100%; border-radius: 999px;
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+        transition: width 0.3s ease;
+        width: 0%;
+    }
+    .export-percent { font-size: 0.85rem; color: #f59e0b; font-weight: 700; margin-bottom: 0.25rem; }
+    .export-message { font-size: 0.78rem; color: #9ca3af; margin-bottom: 1rem; min-height: 1.2em; }
+    .export-done-btn {
+        display: none; width: 100%; padding: 0.8rem;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #1a1a2e; font-weight: 700; border: none;
+        border-radius: 0.75rem; cursor: pointer; font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    .export-close-btn {
+        background: none; border: none; color: #6b7280;
+        font-size: 0.8rem; cursor: pointer; padding: 0.3rem;
+    }
+    .export-trigger-btn {
+        width: 100%; padding: 0.7rem;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #1a1a2e; font-weight: 700; border: none;
+        border-radius: 0.75rem; cursor: pointer; font-size: 0.85rem;
+    }
 </style>
 @endpush
 
@@ -121,6 +165,7 @@
         @if($isLeader)
         <div id="paneFindings" class="tab-panel flex-col gap-3">
             <p class="text-xs text-gray-500">Wszystkie znaleziska przypięte do poszukiwania przez uczestników — także prywatne.</p>
+            <button id="exportFindingsBtn" class="export-trigger-btn" onclick="startExpeditionExport()">📄 Eksportuj znaleziska do PDF</button>
             <div id="findingsList" class="flex flex-col gap-3">
                 <p class="text-gray-400 text-sm text-center py-4">Ładowanie...</p>
             </div>
@@ -128,6 +173,23 @@
         @endif
 
     </div>
+
+    {{-- Export progress modal --}}
+    @if($isLeader)
+    <div id="export-modal" onclick="if(event.target===this)closeExpeditionExport()">
+        <div class="export-sheet">
+            <div class="export-title">Eksport znalezisk do PDF</div>
+            <div class="export-percent" id="export-percent">0%</div>
+            <div class="export-progress-wrap">
+                <div class="export-progress-bar" id="export-bar"></div>
+            </div>
+            <div class="export-message" id="export-message">Inicjalizacja…</div>
+            <div id="export-hint" style="font-size:0.7rem;color:#6b7280;margin-bottom:0.75rem">Możesz zamknąć to okno i wrócić później — eksport będzie kontynuowany w tle.</div>
+            <a id="export-download-btn" class="export-done-btn" href="#" style="display:none;text-decoration:none;text-align:center">Pobierz PDF</a>
+            <button class="export-close-btn" onclick="closeExpeditionExport()">Zamknij</button>
+        </div>
+    </div>
+    @endif
 </div>
 @endsection
 
@@ -378,6 +440,84 @@
             })
             .catch(() => { list.innerHTML = '<p class="text-red-400 text-sm text-center py-6">Błąd ładowania.</p>'; });
     }
+
+    // --- Export findings to PDF (leader) ---
+    // The export id survives navigation so a user can leave the page and come
+    // back to a still-running job.
+    const EXPORT_KEY = 'expedition_findings_export_' + EXP_ID;
+    let exportPollTimer = null;
+
+    function openExportModal() {
+        document.getElementById('export-modal').classList.add('open');
+        document.getElementById('export-percent').textContent = '0%';
+        document.getElementById('export-bar').style.width = '0%';
+        document.getElementById('export-message').textContent = 'Rozpoczynanie eksportu…';
+        document.getElementById('export-download-btn').style.display = 'none';
+        document.getElementById('export-hint').style.display = 'block';
+    }
+
+    function pollExportProgress(exportId) {
+        clearInterval(exportPollTimer);
+        exportPollTimer = setInterval(() => {
+            fetch("/api/expeditions/" + EXP_ID + "/findings-export/" + exportId + "/progress", {
+                headers: { 'Accept': 'application/json' },
+            })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('export-percent').textContent = data.percent + '%';
+                document.getElementById('export-bar').style.width = data.percent + '%';
+                document.getElementById('export-message').textContent = data.message;
+
+                if (data.done) {
+                    clearInterval(exportPollTimer);
+                    const btn = document.getElementById('export-download-btn');
+                    btn.href = "/api/expeditions/" + EXP_ID + "/findings-export/" + exportId + "/download";
+                    btn.style.display = 'block';
+                    btn.addEventListener('click', () => sessionStorage.removeItem(EXPORT_KEY), { once: true });
+                    document.getElementById('export-hint').style.display = 'none';
+                    document.getElementById('export-message').textContent = 'Twój PDF jest gotowy!';
+                } else if (data.failed) {
+                    clearInterval(exportPollTimer);
+                    sessionStorage.removeItem(EXPORT_KEY);
+                    document.getElementById('export-message').textContent = data.message || 'Eksport nie powiódł się.';
+                }
+            })
+            .catch(() => {});
+        }, 1000);
+    }
+
+    window.startExpeditionExport = function () {
+        const existing = sessionStorage.getItem(EXPORT_KEY);
+        if (existing) {
+            openExportModal();
+            pollExportProgress(existing);
+            return;
+        }
+
+        openExportModal();
+
+        fetch("/api/expeditions/" + EXP_ID + "/findings-export", {
+            method: 'POST',
+            headers: jsonHeaders,
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.export_id) {
+                sessionStorage.setItem(EXPORT_KEY, data.export_id);
+                pollExportProgress(data.export_id);
+            } else {
+                document.getElementById('export-message').textContent = data.error || 'Nie udało się rozpocząć eksportu.';
+            }
+        })
+        .catch(() => {
+            document.getElementById('export-message').textContent = 'Błąd połączenia.';
+        });
+    };
+
+    window.closeExpeditionExport = function () {
+        clearInterval(exportPollTimer);
+        document.getElementById('export-modal').classList.remove('open');
+    };
 })();
 </script>
 @endpush

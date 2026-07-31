@@ -64,6 +64,9 @@ Route::middleware('api.auth')->group(function () {
     Route::post('/api/expeditions/join', [ExpeditionController::class, 'joinByCode'])->name('expeditions.join-code');
     Route::get('/api/expeditions/{id}/findings', [ExpeditionController::class, 'findings'])->name('expeditions.findings');
     Route::delete('/api/expeditions/{id}/findings/{findingId}', [ExpeditionController::class, 'removeFinding'])->name('expeditions.findings.remove');
+    Route::post('/api/expeditions/{id}/findings-export', [ExpeditionController::class, 'startFindingsExport'])->name('expeditions.findings-export.start');
+    Route::get('/api/expeditions/{id}/findings-export/{exportId}/progress', [ExpeditionController::class, 'findingsExportProgress'])->name('expeditions.findings-export.progress');
+    Route::get('/api/expeditions/{id}/findings-export/{exportId}/download', [ExpeditionController::class, 'findingsExportDownload'])->name('expeditions.findings-export.download');
     Route::post('/api/expeditions/{id}/participants', [ExpeditionController::class, 'invite'])->name('expeditions.invite');
     Route::post('/api/expeditions/{id}/join', [ExpeditionController::class, 'requestJoin'])->name('expeditions.request-join');
     Route::post('/api/expeditions/{id}/participants/{participant}/accept', [ExpeditionController::class, 'acceptParticipant'])->name('expeditions.participants.accept');
