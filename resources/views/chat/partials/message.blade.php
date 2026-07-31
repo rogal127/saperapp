@@ -3,8 +3,14 @@
     $senderName = $msg['user']['name'] ?? 'Użytkownik';
     $avatarUrl = $msg['user']['avatar_thumb_url'] ?? $msg['user']['avatar_url'] ?? null;
     $initials = strtoupper(substr($senderName, 0, 1));
+    $replyTo = $msg['reply_to'] ?? null;
+    $replyPreview = $replyTo
+        ? (filled($replyTo['body'] ?? null)
+            ? \Illuminate\Support\Str::limit($replyTo['body'], 80)
+            : (($replyTo['has_photo'] ?? false) ? '📷 Zdjęcie' : (($replyTo['has_audio'] ?? false) ? '🎤 Wiadomość głosowa' : 'Wiadomość')))
+        : null;
 @endphp
-<div class="msg-line {{ $isMine ? 'mine' : '' }}" data-msg-id="{{ $msg['id'] }}">
+<div class="msg-line {{ $isMine ? 'mine' : '' }}" data-msg-id="{{ $msg['id'] }}" data-sender="{{ $senderName }}">
     @unless($isMine)
     <a href="{{ route('users.show', $msg['user_id']) }}" class="msg-avatar">
         @if($avatarUrl)
@@ -18,6 +24,12 @@
         @unless($isMine)
         <a href="{{ route('users.show', $msg['user_id']) }}" class="bubble-sender">{{ $senderName }}</a>
         @endunless
+        @if($replyTo)
+        <div class="reply-quote" data-reply-to="{{ $replyTo['id'] }}">
+            <div class="reply-quote-author">↩ {{ $replyTo['user_name'] }}</div>
+            <div class="reply-quote-body">{{ $replyPreview }}</div>
+        </div>
+        @endif
         @if(!empty($msg['finding']))
         <a href="{{ route('findings.show', $msg['finding']['id']) }}"
            style="display:flex;align-items:center;gap:0.5rem;background:#2a2a3e;border:1px solid #f59e0b33;border-radius:0.875rem;padding:0.5rem 0.75rem;margin-bottom:0.25rem;text-decoration:none;max-width:78%">

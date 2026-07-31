@@ -103,6 +103,65 @@
         transition: opacity 0.15s;
     }
     #send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .reply-quote {
+        max-width: 100%; margin-bottom: 3px; cursor: pointer;
+        background: #23233a; border-left: 3px solid #f59e0b;
+        border-radius: 0.5rem; padding: 0.3rem 0.55rem;
+        opacity: 0.85;
+    }
+    .bubble-row.mine .reply-quote { border-left: none; border-right: 3px solid #f59e0b; text-align: right; }
+    .reply-quote-author { font-size: 0.65rem; font-weight: 700; color: #f59e0b; }
+    .reply-quote-body {
+        font-size: 0.72rem; color: #9ca3af; line-height: 1.3;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .msg-line.highlight .bubble { animation: msg-highlight 1.4s ease-out; }
+    @keyframes msg-highlight {
+        0%, 40% { box-shadow: 0 0 0 3px #f59e0b; }
+        100% { box-shadow: 0 0 0 3px transparent; }
+    }
+    .bubble { cursor: pointer; }
+    #msg-action-backdrop {
+        display: none; position: fixed; inset: 0; z-index: 60;
+        background: rgba(0,0,0,0.55);
+        align-items: flex-end; justify-content: center;
+    }
+    #msg-action-backdrop.active { display: flex; }
+    #msg-action-sheet {
+        width: 100%; max-width: 480px; background: #1a1a2e;
+        border-radius: 1rem 1rem 0 0; padding: 0.5rem 0.75rem 1.25rem;
+        animation: sheet-up 0.15s ease-out;
+    }
+    @keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    #msg-action-preview {
+        font-size: 0.72rem; color: #6b7280; padding: 0.5rem 0.75rem 0.25rem;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .msg-action-btn {
+        display: flex; align-items: center; gap: 0.625rem; width: 100%;
+        background: transparent; border: none; color: #e2e8f0;
+        font-size: 0.9rem; text-align: left; padding: 0.875rem 0.75rem;
+        border-radius: 0.75rem; cursor: pointer;
+    }
+    .msg-action-btn:active { background: #2a2a3e; }
+    #reply-bar {
+        display: none; align-items: center; gap: 0.625rem;
+        padding: 0.625rem 1rem 0; background: #13131f; flex-shrink: 0;
+    }
+    #reply-bar.active { display: flex; }
+    #reply-bar-inner {
+        flex: 1; min-width: 0; border-left: 3px solid #f59e0b;
+        padding: 0.15rem 0.55rem;
+    }
+    #reply-bar-author { font-size: 0.7rem; font-weight: 700; color: #f59e0b; }
+    #reply-bar-body {
+        font-size: 0.75rem; color: #9ca3af;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    #reply-cancel {
+        background: #2a2a3e; color: #e2e8f0; border: none; border-radius: 50%;
+        width: 26px; height: 26px; font-size: 0.9rem; cursor: pointer; flex-shrink: 0;
+    }
     #load-earlier-wrap { display: flex; justify-content: center; padding-bottom: 0.25rem; }
     #load-earlier-btn {
         background: #2a2a3e; color: #f59e0b; border: none;
@@ -147,6 +206,15 @@
         @endforelse
     </div>
 
+    {{-- Odpowiedź na wybraną wiadomość --}}
+    <div id="reply-bar">
+        <div id="reply-bar-inner">
+            <div id="reply-bar-author"></div>
+            <div id="reply-bar-body"></div>
+        </div>
+        <button type="button" id="reply-cancel">✕</button>
+    </div>
+
     {{-- Podgląd wybranego zdjęcia --}}
     <div id="photo-preview-bar">
         <img id="photo-preview-img" src="" alt="">
@@ -175,6 +243,15 @@
         <button id="send-btn" disabled>➤</button>
     </div>
 
+</div>
+
+{{-- Menu akcji dla klikniętej wiadomości --}}
+<div id="msg-action-backdrop">
+    <div id="msg-action-sheet" class="safe-bottom">
+        <div id="msg-action-preview"></div>
+        <button type="button" class="msg-action-btn" id="msg-action-reply"><span>↩</span> Odpowiedz</button>
+        <button type="button" class="msg-action-btn" id="msg-action-close"><span>✕</span> Anuluj</button>
+    </div>
 </div>
 
 @push('scripts')
@@ -321,12 +398,12 @@ msgList.scrollTop = msgList.scrollHeight;
 loadEarlierBtn.addEventListener('click', loadEarlierMessages);
 
 function loadEarlierMessages() {
-    if (loadingEarlier || !hasMoreEarlier || !oldestId) { return; }
+    if (loadingEarlier || !hasMoreEarlier || !oldestId) { return Promise.resolve(); }
     loadingEarlier = true;
     loadEarlierBtn.disabled = true;
     loadEarlierBtn.textContent = 'Ładowanie…';
 
-    fetch(POLL_URL + '?before_id=' + oldestId)
+    return fetch(POLL_URL + '?before_id=' + oldestId)
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(data => {
             const earlier = data.data || [];
@@ -354,6 +431,104 @@ function loadEarlierMessages() {
             loadEarlierBtn.textContent = 'Załaduj wcześniejsze wiadomości';
         });
 }
+
+/* ---------- Odpowiadanie na wiadomość ---------- */
+
+const actionBackdrop = document.getElementById('msg-action-backdrop');
+const actionPreview  = document.getElementById('msg-action-preview');
+const actionReply    = document.getElementById('msg-action-reply');
+const actionClose    = document.getElementById('msg-action-close');
+const replyBar       = document.getElementById('reply-bar');
+const replyBarAuthor = document.getElementById('reply-bar-author');
+const replyBarBody   = document.getElementById('reply-bar-body');
+const replyCancel    = document.getElementById('reply-cancel');
+
+let replyTarget = null;
+let actionTarget = null;
+
+function messagePreview(line) {
+    const text = line.querySelector('.bubble-text')?.textContent?.trim();
+    if (text) { return text; }
+    if (line.querySelector('.bubble-photo')) { return '📷 Zdjęcie'; }
+    if (line.querySelector('.bubble-audio')) { return '🎤 Wiadomość głosowa'; }
+    return 'Wiadomość';
+}
+
+msgList.addEventListener('click', e => {
+    const quote = e.target.closest('.reply-quote');
+    if (quote) {
+        scrollToMessage(parseInt(quote.dataset.replyTo, 10));
+        return;
+    }
+
+    const bubble = e.target.closest('.bubble');
+    if (!bubble || e.target.closest('a, audio, .bubble-photo')) { return; }
+
+    const line = bubble.closest('[data-msg-id]');
+    if (!line) { return; }
+
+    actionTarget = line;
+    actionPreview.textContent = (line.dataset.sender || 'Użytkownik') + ': ' + messagePreview(line);
+    actionBackdrop.classList.add('active');
+});
+
+actionBackdrop.addEventListener('click', e => {
+    if (e.target === actionBackdrop) { closeActionSheet(); }
+});
+
+actionClose.addEventListener('click', closeActionSheet);
+
+actionReply.addEventListener('click', () => {
+    if (actionTarget) { setReplyTarget(actionTarget); }
+    closeActionSheet();
+});
+
+function closeActionSheet() {
+    actionBackdrop.classList.remove('active');
+    actionTarget = null;
+}
+
+function setReplyTarget(line) {
+    replyTarget = {
+        id: parseInt(line.dataset.msgId, 10),
+        author: line.dataset.sender || 'Użytkownik',
+        preview: messagePreview(line),
+    };
+
+    replyBarAuthor.textContent = '↩ Odpowiadasz: ' + replyTarget.author;
+    replyBarBody.textContent = replyTarget.preview;
+    replyBar.classList.add('active');
+    input.focus();
+}
+
+function clearReplyTarget() {
+    replyTarget = null;
+    replyBar.classList.remove('active');
+}
+
+replyCancel.addEventListener('click', clearReplyTarget);
+
+function scrollToMessage(id, attempt = 0) {
+    const target = msgList.querySelector(`[data-msg-id="${id}"]`);
+
+    if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.remove('highlight');
+        void target.offsetWidth;
+        target.classList.add('highlight');
+        setTimeout(() => target.classList.remove('highlight'), 1500);
+        return;
+    }
+
+    if (!hasMoreEarlier || attempt >= 10) {
+        appendSystemMsg('Nie udało się odnaleźć oryginalnej wiadomości.');
+        return;
+    }
+
+    loadEarlierMessages().then(() => scrollToMessage(id, attempt + 1));
+}
+
+/* ---------- /Odpowiadanie ---------- */
 
 input.addEventListener('input', () => {
     updateSendButtonState();
@@ -394,6 +569,7 @@ function sendMessage() {
     const body = input.value.trim();
     const photo = selectedPhoto;
     const audio = selectedAudio;
+    const replyToId = replyTarget?.id ?? null;
     if (!body && !photo && !audio) return;
 
     sendBtn.disabled = true;
@@ -405,11 +581,13 @@ function sendMessage() {
     previewBar.classList.remove('active');
     audioPreviewBar.classList.remove('active');
     audioPreviewPlayer.src = '';
+    clearReplyTarget();
 
     const formData = new FormData();
     if (body) { formData.append('body', body); }
     if (photo) { formData.append('photo', photo); }
     if (audio) { formData.append('audio', audio); }
+    if (replyToId) { formData.append('reply_to_id', replyToId); }
 
     fetch(SEND_URL, {
         method: 'POST',
@@ -429,11 +607,20 @@ function poll() {
         .catch(() => {});
 }
 
+function replyPreviewText(replyTo) {
+    const body = (replyTo.body ?? '').trim();
+    if (body) { return body.length > 80 ? body.slice(0, 80) + '…' : body; }
+    if (replyTo.has_photo) { return '📷 Zdjęcie'; }
+    if (replyTo.has_audio) { return '🎤 Wiadomość głosowa'; }
+    return 'Wiadomość';
+}
+
 function buildMessageElement(msg) {
     const isMine = MY_ID !== null && String(msg.user_id) === String(MY_ID);
     const wrapper = document.createElement('div');
     wrapper.className = 'msg-line ' + (isMine ? 'mine' : '');
     wrapper.dataset.msgId = msg.id;
+    wrapper.dataset.sender = msg.user?.name ?? 'Użytkownik';
 
     const d = new Date(msg.created_at);
     const time = d.toLocaleDateString('pl', {day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('pl', {hour:'2-digit',minute:'2-digit'});
@@ -456,11 +643,18 @@ function buildMessageElement(msg) {
             <span style="font-size:0.7rem;color:#6b7280;flex-shrink:0">›</span>
         </a>`
         : '';
+    const replyHtml = msg.reply_to
+        ? `<div class="reply-quote" data-reply-to="${escHtml(msg.reply_to.id)}">
+            <div class="reply-quote-author">↩ ${escHtml(msg.reply_to.user_name)}</div>
+            <div class="reply-quote-body">${escHtml(replyPreviewText(msg.reply_to))}</div>
+        </div>`
+        : '';
 
     wrapper.innerHTML = `
         ${!isMine ? `<a href="${profileUrl}" class="msg-avatar">${avatarUrl ? `<img src="${avatarUrl}" alt="">` : escHtml(initials)}</a>` : ''}
         <div class="bubble-row ${isMine ? 'mine' : 'other'}">
             ${!isMine ? `<a href="${profileUrl}" class="bubble-sender">${escHtml(senderName)}</a>` : ''}
+            ${replyHtml}
             ${findingHtml}
             <div class="bubble ${isMine ? 'bubble-mine' : 'bubble-other'}">${photoHtml}${audioHtml}${bodyHtml}</div>
             <div class="bubble-time">${time}</div>

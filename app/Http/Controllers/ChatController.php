@@ -53,6 +53,7 @@ class ChatController extends Controller
     {
         $request->validate([
             'body' => ['nullable', 'string', 'max:1000'],
+            'reply_to_id' => ['nullable', 'integer'],
             'photo' => ['nullable', 'image', 'max:10240'],
             'audio' => ['nullable', 'file', 'max:10240', function ($attribute, $value, $fail) {
                 if (! in_array(strtolower($value->getClientOriginalExtension()), ['webm', 'ogg', 'oga', 'm4a', 'mp4', 'mp3', 'wav'])) {
@@ -77,9 +78,10 @@ class ChatController extends Controller
             $httpRequest = $httpRequest->attach('audio', file_get_contents($audio->getRealPath()), $audio->getClientOriginalName());
         }
 
-        $response = $httpRequest->post(config('services.api.url').'/chat/messages', [
+        $response = $httpRequest->post(config('services.api.url').'/chat/messages', array_filter([
             'body' => $request->body,
-        ]);
+            'reply_to_id' => $request->input('reply_to_id'),
+        ], fn ($value) => $value !== null));
 
         if ($response->failed()) {
             return response()->json(['message' => 'Błąd wysyłania wiadomości.'], 502);
