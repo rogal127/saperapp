@@ -50,6 +50,31 @@ class ExpeditionController extends Controller
         ]);
     }
 
+    public function edit(Request $request, int $id)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get($this->base()."/expeditions/{$id}");
+
+        if (in_array($response->status(), [403, 404], true)) {
+            abort($response->status());
+        }
+
+        if ($response->failed()) {
+            abort(502);
+        }
+
+        $expedition = $response->json('data') ?? $response->json();
+
+        // Only the leader may change an expedition; the API enforces this too.
+        if (! ($expedition['is_leader'] ?? false)) {
+            abort(403);
+        }
+
+        return view('expeditions.edit', [
+            'expedition' => $expedition,
+        ]);
+    }
+
     // ----- API passthrough -----
 
     public function pendingCount(Request $request)
@@ -366,11 +391,21 @@ class ExpeditionController extends Controller
         $payload = $request->only('name', 'description', 'starts_at', 'ends_at', 'visibility', 'status');
 
         if ($request->filled('area')) {
-            $payload['area'] = json_decode($request->input('area'), true);
+            // The edit screen posts the polygon as a JSON string (same as the
+            // create form); accept a decoded array too.
+            $area = $request->input('area');
+            $payload['area'] = is_string($area) ? json_decode($area, true) : $area;
         }
 
-        $response = Http::withToken($this->apiToken($request))
-            ->put($this->base()."/expeditions/{$id}", $payload);
+        try {
+            $response = Http::withToken($this->apiToken($request))
+                ->timeout(15)
+                ->put($this->base()."/expeditions/{$id}", $payload);
+        } catch (ConnectionException $e) {
+            return response()->json([
+                'message' => 'Serwer nie odpowiada. Spróbuj ponownie za chwilę.',
+            ], 504);
+        }
 
         if ($response->status() === 403) {
             return response()->json(['message' => 'Brak uprawnień.'], 403);

@@ -57,6 +57,7 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/expeditions', [ExpeditionController::class, 'index'])->name('expeditions.index');
     Route::get('/expeditions/create', [ExpeditionController::class, 'create'])->name('expeditions.create');
     Route::post('/expeditions', [ExpeditionController::class, 'store'])->name('expeditions.store');
+    Route::get('/expeditions/{id}/edit', [ExpeditionController::class, 'edit'])->name('expeditions.edit');
     Route::post('/api/expeditions/import-mymaps', [ExpeditionController::class, 'importGoogleMyMaps'])->name('expeditions.import-mymaps');
     Route::get('/api/expeditions', [ExpeditionController::class, 'apiIndex'])->name('expeditions.api');
     Route::get('/api/expeditions/pending-count', [ExpeditionController::class, 'pendingCount'])->name('expeditions.pending-count');

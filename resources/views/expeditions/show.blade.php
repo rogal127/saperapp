@@ -142,6 +142,7 @@
             @endunless
 
             @if($isLeader)
+            <a href="{{ route('expeditions.edit', $expedition['id']) }}" class="btn-secondary text-center">✏️ Edytuj poszukiwanie</a>
             <button id="deleteExpeditionBtn" class="btn-secondary text-red-400">🗑️ Usuń poszukiwanie</button>
             @endif
         </div>
