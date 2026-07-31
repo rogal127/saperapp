@@ -349,7 +349,38 @@
             </a>
             @endif
 
-            @if(!empty($finding['can_view_exact_location']) && isset($finding['latitude'], $finding['longitude']))
+            {{-- Podgląd na mapie aplikacji: własne znaleziska w dokładnym miejscu,
+                 cudze — w środku miejscowości, tak jak pokazuje je mapa. --}}
+            @php
+                $canViewExact = ! empty($finding['can_view_exact_location']) && isset($finding['latitude'], $finding['longitude']);
+                $mapLat = $canViewExact ? $finding['latitude'] : ($finding['city_lat'] ?? null);
+                $mapLng = $canViewExact ? $finding['longitude'] : ($finding['city_lng'] ?? null);
+                $mapQuery = [
+                    'lat' => $mapLat,
+                    'lng' => $mapLng,
+                    'zoom' => 15,
+                    'finding' => $finding['id'],
+                ];
+
+                if ($canViewExact && ! empty($finding['pin_id'])) {
+                    $mapQuery['pin'] = $finding['pin_id'];
+                }
+            @endphp
+            @if($mapLat !== null && $mapLng !== null)
+            <a href="{{ route('findings.map') }}?{{ http_build_query($mapQuery) }}"
+               class="flex items-center gap-3 bg-surface-card rounded-xl p-4 active:opacity-80">
+                <span class="text-2xl">🗺️</span>
+                <span class="flex-1 min-w-0">
+                    <span class="block text-sm font-semibold text-white">Pokaż na mapie</span>
+                    <span class="block text-xs text-gray-500 truncate">
+                        {{ $finding['city'] ?? 'Lokalizacja znaleziska' }}{{ !empty($finding['voivodeship']) ? ' · ' . $finding['voivodeship'] : '' }}
+                    </span>
+                </span>
+                <span class="text-amber-400 text-sm font-semibold whitespace-nowrap">Otwórz</span>
+            </a>
+            @endif
+
+            @if($canViewExact)
             <a href="https://www.google.com/maps?q={{ $finding['latitude'] }},{{ $finding['longitude'] }}"
                target="_blank" rel="noopener"
                class="flex items-center gap-3 bg-surface-card rounded-xl p-4 active:opacity-80">

@@ -266,6 +266,16 @@
         border: 1px solid #404060;
         border-left: 3px solid transparent;
     }
+    .pin-finding-card.focused {
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35);
+        animation: cardFocusPulse 1.6s ease-out 1;
+    }
+    @keyframes cardFocusPulse {
+        0%   { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+        60%  { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+        100% { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35); }
+    }
     .pin-finding-card[data-type="archaeological_monument"] { border-left-color: #ef4444; }
     .pin-finding-card[data-type="monument"]                { border-left-color: #facc15; }
     .pin-finding-card[data-type="non_monument"]            { border-left-color: #22c55e; }
@@ -703,8 +713,36 @@ const orthoLayer = L.tileLayer(
 );
 let currentLayer = 'osm';
 
+// Wejście z widoku znaleziska: ?lat=&lng=&zoom=&finding=&pin= — mapa startuje
+// na miejscowości znaleziska i po załadowaniu klastrów sama otwiera jego kartę.
+const FOCUS = (() => {
+    const params = new URLSearchParams(window.location.search);
+    const num = key => {
+        const value = parseFloat(params.get(key));
+        return Number.isFinite(value) ? value : null;
+    };
+
+    const lat  = num('lat');
+    const lng  = num('lng');
+    const zoom = num('zoom');
+
+    return {
+        lat: lat !== null && lat >= -90 && lat <= 90 ? lat : null,
+        lng: lng !== null && lng >= -180 && lng <= 180 ? lng : null,
+        zoom: zoom !== null ? Math.min(Math.max(Math.round(zoom), 0), 19) : 15,
+        findingId: num('finding'),
+        pinId: num('pin'),
+    };
+})();
+
+const hasFocusPosition = FOCUS.lat !== null && FOCUS.lng !== null;
+
+// Kasowany po pierwszej próbie, żeby modal nie otwierał się ponownie przy przesuwaniu mapy.
+let pendingFocus = hasFocusPosition && (FOCUS.findingId !== null || FOCUS.pinId !== null);
+
 const map = L.map('browse-map', {
-    center: [52.0, 19.0], zoom: 6,
+    center: hasFocusPosition ? [FOCUS.lat, FOCUS.lng] : [52.0, 19.0],
+    zoom: hasFocusPosition ? FOCUS.zoom : 6,
     zoomControl: false, attributionControl: false,
     layers: [osmLayer],
 });
@@ -1263,6 +1301,41 @@ function renderData(items, zoom) {
     });
 
     updatePanel(items, zoom);
+
+    if (pendingFocus) { applyPendingFocus(items); }
+}
+
+/**
+ * Otwiera modal z kartą znaleziska wskazanego w adresie (wejście z widoku znaleziska).
+ * Własne pinezki trafiają na mapę osobno, cudze — w klastrze miejscowości.
+ */
+function applyPendingFocus(items) {
+    pendingFocus = false;
+
+    if (FOCUS.pinId !== null) {
+        const pin = items.find(i => i.type === 'pin' && i.id === FOCUS.pinId);
+        if (pin) {
+            openPinModal(pin, FOCUS.findingId);
+            return;
+        }
+    }
+
+    if (FOCUS.findingId === null) { return; }
+
+    const cluster = items.find(i => i.type === 'cluster'
+        && (i.findings ?? []).some(f => f.id === FOCUS.findingId));
+
+    if (cluster) { openCityFindingsModal(cluster, FOCUS.findingId); }
+}
+
+function highlightFindingCard(findingId) {
+    if (findingId === null || findingId === undefined) { return; }
+
+    const card = document.querySelector(`#modal-findings-list [data-finding-id="${findingId}"]`);
+    if (!card) { return; }
+
+    card.classList.add('focused');
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function updatePanel(items, zoom) {
@@ -1361,7 +1434,7 @@ function highlightItem(el) {
 }
 
 // --- Modal znalezisk miasta (cudzy klaster przy zoom ≥ 14) ---
-function openCityFindingsModal(cluster) {
+function openCityFindingsModal(cluster, focusFindingId = null) {
     const list    = document.getElementById('modal-findings-list');
     const addWrap = document.getElementById('modal-add-btn-wrap');
 
@@ -1378,6 +1451,7 @@ function openCityFindingsModal(cluster) {
         findings.forEach(f => {
             const card = document.createElement('div');
             card.className = 'pin-finding-card';
+            card.dataset.findingId = f.id;
             if (f.type) { card.dataset.type = f.type; }
             card.innerHTML = `
                 <div class="pin-finding-header">
@@ -1407,6 +1481,7 @@ function openCityFindingsModal(cluster) {
     }
 
     document.getElementById('pin-modal').classList.add('open');
+    highlightFindingCard(focusFindingId);
 }
 
 // --- Galeria zdjęć znaleziska (obsługuje tablicę url-i lub obiektów {url}) ---
@@ -1450,7 +1525,7 @@ function toggleDesc(btn) {
 let activeMessageFindingId = null;
 let currentModalPin = null;
 
-function openPinModal(pin) {
+function openPinModal(pin, focusFindingId = null) {
     currentModalPin = pin;
     const list   = document.getElementById('modal-findings-list');
     const addWrap = document.getElementById('modal-add-btn-wrap');
@@ -1514,6 +1589,7 @@ function openPinModal(pin) {
                 `;
                 list.appendChild(card);
             });
+            highlightFindingCard(focusFindingId);
         })
         .catch(() => {
             list.innerHTML = '<div style="text-align:center;color:#f87171;padding:1rem;font-size:0.82rem">Błąd ładowania znalezisk.</div>';
