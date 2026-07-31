@@ -64,6 +64,22 @@ class ProfileController extends Controller
         return back()->with('success', 'Zgoda dodana!')->withFragment('wkz-consents');
     }
 
+    public function updateWkzConsent(Request $request, int $id)
+    {
+        $request->validate(['name' => ['required', 'string', 'max:255']]);
+
+        $response = Http::withToken($this->apiToken($request))
+            ->put(config('services.api.url')."/wkz-consents/{$id}", [
+                'name' => $request->name,
+            ]);
+
+        if ($response->failed()) {
+            return back()->withErrors(['wkz_name' => 'Nie udało się zapisać zmian.'])->withFragment('wkz-consents');
+        }
+
+        return back()->with('success', 'Zgoda zaktualizowana!')->withFragment('wkz-consents');
+    }
+
     public function destroyWkzConsent(Request $request, int $id)
     {
         Http::withToken($this->apiToken($request))

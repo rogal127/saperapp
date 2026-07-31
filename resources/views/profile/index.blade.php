@@ -401,18 +401,35 @@
             @else
                 <div class="flex flex-col gap-2">
                     @foreach($wkzConsents as $consent)
-                        <div class="card flex items-center gap-3">
-                            <span class="text-lg">📋</span>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-semibold text-white truncate">{{ $consent['name'] }}</p>
-                                <p class="text-xs text-gray-500">{{ $consent['findings_count'] ?? 0 }} znalezisk</p>
+                        <div class="card" id="wkz-consent-{{ $consent['id'] }}">
+                            <div class="flex items-center gap-3" data-wkz-view>
+                                <span class="text-lg">📋</span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-white truncate">{{ $consent['name'] }}</p>
+                                    <p class="text-xs text-gray-500">{{ $consent['findings_count'] ?? 0 }} znalezisk</p>
+                                </div>
+                                <button type="button" class="text-amber-400 text-base leading-none px-1"
+                                    onclick="toggleWkzEdit({{ $consent['id'] }}, true)"
+                                    title="Edytuj">✏</button>
+                                <form action="{{ route('profile.wkz-consents.destroy', $consent['id']) }}" method="POST">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-400 text-lg leading-none px-1"
+                                        onclick="return confirm('Usunąć zgodę? Znaleziska nie zostaną usunięte.')"
+                                        title="Usuń">×</button>
+                                </form>
                             </div>
-                            <form action="{{ route('profile.wkz-consents.destroy', $consent['id']) }}" method="POST">
+                            <form action="{{ route('profile.wkz-consents.update', $consent['id']) }}" method="POST"
+                                class="hidden flex-col gap-2" data-wkz-edit>
                                 @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-red-400 text-lg leading-none px-1"
-                                    onclick="return confirm('Usunąć zgodę? Znaleziska nie zostaną usunięte.')"
-                                    title="Usuń">×</button>
+                                @method('PUT')
+                                <input type="text" name="name" value="{{ $consent['name'] }}" maxlength="255"
+                                    class="input-field" required>
+                                <div class="flex gap-2">
+                                    <button type="submit" class="btn-primary flex-1 text-sm">Zapisz</button>
+                                    <button type="button" class="btn-secondary flex-1 text-sm"
+                                        onclick="toggleWkzEdit({{ $consent['id'] }}, false)">Anuluj</button>
+                                </div>
                             </form>
                         </div>
                     @endforeach
@@ -523,6 +540,25 @@
 <script>
 const CSRF_TOKEN = '{{ csrf_token() }}';
 const FINDINGS_URL = '{{ route('users.findings', $user['id'] ?? 0) }}';
+
+function toggleWkzEdit(consentId, isEditing) {
+    const card = document.getElementById(`wkz-consent-${consentId}`);
+    if (!card) return;
+
+    const view = card.querySelector('[data-wkz-view]');
+    const form = card.querySelector('[data-wkz-edit]');
+
+    view.classList.toggle('hidden', isEditing);
+    view.classList.toggle('flex', !isEditing);
+    form.classList.toggle('hidden', !isEditing);
+    form.classList.toggle('flex', isEditing);
+
+    if (isEditing) {
+        const input = form.querySelector('input[name="name"]');
+        input.focus();
+        input.select();
+    }
+}
 
 function toggleLike(findingId, btn) {
     fetch(`/api/findings/${findingId}/like`, {

@@ -79,6 +79,7 @@ Route::middleware('api.auth')->group(function () {
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->name('profile.avatar');
     Route::post('/profile/wkz-consents', [ProfileController::class, 'storeWkzConsent'])->name('profile.wkz-consents.store');
+    Route::put('/profile/wkz-consents/{id}', [ProfileController::class, 'updateWkzConsent'])->name('profile.wkz-consents.update');
     Route::delete('/profile/wkz-consents/{id}', [ProfileController::class, 'destroyWkzConsent'])->name('profile.wkz-consents.destroy');
     Route::get('/profile/wkz-consents/{id}/report', [ProfileController::class, 'wkzConsentReport'])->name('profile.wkz-consents.report');
     Route::post('/profile/findings-export', [ProfileController::class, 'startFindingsExport'])->name('profile.findings-export.start');
