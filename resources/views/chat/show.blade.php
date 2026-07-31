@@ -249,6 +249,7 @@
 <div id="msg-action-backdrop">
     <div id="msg-action-sheet" class="safe-bottom">
         <div id="msg-action-preview"></div>
+        <button type="button" class="msg-action-btn" id="msg-action-zoom"><span>🔍</span> Powiększ</button>
         <button type="button" class="msg-action-btn" id="msg-action-reply"><span>↩</span> Odpowiedz</button>
         <button type="button" class="msg-action-btn" id="msg-action-close"><span>✕</span> Anuluj</button>
     </div>
@@ -437,6 +438,7 @@ function loadEarlierMessages() {
 const actionBackdrop = document.getElementById('msg-action-backdrop');
 const actionPreview  = document.getElementById('msg-action-preview');
 const actionReply    = document.getElementById('msg-action-reply');
+const actionZoom     = document.getElementById('msg-action-zoom');
 const actionClose    = document.getElementById('msg-action-close');
 const replyBar       = document.getElementById('reply-bar');
 const replyBarAuthor = document.getElementById('reply-bar-author');
@@ -445,6 +447,7 @@ const replyCancel    = document.getElementById('reply-cancel');
 
 let replyTarget = null;
 let actionTarget = null;
+let actionPhotoUrl = null;
 
 function messagePreview(line) {
     const text = line.querySelector('.bubble-text')?.textContent?.trim();
@@ -462,14 +465,26 @@ msgList.addEventListener('click', e => {
     }
 
     const bubble = e.target.closest('.bubble');
-    if (!bubble || e.target.closest('a, audio, .bubble-photo')) { return; }
+    if (!bubble || e.target.closest('a, audio')) { return; }
 
     const line = bubble.closest('[data-msg-id]');
     if (!line) { return; }
 
+    openActionSheet(line, e.target.closest('.bubble-photo')?.dataset.full || null);
+});
+
+function openActionSheet(line, photoUrl) {
     actionTarget = line;
+    actionPhotoUrl = photoUrl;
     actionPreview.textContent = (line.dataset.sender || 'Użytkownik') + ': ' + messagePreview(line);
+    actionZoom.style.display = photoUrl ? '' : 'none';
     actionBackdrop.classList.add('active');
+}
+
+actionZoom.addEventListener('click', () => {
+    const url = actionPhotoUrl;
+    closeActionSheet();
+    if (url) { openLightbox(url); }
 });
 
 actionBackdrop.addEventListener('click', e => {
@@ -486,6 +501,7 @@ actionReply.addEventListener('click', () => {
 function closeActionSheet() {
     actionBackdrop.classList.remove('active');
     actionTarget = null;
+    actionPhotoUrl = null;
 }
 
 function setReplyTarget(line) {
@@ -630,7 +646,7 @@ function buildMessageElement(msg) {
     const profileUrl = userUrl(msg.user_id);
 
     const photoHtml = msg.photo_url
-        ? `<img src="${escHtml(msg.photo_thumb_url ?? msg.photo_url)}" class="bubble-photo" onclick="openLightbox(${escHtml(JSON.stringify(msg.photo_url ?? ''))})">`
+        ? `<img src="${escHtml(msg.photo_thumb_url ?? msg.photo_url)}" class="bubble-photo" data-full="${escHtml(msg.photo_url ?? '')}">`
         : '';
     const audioHtml = msg.audio_url
         ? `<audio controls src="${escHtml(msg.audio_url)}" class="bubble-audio"></audio>`

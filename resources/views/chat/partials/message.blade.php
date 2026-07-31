@@ -40,7 +40,7 @@
         @endif
         <div class="bubble {{ $isMine ? 'bubble-mine' : 'bubble-other' }}">
             @if(!empty($msg['photo_url']))
-            <img src="{{ $msg['photo_thumb_url'] ?? $msg['photo_url'] }}" class="bubble-photo" onclick="openLightbox('{{ $msg['photo_url'] }}')">
+            <img src="{{ $msg['photo_thumb_url'] ?? $msg['photo_url'] }}" class="bubble-photo" data-full="{{ $msg['photo_url'] }}">
             @endif
             @if(!empty($msg['audio_url']))
             <audio controls src="{{ $msg['audio_url'] }}" class="bubble-audio"></audio>
