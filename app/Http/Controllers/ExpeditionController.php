@@ -94,7 +94,27 @@ class ExpeditionController extends Controller
     public function apiIndex(Request $request)
     {
         $response = Http::withToken($this->apiToken($request))
-            ->get($this->base().'/expeditions', $request->only('scope', 'voivodeship', 'from', 'to', 'page'));
+            ->get($this->base().'/expeditions', $request->only('scope', 'voivodeship', 'from', 'to', 'page', 'q'));
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Błąd API'], 502);
+        }
+
+        return response()->json($response->json());
+    }
+
+    /**
+     * Single expedition as JSON (including the `area` geometry), used by the
+     * "Live" mode of the findings map to draw the selected expedition's terrain.
+     */
+    public function apiShow(Request $request, int $id)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->get($this->base()."/expeditions/{$id}");
+
+        if (in_array($response->status(), [403, 404], true)) {
+            return response()->json(['error' => 'Nie znaleziono poszukiwania'], $response->status());
+        }
 
         if ($response->failed()) {
             return response()->json(['error' => 'Błąd API'], 502);

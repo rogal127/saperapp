@@ -217,32 +217,32 @@
     #empty-state { text-align: center; padding: 2rem 1rem; color: #6b7280; font-size: 0.8rem; }
 
     /* Modals */
-    #pin-modal, #message-modal, #share-modal, #assoc-modal {
+    #pin-modal, #message-modal, #share-modal, #assoc-modal, #live-modal {
         display: none; position: fixed; inset: 0; z-index: 2000;
         background: rgba(0,0,0,0.75); align-items: flex-end;
         justify-content: center;
     }
-    #pin-modal.open, #message-modal.open, #share-modal.open, #assoc-modal.open { display: flex; }
-    #modal-sheet, #message-sheet, #share-sheet, #assoc-sheet {
+    #pin-modal.open, #message-modal.open, #share-modal.open, #assoc-modal.open, #live-modal.open { display: flex; }
+    #modal-sheet, #message-sheet, #share-sheet, #assoc-sheet, #live-sheet {
         background: #1a1a2e; border-radius: 1.25rem 1.25rem 0 0;
         border: 1px solid #2a2a3e; width: 100%; max-width: 480px;
         max-height: 90vh; display: flex; flex-direction: column;
         animation: slideUp 0.25s ease;
     }
-    #modal-sheet-header, #message-sheet-header, #share-sheet-header, #assoc-sheet-header {
+    #modal-sheet-header, #message-sheet-header, #share-sheet-header, #assoc-sheet-header, #live-sheet-header {
         flex-shrink: 0;
         padding: 1rem 1rem 0.75rem;
         border-bottom: 1px solid #2a2a3e;
         border-radius: 1.25rem 1.25rem 0 0;
     }
-    #modal-sheet-body, #message-sheet-body, #share-sheet-body, #assoc-sheet-body {
+    #modal-sheet-body, #message-sheet-body, #share-sheet-body, #assoc-sheet-body, #live-sheet-body {
         flex: 1; overflow-y: auto;
     }
     @media (min-width: 768px) {
-        #modal-sheet, #message-sheet, #share-sheet, #assoc-sheet { max-width: 640px; }
+        #modal-sheet, #message-sheet, #share-sheet, #assoc-sheet, #live-sheet { max-width: 640px; }
     }
     @media (min-width: 1280px) {
-        #modal-sheet, #message-sheet, #share-sheet, #assoc-sheet { max-width: 820px; }
+        #modal-sheet, #message-sheet, #share-sheet, #assoc-sheet, #live-sheet { max-width: 820px; }
     }
     .autocomplete-list {
         position: relative; z-index: 50; background: #2a2a3e; border: 1px solid #404060;
@@ -425,6 +425,19 @@
         padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 600; cursor: pointer;
     }
 
+    /* Tryb Live */
+    #live-select-btn {
+        display: none;
+        position: absolute; right: 12px; bottom: 190px; z-index: 800;
+        background: #f59e0b; border: none; border-radius: 0.875rem;
+        padding: 0.6rem 0.875rem; color: #1a1a2e;
+        font-size: 0.8rem; font-weight: 800;
+        cursor: pointer; touch-action: manipulation;
+        box-shadow: 0 4px 16px rgba(245,158,11,0.45);
+    }
+    #live-select-btn.visible { display: flex; align-items: center; gap: 0.4rem; }
+    #live-select-btn:active { opacity: 0.75; }
+
     .assoc-field { margin-top: 0.75rem; }
     .assoc-field:first-child { margin-top: 0; }
     .assoc-label { display: block; font-size: 0.7rem; font-weight: 700; color: #9ca3af; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -454,12 +467,13 @@
     <div class="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-surface-card flex-shrink-0">
         <a href="{{ route('home') }}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card text-gray-300 text-xl flex-shrink-0">‹</a>
         <div class="flex-1 min-w-0">
-            <div id="mode-switch" class="{{ session('api_user.is_admin') ? 'three-modes' : '' }}">
+            <div id="mode-switch" class="three-modes">
                 <button type="button" class="mode-btn active" data-mode="findings">Znaleziska</button>
                 <button type="button" class="mode-btn" data-mode="expeditions">Poszukiwania</button>
                 @if(session('api_user.is_admin'))
                     <button type="button" class="mode-btn" data-mode="associations">Stowarzyszenia</button>
                 @endif
+                <button type="button" class="mode-btn" data-mode="live">Live</button>
             </div>
             @if($findingsCount !== null)
                 <p id="findings-total" class="text-xs text-gray-400 mt-1">Łącznie dodano: {{ number_format($findingsCount, 0, ',', ' ') }}</p>
@@ -482,6 +496,8 @@
             <div><span class="legend-dot" style="background:#eab308"></span>Uczestniczysz</div>
             <div><span class="legend-dot" style="background:#ef4444"></span>Twoje</div>
         </div>
+
+        <button id="live-select-btn" onclick="openLiveExpeditionModal()">🔍 Wybierz poszukiwania</button>
 
         @if(session('api_user.is_admin'))
             <div id="assoc-legend">
@@ -610,6 +626,24 @@
         </div>
     </div>
 
+    {{-- Modal wyboru poszukiwania (tryb Live) --}}
+    <div id="live-modal" onclick="handleLiveBackdrop(event)">
+        <div id="live-sheet">
+            <div id="live-sheet-header">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <div class="modal-title">Wybierz poszukiwania</div>
+                    <button class="modal-close" onclick="closeLiveExpeditionModal()">✕</button>
+                </div>
+            </div>
+            <div id="live-sheet-body">
+                <div class="modal-body">
+                    <input type="text" id="liveSearchInput" class="modal-textarea" style="resize:none" placeholder="🔍 Szukaj poszukiwania po nazwie…" autocomplete="off">
+                    <div id="liveExpeditionList" style="margin-top:0.6rem"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @if(session('api_user.is_admin'))
         {{-- Modal stowarzyszenia (dodawanie / edycja) --}}
         <div id="assoc-modal" onclick="handleAssociationBackdrop(event)">
@@ -654,6 +688,7 @@
 <script>
 const CLUSTERS_URL  = "{{ route('findings.api') }}";
 const EXPEDITIONS_MAP_URL = "{{ route('expeditions.map-areas') }}";
+const EXPEDITIONS_API_URL = "{{ route('expeditions.api') }}";
 const EXPEDITION_CREATE_URL = "{{ route('expeditions.create') }}";
 const FINDINGS_CREATE_URL   = "{{ route('findings.create') }}";
 const PINS_API_BASE = "{{ url('/api/pins') }}";
@@ -766,6 +801,7 @@ L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 const expeditionLayer = L.layerGroup().addTo(map);
 const associationLayer = L.layerGroup().addTo(map);
+const liveLayer = L.layerGroup().addTo(map);
 
 function toggleLayer() {
     const btn = document.getElementById('layer-btn');
@@ -825,6 +861,7 @@ function scheduleFetch() {
     loadTimer = setTimeout(() => {
         if (mapMode === 'expeditions') { fetchExpeditions(); }
         else if (mapMode === 'associations') { updateAssociationPanel(); }
+        else if (mapMode === 'live') { /* dane nie zależą od widoku mapy */ }
         else { fetchClusters(); }
     }, 350);
 }
@@ -1219,6 +1256,161 @@ if (IS_ADMIN) {
     });
 }
 
+// --- Tryb Live ---
+// Użytkownik wybiera jedno ze swoich poszukiwań (organizowanych lub takich,
+// w których uczestniczy), mapa rysuje jego teren i rusza śledzenie pozycji.
+
+let liveExpedition = null;   // wybrane poszukiwanie wraz z geometrią `area`
+let liveSearchDeb  = null;
+
+function enterLiveMode() {
+    if (liveExpedition) {
+        renderLiveExpedition();
+        return;
+    }
+    updateLivePanel();
+    openLiveExpeditionModal();
+}
+
+function openLiveExpeditionModal() {
+    document.getElementById('liveSearchInput').value = '';
+    document.getElementById('live-modal').classList.add('open');
+    searchLiveExpeditions('');
+}
+
+function closeLiveExpeditionModal() {
+    document.getElementById('live-modal').classList.remove('open');
+}
+
+function handleLiveBackdrop(e) {
+    if (e.target === document.getElementById('live-modal')) { closeLiveExpeditionModal(); }
+}
+
+document.getElementById('liveSearchInput').addEventListener('input', function () {
+    clearTimeout(liveSearchDeb);
+    const q = this.value.trim();
+    liveSearchDeb = setTimeout(() => searchLiveExpeditions(q), 300);
+});
+
+function searchLiveExpeditions(q) {
+    const list = document.getElementById('liveExpeditionList');
+    list.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:1rem;font-size:0.82rem">Szukanie…</div>';
+
+    const params = new URLSearchParams({ scope: 'live' });
+    if (q) { params.set('q', q); }
+
+    fetch(`${EXPEDITIONS_API_URL}?${params}`)
+        .then(r => {
+            if (!r.ok) { throw new Error(); }
+            return r.json();
+        })
+        .then(res => {
+            // Odpowiedź mogła dotrzeć po wpisaniu kolejnej frazy.
+            if (q !== document.getElementById('liveSearchInput').value.trim()) { return; }
+            renderLiveExpeditionList(res.data ?? []);
+        })
+        .catch(() => {
+            list.innerHTML = '<div style="text-align:center;color:#f87171;padding:1rem;font-size:0.82rem">Nie udało się wczytać poszukiwań.</div>';
+        });
+}
+
+function renderLiveExpeditionList(items) {
+    const list = document.getElementById('liveExpeditionList');
+
+    if (!items.length) {
+        list.innerHTML = '<div style="text-align:center;color:#6b7280;padding:1rem;font-size:0.82rem">Brak poszukiwań.<br>Widzisz tu tylko poszukiwania, które organizujesz<br>lub w których uczestniczysz.</div>';
+        return;
+    }
+
+    list.innerHTML = '';
+    items.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'finding-item';
+        el.innerHTML = `
+            <div class="finding-item-name">${escHtml(item.name ?? 'Poszukiwanie')} ${phaseBadge(item.phase)}</div>
+            <div class="finding-item-meta">📅 ${escHtml(item.starts_at ?? '')} — ${escHtml(item.ends_at ?? '')}</div>
+            <div class="finding-item-meta">${item.is_leader ? '⭐ Organizujesz' : '👥 Uczestniczysz'} · ⚒️ ${item.findings_count ?? 0}</div>
+        `;
+        el.addEventListener('click', () => selectLiveExpedition(item.id));
+        list.appendChild(el);
+    });
+}
+
+function selectLiveExpedition(id) {
+    closeLiveExpeditionModal();
+    document.getElementById('findings-count').textContent = 'Ładowanie poszukiwania…';
+
+    fetch(`${EXPEDITIONS_API_URL}/${id}`)
+        .then(r => {
+            if (!r.ok) { throw new Error(); }
+            return r.json();
+        })
+        .then(res => {
+            if (mapMode !== 'live') { return; }
+            liveExpedition = res.data ?? res;
+            renderLiveExpedition();
+            if (positionWatchId === null) { startPositionTracking(false); }
+        })
+        .catch(() => {
+            if (mapMode !== 'live') { return; }
+            updateLivePanel();
+            alert('Nie udało się wczytać poszukiwania.');
+        });
+}
+
+function renderLiveExpedition() {
+    liveLayer.clearLayers();
+
+    if (liveExpedition?.area) {
+        const areaLayer = L.geoJSON(liveExpedition.area, {
+            style: { color: '#f59e0b', weight: 2, fillColor: '#f59e0b', fillOpacity: 0.15 },
+        });
+        areaLayer.bindTooltip(escHtml(liveExpedition.name ?? 'Poszukiwanie'), { direction: 'top', opacity: 0.9 });
+        liveLayer.addLayer(areaLayer);
+
+        const bounds = areaLayer.getBounds();
+        if (bounds.isValid()) { map.fitBounds(bounds, { padding: [30, 30] }); }
+    }
+
+    updateLivePanel();
+}
+
+function updateLivePanel() {
+    if (mapMode !== 'live') { return; }
+
+    panelTotalCount = liveExpedition ? 1 : 0;
+
+    document.getElementById('panel-level').textContent = 'Live';
+    document.getElementById('toggle-count').textContent = liveExpedition ? '1' : '—';
+    document.getElementById('findings-count').textContent = liveExpedition
+        ? liveExpedition.name
+        : 'Nie wybrano poszukiwania';
+    document.getElementById('panel-toggle').classList.toggle('has-findings', panelTotalCount > 0 && !panelOpen);
+
+    const list = document.getElementById('findings-list');
+
+    if (!liveExpedition) {
+        list.innerHTML = '<div id="empty-state">Wybierz poszukiwanie,<br>aby zobaczyć jego teren na mapie</div>';
+        return;
+    }
+
+    const e = liveExpedition;
+    const el = document.createElement('div');
+    el.className = 'finding-item';
+    el.innerHTML = `
+        <div class="finding-item-name">${escHtml(e.name ?? 'Poszukiwanie')} ${phaseBadge(e.phase)}</div>
+        <div class="finding-item-meta">📅 ${escHtml(e.starts_at ?? '')} — ${escHtml(e.ends_at ?? '')}</div>
+        <div class="finding-item-meta">${e.is_leader ? '⭐ Organizujesz' : '👥 Uczestniczysz'} · 👥 ${e.participants_count ?? 0} · ⚒️ ${e.findings_count ?? 0}</div>
+    `;
+    el.addEventListener('click', () => {
+        const areaLayer = liveLayer.getLayers()[0];
+        const bounds = areaLayer?.getBounds?.();
+        if (bounds && bounds.isValid()) { map.fitBounds(bounds, { padding: [30, 30] }); }
+    });
+    list.innerHTML = '';
+    list.appendChild(el);
+}
+
 function setMapMode(mode) {
     if (mode === mapMode) { return; }
     mapMode = mode;
@@ -1229,13 +1421,15 @@ function setMapMode(mode) {
 
     const isExpeditions  = mode === 'expeditions';
     const isAssociations = mode === 'associations';
+    const isLive         = mode === 'live';
     const addBtn = document.getElementById('header-add-btn');
     const total  = document.getElementById('findings-total');
 
     addBtn.href = isExpeditions ? EXPEDITION_CREATE_URL : FINDINGS_CREATE_URL;
-    if (total) { total.style.display = isExpeditions || isAssociations ? 'none' : ''; }
+    if (total) { total.style.display = isExpeditions || isAssociations || isLive ? 'none' : ''; }
     document.getElementById('exp-legend').classList.toggle('visible', isExpeditions);
-    document.getElementById('zoom-info').style.display = isExpeditions || isAssociations ? 'none' : '';
+    document.getElementById('zoom-info').style.display = isExpeditions || isAssociations || isLive ? 'none' : '';
+    document.getElementById('live-select-btn').classList.toggle('visible', isLive);
 
     const assocLegend = document.getElementById('assoc-legend');
     if (assocLegend) { assocLegend.classList.toggle('visible', isAssociations); }
@@ -1244,6 +1438,7 @@ function setMapMode(mode) {
     if (assocAddBtn) { assocAddBtn.classList.toggle('visible', isAssociations); }
 
     closeModal();
+    closeLiveExpeditionModal();
     cancelAssociationPlacement();
     clearTimeout(loadTimer);
 
@@ -1252,18 +1447,28 @@ function setMapMode(mode) {
     if (isExpeditions) {
         clearMarkers();
         associationLayer.clearLayers();
+        liveLayer.clearLayers();
         allPins = [];
         lastLevel = null;
         fetchExpeditions();
     } else if (isAssociations) {
         clearMarkers();
         expeditionLayer.clearLayers();
+        liveLayer.clearLayers();
         allPins = [];
         lastLevel = null;
         fetchAssociations();
+    } else if (isLive) {
+        clearMarkers();
+        expeditionLayer.clearLayers();
+        associationLayer.clearLayers();
+        allPins = [];
+        lastLevel = null;
+        enterLiveMode();
     } else {
         expeditionLayer.clearLayers();
         associationLayer.clearLayers();
+        liveLayer.clearLayers();
         fetchClusters();
     }
 }
@@ -1845,6 +2050,8 @@ let positionWatchId = null;
 let followPosition  = false;
 let meMarker         = null;
 let meAccuracyCircle = null;
+// Tryb Live startuje śledzenie bez centrowania, żeby nie odjeżdżać z terenu poszukiwania.
+let centerOnFirstFix = true;
 
 const locateBtn = document.getElementById('locate-btn');
 
@@ -1874,7 +2081,7 @@ function onPositionUpdate(pos) {
             interactive: false,
         }).addTo(map);
         meMarker = L.marker(latlng, { icon: meIcon, zIndexOffset: 1000, interactive: false }).addTo(map);
-        map.setView(latlng, Math.max(map.getZoom(), 14));
+        if (centerOnFirstFix) { map.setView(latlng, Math.max(map.getZoom(), 14)); }
         return;
     }
 
@@ -1886,13 +2093,14 @@ function onPositionUpdate(pos) {
     }
 }
 
-function startPositionTracking() {
+function startPositionTracking(centerOnUser = true) {
     if (!navigator.geolocation) {
         alert('Lokalizacja jest niedostępna na tym urządzeniu.');
         return;
     }
 
-    followPosition = true;
+    followPosition = centerOnUser;
+    centerOnFirstFix = centerOnUser;
     positionWatchId = navigator.geolocation.watchPosition(onPositionUpdate, () => {
         stopPositionTracking();
         alert('Nie udało się pobrać lokalizacji.');
