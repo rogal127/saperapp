@@ -468,12 +468,12 @@
         <a href="{{ route('home') }}" class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-card text-gray-300 text-xl flex-shrink-0">‹</a>
         <div class="flex-1 min-w-0">
             <div id="mode-switch" class="three-modes">
-                <button type="button" class="mode-btn active" data-mode="findings">Znaleziska</button>
-                <button type="button" class="mode-btn" data-mode="expeditions">Poszukiwania</button>
+                <button type="button" class="mode-btn active" data-mode="findings">Mapa znalezisk</button>
+                <button type="button" class="mode-btn" data-mode="live">Poszukiwania live</button>
+                <button type="button" class="mode-btn" data-mode="expeditions">Mapa poszukiwań</button>
                 @if(session('api_user.is_admin'))
                     <button type="button" class="mode-btn" data-mode="associations">Stowarzyszenia</button>
                 @endif
-                <button type="button" class="mode-btn" data-mode="live">Live</button>
             </div>
             @if($findingsCount !== null)
                 <p id="findings-total" class="text-xs text-gray-400 mt-1">Łącznie dodano: {{ number_format($findingsCount, 0, ',', ' ') }}</p>
