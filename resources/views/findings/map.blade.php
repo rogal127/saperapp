@@ -79,6 +79,22 @@
     #locate-btn { bottom: 90px; }
     #layer-btn  { bottom: 140px; }
     #locate-btn:active, #layer-btn:active { opacity: 0.7; }
+    #locate-btn.tracking { border-color: #3b82f6; color: #60a5fa; }
+
+    /* Marker bieżącej pozycji (śledzenie na żywo) */
+    .me-dot {
+        width: 16px; height: 16px;
+        background: #3b82f6;
+        border: 3px solid #fff;
+        border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(59,130,246,0.5);
+        animation: mePulse 2s ease-out infinite;
+    }
+    @keyframes mePulse {
+        0%   { box-shadow: 0 0 0 0 rgba(59,130,246,0.5); }
+        70%  { box-shadow: 0 0 0 14px rgba(59,130,246,0); }
+        100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+    }
 
     /* Przełącznik trybu mapy */
     #mode-switch {
@@ -1821,12 +1837,98 @@ map.on('zoomend moveend', () => {
     scheduleFetch();
 });
 
-// --- Moja pozycja ---
-document.getElementById('locate-btn').addEventListener('click', () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(pos => {
-        map.setView([pos.coords.latitude, pos.coords.longitude], 14);
-    }, () => alert('Nie udało się pobrać lokalizacji.'));
+// --- Moja pozycja (śledzenie na żywo) ---
+// Stany przycisku: wyłączone → śledzenie z podążaniem mapy → (przesunięcie
+// mapy palcem) śledzenie bez podążania → „Wyśrodkuj" wraca do podążania,
+// „Zatrzymaj" kończy śledzenie i usuwa marker.
+let positionWatchId = null;
+let followPosition  = false;
+let meMarker         = null;
+let meAccuracyCircle = null;
+
+const locateBtn = document.getElementById('locate-btn');
+
+const meIcon = L.divIcon({
+    html: '<div class="me-dot"></div>',
+    iconSize: [22, 22], iconAnchor: [11, 11],
+    className: '',
+});
+
+function updateLocateBtn() {
+    if (positionWatchId === null) {
+        locateBtn.textContent = '🎯 Moja pozycja';
+    } else {
+        locateBtn.textContent = followPosition ? '🛑 Zatrzymaj' : '🎯 Wyśrodkuj';
+    }
+    locateBtn.classList.toggle('tracking', positionWatchId !== null);
+}
+
+function onPositionUpdate(pos) {
+    const latlng = [pos.coords.latitude, pos.coords.longitude];
+
+    if (!meMarker) {
+        meAccuracyCircle = L.circle(latlng, {
+            radius: pos.coords.accuracy ?? 0,
+            color: '#3b82f6', weight: 1, opacity: 0.4,
+            fillColor: '#3b82f6', fillOpacity: 0.1,
+            interactive: false,
+        }).addTo(map);
+        meMarker = L.marker(latlng, { icon: meIcon, zIndexOffset: 1000, interactive: false }).addTo(map);
+        map.setView(latlng, Math.max(map.getZoom(), 14));
+        return;
+    }
+
+    meMarker.setLatLng(latlng);
+    meAccuracyCircle.setLatLng(latlng).setRadius(pos.coords.accuracy ?? 0);
+
+    if (followPosition) {
+        map.panTo(latlng);
+    }
+}
+
+function startPositionTracking() {
+    if (!navigator.geolocation) {
+        alert('Lokalizacja jest niedostępna na tym urządzeniu.');
+        return;
+    }
+
+    followPosition = true;
+    positionWatchId = navigator.geolocation.watchPosition(onPositionUpdate, () => {
+        stopPositionTracking();
+        alert('Nie udało się pobrać lokalizacji.');
+    }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 });
+    updateLocateBtn();
+}
+
+function stopPositionTracking() {
+    if (positionWatchId !== null) {
+        navigator.geolocation.clearWatch(positionWatchId);
+        positionWatchId = null;
+    }
+    followPosition = false;
+    if (meMarker) { map.removeLayer(meMarker); meMarker = null; }
+    if (meAccuracyCircle) { map.removeLayer(meAccuracyCircle); meAccuracyCircle = null; }
+    updateLocateBtn();
+}
+
+locateBtn.addEventListener('click', () => {
+    if (positionWatchId === null) {
+        startPositionTracking();
+    } else if (!followPosition) {
+        followPosition = true;
+        if (meMarker) { map.panTo(meMarker.getLatLng()); }
+        updateLocateBtn();
+    } else {
+        stopPositionTracking();
+    }
+});
+
+// Ręczne przesunięcie mapy wyłącza podążanie, ale marker dalej się aktualizuje.
+map.on('dragstart', () => {
+    if (followPosition) {
+        followPosition = false;
+        updateLocateBtn();
+    }
 });
 
 // --- Panel ---
