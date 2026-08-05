@@ -73,7 +73,7 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <h3 class="font-bold text-white text-sm">Przeglądaj mapę</h3>
-                    <p class="text-xs text-gray-400 truncate">Znaleziska na interaktywnej mapie</p>
+                    <p class="text-xs text-gray-400 truncate">Mapa znalezisk, poszukiwania live oraz mapa poszukiwań</p>
                 </div>
                 <span class="text-gray-500 text-lg">›</span>
             </div>
