@@ -97,20 +97,18 @@
     }
 
     /* Przełącznik trybu mapy */
+    /* Zakładki zawijają się do kolejnych rzędów — każda musi być widoczna w całości */
     #mode-switch {
         display: inline-flex; background: #2a2a3e;
         border-radius: 0.75rem; padding: 3px; gap: 3px;
-        max-width: 100%; overflow-x: auto; flex-wrap: nowrap;
-        scrollbar-width: none;
+        max-width: 100%; flex-wrap: wrap;
     }
-    #mode-switch::-webkit-scrollbar { display: none; }
     .mode-btn {
         padding: 0.35rem 0.75rem; border: none; border-radius: 0.6rem;
         background: transparent; color: #9ca3af;
         font-size: 0.78rem; font-weight: 700; cursor: pointer; white-space: nowrap;
         touch-action: manipulation; transition: background 0.15s, color 0.15s;
     }
-    /* Trzy tryby (widok administratora) nie mieszczą się na wąskich ekranach */
     #mode-switch.three-modes .mode-btn { padding: 0.35rem 0.5rem; font-size: 0.7rem; }
     .mode-btn.active { background: #f59e0b; color: #1a1a2e; }
 
