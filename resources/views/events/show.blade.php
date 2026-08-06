@@ -130,8 +130,9 @@
         <button type="button" id="rejectBtn" class="btn-secondary">⛔ Cofnij i odrzuć</button>
         @endif
 
-        {{-- Delete (owner or admin) --}}
+        {{-- Edit / delete (owner or admin) --}}
         @if($isOwner || $isAdmin)
+        <a href="{{ route('events.edit', $event['id'] ?? 0) }}" class="btn-secondary block text-center">✏️ Edytuj imprezę</a>
         <button type="button" id="deleteBtn" class="text-red-400 text-sm font-semibold py-2">🗑️ Usuń imprezę</button>
         @endif
 

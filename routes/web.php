@@ -83,6 +83,8 @@ Route::middleware('api.auth')->group(function () {
     Route::get('/events', [EventController::class, 'index'])->name('events.index');
     Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
     Route::post('/events', [EventController::class, 'store'])->middleware('throttle:10,60')->name('events.store');
+    Route::get('/events/{id}/edit', [EventController::class, 'edit'])->name('events.edit');
+    Route::put('/events/{id}', [EventController::class, 'update'])->middleware('throttle:10,60')->name('events.update');
     Route::get('/api/events', [EventController::class, 'apiIndex'])->name('events.api');
     Route::get('/api/events/pending-count', [EventController::class, 'pendingCount'])->name('events.pending-count');
     Route::post('/api/events/{id}/approve', [EventController::class, 'approve'])->name('events.approve');
