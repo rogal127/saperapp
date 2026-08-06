@@ -93,6 +93,20 @@
             </div>
         </a>
 
+        <a href="{{ route('events.index') }}" class="block flex-1 min-h-0">
+            <div class="card h-full flex items-center gap-3 active:scale-95 transition-transform" style="padding:0.6rem 0.875rem">
+                <div class="relative w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center text-xl flex-shrink-0">
+                    🎉
+                    <span id="eventBadge" class="hidden absolute -top-1.5 -right-1.5 bg-amber-500 text-black text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center"></span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-white text-sm">Imprezy</h3>
+                    <p id="eventSubtitle" class="text-xs text-gray-400 truncate">Zloty, giełdy i wydarzenia dla poszukiwaczy</p>
+                </div>
+                <span class="text-gray-500 text-lg">›</span>
+            </div>
+        </a>
+
         <a href="{{ route('users.index') }}" class="block flex-1 min-h-0">
             <div class="card h-full flex items-center gap-3 active:scale-95 transition-transform" style="padding:0.6rem 0.875rem">
                 <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-xl flex-shrink-0">
@@ -111,3 +125,33 @@
 </div>
 
 @endsection
+
+@if(session('api_user.is_admin'))
+@push('scripts')
+<script>
+(function () {
+    fetch("{{ route('events.pending-count') }}")
+        .then(r => r.json())
+        .then(data => {
+            const count = data.count || 0;
+            if (count <= 0) { return; }
+
+            const badge = document.getElementById('eventBadge');
+            if (badge) {
+                badge.textContent = count > 9 ? '9+' : count;
+                badge.classList.remove('hidden');
+            }
+            const subtitle = document.getElementById('eventSubtitle');
+            if (subtitle) {
+                subtitle.textContent = count === 1
+                    ? '1 impreza czeka na akceptację'
+                    : count + ' imprezy czekają na akceptację';
+                subtitle.classList.remove('text-gray-400');
+                subtitle.classList.add('text-amber-400', 'font-semibold');
+            }
+        })
+        .catch(() => {});
+})();
+</script>
+@endpush
+@endif

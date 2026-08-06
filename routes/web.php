@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ConversationController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\ExpeditionController;
 use App\Http\Controllers\FindingController;
 use App\Http\Controllers\ProfileController;
@@ -77,6 +78,17 @@ Route::middleware('api.auth')->group(function () {
     Route::put('/api/expeditions/{id}', [ExpeditionController::class, 'update'])->name('expeditions.update');
     Route::delete('/api/expeditions/{id}', [ExpeditionController::class, 'destroy'])->name('expeditions.destroy');
     Route::get('/expeditions/{id}', [ExpeditionController::class, 'show'])->name('expeditions.show');
+
+    // Imprezy
+    Route::get('/events', [EventController::class, 'index'])->name('events.index');
+    Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
+    Route::post('/events', [EventController::class, 'store'])->middleware('throttle:10,60')->name('events.store');
+    Route::get('/api/events', [EventController::class, 'apiIndex'])->name('events.api');
+    Route::get('/api/events/pending-count', [EventController::class, 'pendingCount'])->name('events.pending-count');
+    Route::post('/api/events/{id}/approve', [EventController::class, 'approve'])->name('events.approve');
+    Route::post('/api/events/{id}/reject', [EventController::class, 'reject'])->name('events.reject');
+    Route::delete('/api/events/{id}', [EventController::class, 'destroy'])->name('events.destroy');
+    Route::get('/events/{id}', [EventController::class, 'show'])->name('events.show');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/api/profile/favorites', [ProfileController::class, 'favorites'])->name('profile.favorites');
