@@ -195,6 +195,24 @@
         line-height: 1;
         z-index: 1;
     }
+    /* Pinezka imprezy */
+    .event-pin {
+        width: 26px; height: 26px;
+        background: #a78bfa;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 2px solid #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        display: flex; align-items: center; justify-content: center;
+    }
+    .event-pin-emoji {
+        transform: rotate(45deg);
+        font-size: 12px; line-height: 1;
+    }
+    .event-popup-photo {
+        width: 100%; max-height: 120px; object-fit: cover;
+        border-radius: 0.5rem; margin-bottom: 0.4rem; background: #1a1a2e;
+    }
     /* Pinezka cudza */
     .other-pin {
         width: 22px; height: 22px;
@@ -471,6 +489,7 @@
                 <button type="button" class="mode-btn active" data-mode="findings">Mapa znalezisk</button>
                 <button type="button" class="mode-btn" data-mode="live">Poszukiwania live</button>
                 <button type="button" class="mode-btn" data-mode="expeditions">Mapa poszukiwań</button>
+                <button type="button" class="mode-btn" data-mode="events">Imprezy</button>
                 @if(session('api_user.is_admin'))
                     <button type="button" class="mode-btn" data-mode="associations">Stowarzyszenia</button>
                 @endif
@@ -697,6 +716,8 @@ const CREATE_URL    = "{{ route('findings.create') }}";
 const CSRF_TOKEN    = '{{ csrf_token() }}';
 const USERS_SEARCH_URL = "{{ route('users.search') }}";
 const ASSOCIATIONS_URL = "{{ url('/api/associations') }}";
+const EVENTS_API_URL    = "{{ route('events.api') }}";
+const EVENTS_CREATE_URL = "{{ route('events.create') }}";
 const IS_ADMIN = @json((bool) session('api_user.is_admin'));
 
 async function deleteFinding(id, btn) {
@@ -802,6 +823,7 @@ L.control.zoom({ position: 'bottomright' }).addTo(map);
 const expeditionLayer = L.layerGroup().addTo(map);
 const associationLayer = L.layerGroup().addTo(map);
 const liveLayer = L.layerGroup().addTo(map);
+const eventLayer = L.layerGroup().addTo(map);
 
 function toggleLayer() {
     const btn = document.getElementById('layer-btn');
@@ -861,6 +883,7 @@ function scheduleFetch() {
     loadTimer = setTimeout(() => {
         if (mapMode === 'expeditions') { fetchExpeditions(); }
         else if (mapMode === 'associations') { updateAssociationPanel(); }
+        else if (mapMode === 'events') { updateEventPanel(); }
         else if (mapMode === 'live') { /* dane nie zależą od widoku mapy */ }
         else { fetchClusters(); }
     }, 350);
@@ -1256,6 +1279,135 @@ if (IS_ADMIN) {
     });
 }
 
+// --- Tryb imprez ---
+// Domyślny listing API zwraca wyłącznie zaakceptowane imprezy, które jeszcze
+// się nie skończyły — pobieramy je raz i filtrujemy lokalnie przy przesuwaniu mapy.
+
+let allEvents      = [];
+let eventMarkers   = {};   // id imprezy → marker (do otwierania popupu z panelu)
+let eventsLoaded   = false;
+
+const eventPinIcon = L.divIcon({
+    html: '<div class="event-pin"><span class="event-pin-emoji">🎉</span></div>',
+    iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -28],
+    className: '',
+});
+
+async function fetchEvents() {
+    document.getElementById('findings-count').textContent = 'Ładowanie imprez…';
+
+    try {
+        let page = 1;
+        let items = [];
+
+        // Listing jest stronicowany po 20 — dociągamy kolejne strony (z bezpiecznym limitem).
+        while (page <= 10) {
+            const res = await fetch(`${EVENTS_API_URL}?page=${page}`);
+            if (!res.ok) { throw new Error(); }
+            const json = await res.json();
+            items = items.concat(json.data ?? []);
+            if (page >= (json.meta?.last_page ?? 1)) { break; }
+            page++;
+        }
+
+        if (mapMode !== 'events') { return; }
+        allEvents = items;
+        eventsLoaded = true;
+        renderEvents();
+    } catch {
+        if (mapMode !== 'events') { return; }
+        document.getElementById('findings-list').innerHTML =
+            '<div id="empty-state">Nie udało się wczytać imprez.</div>';
+        document.getElementById('findings-count').textContent = 'Błąd ładowania';
+    }
+}
+
+function renderEvents() {
+    eventLayer.clearLayers();
+    eventMarkers = {};
+
+    allEvents.forEach(item => {
+        if (item.latitude === null || item.longitude === null) { return; }
+        const marker = L.marker([item.latitude, item.longitude], { icon: eventPinIcon });
+        marker.bindPopup(eventPopupHtml(item), { className: 'popup-dark' });
+        eventLayer.addLayer(marker);
+        eventMarkers[item.id] = marker;
+    });
+
+    updateEventPanel();
+}
+
+function eventPopupHtml(item) {
+    const photo = item.photo_thumb_url
+        ? `<img class="event-popup-photo" src="${escHtml(item.photo_thumb_url)}" alt="">`
+        : '';
+
+    return `
+        ${photo}
+        <div style="font-weight:700;font-size:0.85rem">🎉 ${escHtml(item.name)}</div>
+        <div style="font-size:0.78rem;margin-top:3px">📅 ${escHtml(item.starts_at ?? '')} — ${escHtml(item.ends_at ?? '')}</div>
+        <div style="font-size:0.78rem;margin-top:3px;color:#9ca3af">📍 woj. ${escHtml(item.voivodeship ?? '')}</div>
+        <a href="/events/${item.id}"
+            style="display:block;margin-top:0.5rem;width:100%;padding:0.4rem;border:1px solid #a78bfa;color:#a78bfa;border-radius:0.5rem;font-size:0.75rem;font-weight:700;text-align:center;text-decoration:none;box-sizing:border-box">
+            Zobacz imprezę
+        </a>
+    `;
+}
+
+/**
+ * Panel listuje imprezy widoczne w bieżącym wycinku mapy — dane są pobierane
+ * raz, więc przy przesuwaniu mapy filtrujemy je lokalnie (jak stowarzyszenia).
+ */
+function updateEventPanel() {
+    if (mapMode !== 'events') { return; }
+
+    const bounds = map.getBounds();
+    const items = allEvents.filter(item => item.latitude !== null && item.longitude !== null
+        && bounds.contains([item.latitude, item.longitude]));
+
+    panelTotalCount = items.length;
+
+    document.getElementById('panel-level').textContent = 'Imprezy';
+    document.getElementById('toggle-count').textContent = items.length > 0 ? items.length : '—';
+    document.getElementById('findings-count').textContent = items.length > 0
+        ? `${items.length} ${eventNoun(items.length)} w widoku`
+        : 'Brak imprez w widoku';
+    document.getElementById('panel-toggle').classList.toggle('has-findings', items.length > 0 && !panelOpen);
+
+    const list = document.getElementById('findings-list');
+
+    if (!items.length) {
+        list.innerHTML = allEvents.length || !eventsLoaded
+            ? '<div id="empty-state">Brak imprez w tym widoku</div>'
+            : '<div id="empty-state">Brak nadchodzących imprez.<br>Użyj przycisku ➕, aby zgłosić pierwszą.</div>';
+        return;
+    }
+
+    list.innerHTML = '';
+    items.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'finding-item';
+        el.innerHTML = `
+            <div class="finding-item-name">🎉 ${escHtml(item.name)} ${phaseBadge(item.phase)}</div>
+            <div class="finding-item-meta">📅 ${escHtml(item.starts_at ?? '')} — ${escHtml(item.ends_at ?? '')}</div>
+            <div class="finding-item-meta">📍 woj. ${escHtml(item.voivodeship ?? '')}</div>
+        `;
+        el.addEventListener('click', () => {
+            highlightItem(el);
+            map.setView([item.latitude, item.longitude], Math.max(map.getZoom(), 12));
+            eventMarkers[item.id]?.openPopup();
+        });
+        list.appendChild(el);
+    });
+}
+
+function eventNoun(count) {
+    if (count === 1) { return 'impreza'; }
+    const rest = count % 10;
+    const tens = count % 100;
+    return rest >= 2 && rest <= 4 && (tens < 12 || tens > 14) ? 'imprezy' : 'imprez';
+}
+
 // --- Tryb Live ---
 // Użytkownik wybiera jedno ze swoich poszukiwań (organizowanych lub takich,
 // w których uczestniczy), mapa rysuje jego teren i rusza śledzenie pozycji.
@@ -1422,13 +1574,14 @@ function setMapMode(mode) {
     const isExpeditions  = mode === 'expeditions';
     const isAssociations = mode === 'associations';
     const isLive         = mode === 'live';
+    const isEvents       = mode === 'events';
     const addBtn = document.getElementById('header-add-btn');
     const total  = document.getElementById('findings-total');
 
-    addBtn.href = isExpeditions ? EXPEDITION_CREATE_URL : FINDINGS_CREATE_URL;
-    if (total) { total.style.display = isExpeditions || isAssociations || isLive ? 'none' : ''; }
+    addBtn.href = isExpeditions ? EXPEDITION_CREATE_URL : (isEvents ? EVENTS_CREATE_URL : FINDINGS_CREATE_URL);
+    if (total) { total.style.display = isExpeditions || isAssociations || isLive || isEvents ? 'none' : ''; }
     document.getElementById('exp-legend').classList.toggle('visible', isExpeditions);
-    document.getElementById('zoom-info').style.display = isExpeditions || isAssociations || isLive ? 'none' : '';
+    document.getElementById('zoom-info').style.display = isExpeditions || isAssociations || isLive || isEvents ? 'none' : '';
     document.getElementById('live-select-btn').classList.toggle('visible', isLive);
 
     const assocLegend = document.getElementById('assoc-legend');
@@ -1448,6 +1601,7 @@ function setMapMode(mode) {
         clearMarkers();
         associationLayer.clearLayers();
         liveLayer.clearLayers();
+        eventLayer.clearLayers();
         allPins = [];
         lastLevel = null;
         fetchExpeditions();
@@ -1455,6 +1609,7 @@ function setMapMode(mode) {
         clearMarkers();
         expeditionLayer.clearLayers();
         liveLayer.clearLayers();
+        eventLayer.clearLayers();
         allPins = [];
         lastLevel = null;
         fetchAssociations();
@@ -1462,13 +1617,23 @@ function setMapMode(mode) {
         clearMarkers();
         expeditionLayer.clearLayers();
         associationLayer.clearLayers();
+        eventLayer.clearLayers();
         allPins = [];
         lastLevel = null;
         enterLiveMode();
+    } else if (isEvents) {
+        clearMarkers();
+        expeditionLayer.clearLayers();
+        associationLayer.clearLayers();
+        liveLayer.clearLayers();
+        allPins = [];
+        lastLevel = null;
+        fetchEvents();
     } else {
         expeditionLayer.clearLayers();
         associationLayer.clearLayers();
         liveLayer.clearLayers();
+        eventLayer.clearLayers();
         fetchClusters();
     }
 }
