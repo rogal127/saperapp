@@ -303,7 +303,10 @@
     }
 
     function participantRow(p) {
-        const [label, cls] = statusLabels[p.status] || ['', 'text-gray-400'];
+        const isCoLeader = p.status === 'accepted' && p.role === 'leader';
+        const [label, cls] = isCoLeader
+            ? ['Kierownik', 'text-amber-400']
+            : (statusLabels[p.status] || ['', 'text-gray-400']);
         const name = p.user ? p.user.name : 'Użytkownik';
         let actions = '';
         if (IS_LEADER) {
@@ -311,7 +314,12 @@
                 actions = '<button class="text-xs text-green-400 font-semibold px-2" data-act="accept" data-pid="' + p.id + '">Akceptuj</button>' +
                           '<button class="text-xs text-red-400 font-semibold px-2" data-act="decline" data-pid="' + p.id + '">Odrzuć</button>';
             } else {
-                actions = '<button class="text-xs text-red-400 font-semibold px-2" data-act="remove" data-pid="' + p.id + '">Usuń</button>';
+                if (p.status === 'accepted') {
+                    actions = isCoLeader
+                        ? '<button class="text-xs text-amber-400 font-semibold px-2" data-act="demote" data-pid="' + p.id + '">Degraduj</button>'
+                        : '<button class="text-xs text-amber-400 font-semibold px-2" data-act="promote" data-pid="' + p.id + '">Mianuj</button>';
+                }
+                actions += '<button class="text-xs text-red-400 font-semibold px-2" data-act="remove" data-pid="' + p.id + '">Usuń</button>';
             }
         }
         return '<div class="card flex items-center gap-3" style="padding:0.75rem">' +
@@ -331,12 +339,18 @@
         list.querySelectorAll('[data-act]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const pid = parseInt(btn.dataset.pid, 10), act = btn.dataset.act;
-                const method = act === 'remove' ? 'DELETE' : 'POST';
+                const isRoleChange = act === 'promote' || act === 'demote';
+                if (act === 'promote' && !confirm('Mianować tę osobę kierownikiem? Otrzyma pełne uprawnienia w tym poszukiwaniu — takie same jak Ty.')) { return; }
+                if (act === 'demote' && !confirm('Odebrać tej osobie rolę kierownika?')) { return; }
+                const method = act === 'remove' ? 'DELETE' : (isRoleChange ? 'PATCH' : 'POST');
                 const url = act === 'remove'
                     ? "/api/expeditions/" + EXP_ID + "/participants/" + pid
-                    : "/api/expeditions/" + EXP_ID + "/participants/" + pid + "/" + act;
+                    : (isRoleChange
+                        ? "/api/expeditions/" + EXP_ID + "/participants/" + pid + "/role"
+                        : "/api/expeditions/" + EXP_ID + "/participants/" + pid + "/" + act);
+                const body = isRoleChange ? JSON.stringify({ role: act === 'promote' ? 'leader' : 'member' }) : undefined;
                 btn.disabled = true;
-                fetch(url, { method, headers: jsonHeaders })
+                fetch(url, { method, headers: jsonHeaders, body })
                     .then(async r => ({ ok: r.ok, data: await r.json().catch(() => ({})) }))
                     .then(({ ok, data }) => {
                         if (!ok) { alert(data.message || 'Błąd.'); btn.disabled = false; return; }

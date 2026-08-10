@@ -592,6 +592,18 @@ class ExpeditionController extends Controller
         return $this->passthrough($response);
     }
 
+    public function updateParticipantRole(Request $request, int $id, int $participant)
+    {
+        $request->validate(['role' => ['required', 'in:member,leader']]);
+
+        $response = Http::withToken($this->apiToken($request))
+            ->patch($this->base()."/expeditions/{$id}/participants/{$participant}/role", [
+                'role' => $request->role,
+            ]);
+
+        return $this->passthrough($response);
+    }
+
     public function removeParticipant(Request $request, int $id, int $participant)
     {
         $response = Http::withToken($this->apiToken($request))

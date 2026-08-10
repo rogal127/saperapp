@@ -73,6 +73,7 @@ Route::middleware('api.auth')->group(function () {
     Route::post('/api/expeditions/{id}/join', [ExpeditionController::class, 'requestJoin'])->name('expeditions.request-join');
     Route::post('/api/expeditions/{id}/participants/{participant}/accept', [ExpeditionController::class, 'acceptParticipant'])->name('expeditions.participants.accept');
     Route::post('/api/expeditions/{id}/participants/{participant}/decline', [ExpeditionController::class, 'declineParticipant'])->name('expeditions.participants.decline');
+    Route::patch('/api/expeditions/{id}/participants/{participant}/role', [ExpeditionController::class, 'updateParticipantRole'])->name('expeditions.participants.role');
     Route::delete('/api/expeditions/{id}/participants/{participant}', [ExpeditionController::class, 'removeParticipant'])->name('expeditions.participants.remove');
     Route::get('/api/expeditions/{id}', [ExpeditionController::class, 'apiShow'])->name('expeditions.api-show');
     Route::put('/api/expeditions/{id}', [ExpeditionController::class, 'update'])->name('expeditions.update');
