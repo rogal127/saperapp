@@ -31,7 +31,7 @@
     <div class="flex px-4 border-b border-surface-card flex-shrink-0">
         <button class="tab-btn active" data-tab="mine">Moje</button>
         <button class="tab-btn" data-tab="participating">Uczestniczę</button>
-        <button class="tab-btn" data-tab="discover">Odkrywaj</button>
+        <button class="tab-btn" data-tab="discover">Publiczne</button>
     </div>
 
     {{-- Panels --}}
