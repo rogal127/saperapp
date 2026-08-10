@@ -581,10 +581,22 @@
     (function loadExpeditions() {
         const section = document.getElementById('expeditionSection');
         const body = document.getElementById('expeditionBody');
-        fetch(EXPEDITIONS_URL + '?scope=mine')
+        // scope=live: expeditions the user leads or joined — the same set the
+        // API accepts in expedition_id validation. Follows pagination so the
+        // select isn't cut off at the first 20 expeditions.
+        const fetchPage = (page, acc) => fetch(EXPEDITIONS_URL + '?scope=live&page=' + page)
             .then(r => r.json())
             .then(res => {
-                const items = (res.data || []).filter(e => e.status === 'published' && e.phase === 'active');
+                acc = acc.concat(res.data || []);
+                const meta = res.meta || {};
+                return (meta.current_page && meta.last_page && meta.current_page < meta.last_page)
+                    ? fetchPage(meta.current_page + 1, acc)
+                    : acc;
+            });
+
+        fetchPage(1, [])
+            .then(all => {
+                const items = all.filter(e => e.status === 'published' && e.phase === 'active');
                 if (!items.length) { return; }
                 expeditionCandidates = items;
                 drawExpeditionAreas(items);

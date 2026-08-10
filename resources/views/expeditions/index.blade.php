@@ -30,11 +30,15 @@
     {{-- Tabs --}}
     <div class="flex px-4 border-b border-surface-card flex-shrink-0">
         <button class="tab-btn active" data-tab="mine">Moje</button>
+        <button class="tab-btn" data-tab="participating">Uczestniczę</button>
         <button class="tab-btn" data-tab="discover">Odkrywaj</button>
     </div>
 
     {{-- Panels --}}
     <div id="paneMine" class="tab-panel active flex-1 overflow-y-auto px-4 py-3 flex-col gap-3">
+        <div class="text-gray-400 text-sm text-center py-8" data-loading>Ładowanie...</div>
+    </div>
+    <div id="paneParticipating" class="tab-panel flex-1 overflow-y-auto px-4 py-3 flex-col gap-3">
         <div class="text-gray-400 text-sm text-center py-8" data-loading>Ładowanie...</div>
     </div>
     <div id="paneDiscover" class="tab-panel flex-1 overflow-y-auto px-4 py-3 flex-col gap-3">
@@ -105,50 +109,79 @@
         '</a>';
     }
 
-    function loadPane(scope, pane, extra) {
-        pane.innerHTML = '<div class="text-gray-400 text-sm text-center py-8">Ładowanie...</div>';
+    const panes = {
+        mine:          { el: document.getElementById('paneMine'),          loaded: false, empty: 'Nie prowadzisz jeszcze żadnego poszukiwania.' },
+        participating: { el: document.getElementById('paneParticipating'), loaded: false, empty: 'Nie uczestniczysz w żadnym poszukiwaniu.' },
+        discover:      { el: document.getElementById('paneDiscover'),      loaded: false, empty: 'Brak publicznych poszukiwań.' },
+    };
+
+    function loadPane(scope, page) {
+        page = page || 1;
+        const pane = panes[scope].el;
+        if (page === 1) {
+            pane.innerHTML = '<div class="text-gray-400 text-sm text-center py-8">Ładowanie...</div>';
+        }
+
         const url = new URL(API, window.location.origin);
         url.searchParams.set('scope', scope);
-        if (extra) { Object.entries(extra).forEach(([k, v]) => { if (v) { url.searchParams.set(k, v); } }); }
+        url.searchParams.set('page', page);
 
         fetch(url)
             .then(r => r.json())
             .then(res => {
                 const items = res.data || [];
-                if (!items.length) {
-                    pane.innerHTML = '<div class="flex flex-col items-center justify-center py-12 text-gray-500">' +
-                        '<div class="text-4xl mb-3">🧭</div><p class="text-sm text-center">' +
-                        (scope === 'mine' ? 'Nie uczestniczysz w żadnym poszukiwaniu.' : 'Brak publicznych poszukiwań.') +
-                        '</p></div>';
-                    return;
+                const moreBtn = pane.querySelector('[data-more]');
+                if (moreBtn) { moreBtn.remove(); }
+
+                if (page === 1) {
+                    if (!items.length) {
+                        pane.innerHTML = '<div class="flex flex-col items-center justify-center py-12 text-gray-500">' +
+                            '<div class="text-4xl mb-3">🧭</div><p class="text-sm text-center">' + panes[scope].empty + '</p></div>';
+                        return;
+                    }
+                    pane.innerHTML = '';
                 }
-                pane.innerHTML = items.map(renderCard).join('');
+                pane.insertAdjacentHTML('beforeend', items.map(renderCard).join(''));
+
+                const meta = res.meta || {};
+                if (meta.current_page && meta.last_page && meta.current_page < meta.last_page) {
+                    pane.insertAdjacentHTML('beforeend',
+                        '<button data-more class="btn-secondary flex-shrink-0">Pokaż więcej</button>');
+                    pane.querySelector('[data-more]').addEventListener('click', function () {
+                        this.disabled = true;
+                        this.textContent = 'Ładowanie...';
+                        loadPane(scope, meta.current_page + 1);
+                    });
+                }
             })
             .catch(() => {
-                pane.innerHTML = '<div class="text-red-400 text-sm text-center py-8">Błąd ładowania.</div>';
+                if (page === 1) {
+                    pane.innerHTML = '<div class="text-red-400 text-sm text-center py-8">Błąd ładowania.</div>';
+                    return;
+                }
+                const moreBtn = pane.querySelector('[data-more]');
+                if (moreBtn) {
+                    moreBtn.disabled = false;
+                    moreBtn.textContent = 'Błąd — spróbuj ponownie';
+                }
             });
     }
-
-    const paneMine = document.getElementById('paneMine');
-    const paneDiscover = document.getElementById('paneDiscover');
-
-    let discoverLoaded = false;
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             const tab = btn.dataset.tab;
-            paneMine.classList.toggle('active', tab === 'mine');
-            paneDiscover.classList.toggle('active', tab === 'discover');
-            if (tab === 'discover' && !discoverLoaded) {
-                discoverLoaded = true;
-                loadPane('discover', paneDiscover);
+            Object.entries(panes).forEach(([scope, p]) => p.el.classList.toggle('active', scope === tab));
+            if (!panes[tab].loaded) {
+                panes[tab].loaded = true;
+                loadPane(tab);
             }
         });
     });
 
-    loadPane('mine', paneMine);
+    panes.mine.loaded = true;
+    loadPane('mine');
 
     // Join by code modal
     const modal = document.getElementById('joinCodeModal');

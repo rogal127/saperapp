@@ -322,13 +322,25 @@
     (function loadExpeditions() {
         const section = document.getElementById('expeditionSection');
         const body = document.getElementById('expeditionBody');
-        fetch("{{ route('expeditions.api') }}?scope=mine")
+        // scope=live: expeditions the user leads or joined — the same set the
+        // API accepts in expedition_id validation. Follows pagination so the
+        // select isn't cut off at the first 20 expeditions.
+        const fetchPage = (page, acc) => fetch("{{ route('expeditions.api') }}?scope=live&page=" + page)
             .then(r => r.json())
             .then(res => {
-                let items = (res.data || []).filter(e => e.status === 'published' && e.phase === 'active');
+                acc = acc.concat(res.data || []);
+                const meta = res.meta || {};
+                return (meta.current_page && meta.last_page && meta.current_page < meta.last_page)
+                    ? fetchPage(meta.current_page + 1, acc)
+                    : acc;
+            });
+
+        fetchPage(1, [])
+            .then(all => {
+                let items = all.filter(e => e.status === 'published' && e.phase === 'active');
                 // Ensure the currently assigned expedition stays selectable even if it ended.
                 if (CURRENT_EXPEDITION_ID && !items.some(e => e.id === CURRENT_EXPEDITION_ID)) {
-                    const cur = (res.data || []).find(e => e.id === CURRENT_EXPEDITION_ID);
+                    const cur = all.find(e => e.id === CURRENT_EXPEDITION_ID);
                     if (cur) { items = [cur, ...items]; }
                 }
                 if (!items.length && !CURRENT_EXPEDITION_ID) { return; }
