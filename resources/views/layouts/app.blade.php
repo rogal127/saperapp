@@ -113,16 +113,61 @@
         .welcome-modal-link { color: #f59e0b; font-weight: 700; text-decoration: underline; }
     </style>
     @stack('styles')
-    @if (config('services.google_analytics.id'))
-        <!-- Google tag (gtag.js) -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google_analytics.id') }}"></script>
-        <script>
+    <!-- Google Analytics ładowany wyłącznie po zgodzie (cookie analytics_consent) -->
+    <script>
+    (function () {
+        var GA_ID = @json(config('services.google_analytics.id'));
+
+        function readConsent() {
+            var match = document.cookie.match(/(?:^|;\s*)analytics_consent=(granted|denied)/);
+            return match ? match[1] : null;
+        }
+
+        function removeAnalyticsCookies() {
+            var host = window.location.hostname;
+            document.cookie.split('; ').forEach(function (cookie) {
+                var name = cookie.split('=')[0];
+                if (name === '_ga' || name === '_gid' || name.indexOf('_ga_') === 0) {
+                    ['', '; domain=' + host, '; domain=.' + host].forEach(function (domain) {
+                        document.cookie = name + '=; path=/; max-age=0' + domain;
+                    });
+                }
+            });
+        }
+
+        window.loadAnalytics = function () {
+            if (!GA_ID || document.getElementById('ga-script')) { return; }
+            window['ga-disable-' + GA_ID] = false;
             window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
+            window.gtag = window.gtag || function () { dataLayer.push(arguments); };
             gtag('js', new Date());
-            gtag('config', '{{ config('services.google_analytics.id') }}');
-        </script>
-    @endif
+            gtag('config', GA_ID);
+            var script = document.createElement('script');
+            script.id = 'ga-script';
+            script.async = true;
+            script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA_ID);
+            document.head.appendChild(script);
+        };
+
+        window.getAnalyticsConsent = readConsent;
+
+        window.setAnalyticsConsent = function (value) {
+            document.cookie = 'analytics_consent=' + value + '; path=/; max-age=31536000; SameSite=Lax';
+            var banner = document.getElementById('cookie-banner');
+            if (banner) { banner.style.display = 'none'; }
+            if (value === 'granted') {
+                window.loadAnalytics();
+            } else {
+                if (GA_ID) { window['ga-disable-' + GA_ID] = true; }
+                removeAnalyticsCookies();
+            }
+        };
+
+        if (readConsent() === 'granted') {
+            window.loadAnalytics();
+        }
+    })();
+    </script>
 </head>
 <body>
     <div class="screen">
@@ -185,6 +230,29 @@ dbamy o jej zachowanie.
         </div>
     </div>
     @php \App\Models\SeenNotice::markSeen(session('api_user.id'), 'coffee'); @endphp
+    @endif
+    @if (config('services.google_analytics.id'))
+    <!-- Baner zgody na cookies analityczne -->
+    <div id="cookie-banner" class="safe-bottom" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:2500;background:#13131f;border-top:1px solid #2a2a3e;padding:1rem 1.25rem 1.25rem;">
+        <p class="text-sm" style="color:#cbd5e0;line-height:1.5;margin-bottom:0.875rem;">
+            Używamy plików cookies analitycznych (Google Analytics), aby lepiej rozumieć, jak korzystasz z aplikacji.
+            Będą one użyte wyłącznie po Twojej zgodzie, którą możesz w każdej chwili wycofać w
+            <a href="{{ route('cookies.settings') }}" class="welcome-modal-link">ustawieniach cookies</a>.
+            Więcej w <a href="{{ route('legal.privacy') }}" target="_blank" rel="noopener" class="welcome-modal-link">Polityce prywatności</a>
+            i <a href="{{ route('legal.terms') }}" target="_blank" rel="noopener" class="welcome-modal-link">Regulaminie</a>.
+        </p>
+        <div style="display:flex;gap:0.75rem;">
+            <button type="button" class="btn-secondary" style="padding:0.75rem 1rem;" onclick="setAnalyticsConsent('denied')">Odrzucam</button>
+            <button type="button" class="btn-primary" style="padding:0.75rem 1rem;" onclick="setAnalyticsConsent('granted')">Akceptuję</button>
+        </div>
+    </div>
+    <script>
+    (function () {
+        if (window.getAnalyticsConsent() === null && window.location.pathname !== '{{ route('cookies.settings', absolute: false) }}') {
+            document.getElementById('cookie-banner').style.display = 'block';
+        }
+    })();
+    </script>
     @endif
     <!-- Lightbox -->
     <div id="lightbox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.93);align-items:center;justify-content:center;" onclick="closeLightbox()">

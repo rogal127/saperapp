@@ -119,6 +119,13 @@
             <button type="submit" class="btn-primary mt-2">
                 Zarejestruj się
             </button>
+
+            <p class="text-gray-400 text-xs text-center leading-relaxed">
+                Rejestrując się, akceptujesz
+                <a href="{{ route('legal.terms') }}" target="_blank" rel="noopener" class="text-amber-400 font-semibold">Regulamin</a>
+                oraz
+                <a href="{{ route('legal.privacy') }}" target="_blank" rel="noopener" class="text-amber-400 font-semibold">Politykę prywatności</a>.
+            </p>
         </form>
 
         <div class="text-center mt-6">

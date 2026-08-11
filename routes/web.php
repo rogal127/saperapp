@@ -125,6 +125,10 @@ Route::middleware('api.auth')->group(function () {
     Route::post('/logout', LogoutController::class)->name('logout');
 });
 
+Route::get('/ustawienia-cookies', fn () => view('cookies.settings'))->name('cookies.settings');
+Route::get('/polityka-prywatnosci', fn () => response()->file(public_path('polityka-prywatnosci.pdf')))->name('legal.privacy');
+Route::get('/regulamin', fn () => response()->file(public_path('regulamin.pdf')))->name('legal.terms');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->name('login');
     Route::post('/login', [LoginController::class, 'store']);
