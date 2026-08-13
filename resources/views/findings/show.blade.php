@@ -226,6 +226,20 @@
                         <span class="text-sm font-semibold text-gray-300">Prześlij</span>
                     </button>
 
+                    @if(!empty($finding['is_mine']))
+                    <form method="POST" action="{{ route('findings.destroy', $finding['id']) }}"
+                          onsubmit="return confirm('Usunąć to znalezisko? Tej operacji nie można cofnąć.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all active:scale-95"
+                                style="background:rgba(239,68,68,0.15)">
+                            <span class="text-lg">🗑️</span>
+                            <span class="text-sm font-semibold text-red-400">Usuń</span>
+                        </button>
+                    </form>
+                    @endif
+
                     @if(session('api_user.is_admin') && empty($finding['is_mine']))
                     <button id="adminDeleteBtn"
                             class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all active:scale-95"

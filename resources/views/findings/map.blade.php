@@ -1956,7 +1956,7 @@ function openPinModal(pin, focusFindingId = null) {
                         <div style="display:flex;align-items:center;gap:0.4rem;flex-shrink:0">
                             ${favoriteButtonHtml(f.id, f.is_favorited)}
                             ${likeButtonHtml(f.id, f.is_liked, f.likes_count)}
-                            ${pin.is_mine ? `
+                            ${f.is_mine ? `
                             <div class="finding-actions" style="margin-left:0">
                                 <a href="/findings/${f.id}/edit" class="finding-action-btn edit" title="Edytuj">✏️</a>
                                 <button class="finding-action-btn delete" onclick="deleteFinding(${f.id}, this)" title="Usuń">🗑️</button>

@@ -403,6 +403,10 @@
             ? '<button class="card-action-btn" style="background:rgba(239,68,68,0.08);color:#f87171" onclick="openAdminDeleteModal(' + f.id + ', ' + escHtml(JSON.stringify(f.name ?? '')) + ')">🗑️ Usuń</button>'
             : '';
 
+        const ownerDeleteBtnHtml = isOwner
+            ? '<button class="card-action-btn" style="background:rgba(239,68,68,0.08);color:#f87171" onclick="deleteOwnFinding(' + f.id + ', this)">🗑️ Usuń</button>'
+            : '';
+
         return '<div class="card flex flex-col gap-0" style="padding:0.875rem">' +
             '<div class="flex gap-3 items-center">' +
                 '<a href="/findings/' + f.id + '" class="flex gap-3 flex-1 min-w-0">' +
@@ -429,6 +433,7 @@
                 messageBtnHtml +
                 shareBtnHtml +
                 adminDeleteBtnHtml +
+                ownerDeleteBtnHtml +
             '</div>' +
         '</div>';
     }
@@ -760,6 +765,33 @@
             status.textContent = 'Błąd połączenia.';
             status.style.color = '#f87171';
             btn.disabled = false;
+        });
+    };
+
+    window.deleteOwnFinding = function (findingId, btn) {
+        if (!confirm('Usunąć to znalezisko? Tej operacji nie można cofnąć.')) { return; }
+
+        btn.disabled = true;
+        btn.textContent = '⏳';
+
+        fetch('/findings/' + findingId, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+        })
+        .then(r => {
+            if (!r.ok) { throw new Error(); }
+            removeCachedFinding(findingId);
+            const card = btn.closest('.card');
+            if (card) {
+                card.style.transition = 'opacity 0.2s';
+                card.style.opacity = '0';
+                setTimeout(() => card.remove(), 200);
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.textContent = '🗑️ Usuń';
+            alert('Nie udało się usunąć znaleziska.');
         });
     };
 

@@ -766,9 +766,34 @@ function buildFindingCard(finding, options = {}) {
             <span class="like-icon">${finding.is_liked ? '❤️' : '🤍'}</span>
             <span class="like-count">${finding.likes_count || 0}</span>
         </button>
+        ${finding.is_mine ? `<button class="favorite-btn" title="Usuń znalezisko" onclick="event.stopPropagation(); deleteOwnFinding(${finding.id}, this)"><span class="favorite-icon">🗑️</span></button>` : ''}
     `;
 
     return card;
+}
+
+function deleteOwnFinding(findingId, btn) {
+    if (!confirm('Usunąć to znalezisko? Tej operacji nie można cofnąć.')) { return; }
+
+    btn.disabled = true;
+
+    fetch(`/findings/${findingId}`, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+    })
+        .then(r => {
+            if (!r.ok) { throw new Error(); }
+            const card = btn.closest('.finding-card');
+            if (card) {
+                card.style.transition = 'opacity 0.2s';
+                card.style.opacity = '0';
+                setTimeout(() => card.remove(), 200);
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            alert('Nie udało się usunąć znaleziska.');
+        });
 }
 
 function escapeHtml(str) {
