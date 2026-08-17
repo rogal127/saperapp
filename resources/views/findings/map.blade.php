@@ -1950,6 +1950,7 @@ function openPinModal(pin, focusFindingId = null) {
                     <div class="pin-finding-header">
                         <div class="flex-1 min-w-0">
                             <div class="pin-finding-name">🪙 ${escHtml(f.name)}</div>
+                            ${f.is_private ? '<div style="margin-top:2px"><span style="display:inline-flex;align-items:center;gap:3px;background:rgba(245,158,11,0.15);color:#fbbf24;border-radius:0.5rem;padding:0.1rem 0.45rem;font-size:0.62rem;font-weight:600">🔒 Prywatne</span></div>' : ''}
                             <div class="pin-finding-depth">📏 ${f.depth_cm} cm głębokości</div>
                             <div class="pin-finding-meta">📅 ${f.found_at}</div>
                         </div>

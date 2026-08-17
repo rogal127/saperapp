@@ -414,7 +414,7 @@
             ? '<img src="' + (f.photo_thumb_url || f.photo_url) + '" style="width:64px;height:64px;object-fit:cover;border-radius:0.75rem;flex-shrink:0">'
             : '<div style="width:64px;height:64px;border-radius:0.75rem;background:#323248;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">📷</div>';
         const loc = [f.city, f.voivodeship].filter(Boolean).join(', ');
-        const priv = f.is_private ? '<span class="text-xs text-purple-400 ml-1">🔒 prywatne</span>' : '';
+        const priv = f.is_private ? ' <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(245,158,11,0.15);color:#fbbf24;border-radius:0.5rem;padding:0.1rem 0.45rem;font-size:0.65rem;font-weight:600;vertical-align:middle">🔒 Prywatne</span>' : '';
         return '<div class="card flex gap-3 items-center" style="padding:0.75rem">' +
             '<a href="/findings/' + f.id + '" class="flex gap-3 items-center flex-1 min-w-0">' + photo +
             '<div class="flex-1 min-w-0">' +

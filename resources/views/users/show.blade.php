@@ -469,10 +469,15 @@ function buildFindingCard(finding) {
         ? `<div class="finding-card-meta" style="margin-top:3px">${escapeHtml(truncate(finding.description, 60))}</div>`
         : '';
 
+    const privateBadgeHtml = finding.is_private
+        ? '<div style="margin-top:2px"><span style="display:inline-flex;align-items:center;gap:3px;background:rgba(245,158,11,0.15);color:#fbbf24;border-radius:0.5rem;padding:0.1rem 0.45rem;font-size:0.62rem;font-weight:600">🔒 Prywatne</span></div>'
+        : '';
+
     card.innerHTML = `
         ${thumbHtml}
         <div class="flex-1 min-w-0">
             <div class="finding-card-name">${escapeHtml(finding.name || '')}</div>
+            ${privateBadgeHtml}
             <div class="finding-card-meta">📅 ${escapeHtml(finding.found_at || '')}</div>
             <div class="finding-card-depth">📏 ${finding.depth_cm || 0} cm</div>
             ${descHtml}

@@ -375,6 +375,11 @@
         return '<span style="display:inline-flex;align-items:center;gap:4px;background:' + badge.bg + ';color:' + badge.color + ';border-radius:0.5rem;padding:0.15rem 0.5rem;font-size:0.65rem;font-weight:600"><span style="width:6px;height:6px;border-radius:50%;background:currentColor"></span>' + badge.label + '</span>';
     }
 
+    function privateBadgeHtml(f) {
+        if (!f.is_private) { return ''; }
+        return '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(245,158,11,0.15);color:#fbbf24;border-radius:0.5rem;padding:0.15rem 0.5rem;font-size:0.65rem;font-weight:600">🔒 Prywatne</span>';
+    }
+
     function renderCard(f) {
         const photoHtml = f.photo_url
             ? '<img src="' + escHtml(f.photo_thumb_url || f.photo_url) + '" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:0.75rem;flex-shrink:0">'
@@ -413,7 +418,7 @@
                     photoHtml +
                     '<div class="flex-1 min-w-0">' +
                         '<h3 class="font-bold text-white text-sm truncate">' + escHtml(f.name || '') + '</h3>' +
-                        (f.type ? '<div class="mt-1">' + typeBadgeHtml(f.type) + '</div>' : '') +
+                        ((f.type || f.is_private) ? '<div class="mt-1 flex flex-wrap items-center gap-1">' + typeBadgeHtml(f.type) + privateBadgeHtml(f) + '</div>' : '') +
                         (location ? '<p class="text-xs text-gray-400 mt-1 truncate">📍 ' + escHtml(location) + '</p>' : '') +
                         '<p class="text-xs text-gray-500 mt-0.5">📅 ' + escHtml(f.found_at || '') + '</p>' +
                         (f.finder ? '<p class="text-xs text-amber-400 mt-0.5">' + escHtml(f.finder.name) + '</p>' : '') +
