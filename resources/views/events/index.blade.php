@@ -73,7 +73,7 @@
 <div id="rejectModal" class="fixed inset-0 z-50 hidden items-center justify-center p-6" style="background:rgba(0,0,0,0.6)">
     <div class="card w-full max-w-sm">
         <h3 class="text-base font-bold text-white mb-1">Odrzuć imprezę</h3>
-        <p class="text-xs text-gray-400 mb-3">Podaj powód — zobaczy go osoba zgłaszająca.</p>
+        <p class="text-xs text-gray-400 mb-3">Podaj powód - zobaczy go osoba zgłaszająca.</p>
         <textarea id="rejectReason" rows="3" class="input-field mb-3 resize-none" placeholder="np. Brak dokładnej lokalizacji"></textarea>
         <p id="rejectError" class="text-red-400 text-xs mb-2 hidden"></p>
         <div class="flex gap-2">

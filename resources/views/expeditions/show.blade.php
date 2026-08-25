@@ -91,7 +91,7 @@
 
             <div class="card flex flex-col gap-2">
                 <div class="flex items-center gap-3 text-sm text-gray-300">
-                    <span>📅</span><span>{{ $expedition['starts_at'] ?? '' }} — {{ $expedition['ends_at'] ?? '' }}</span>
+                    <span>📅</span><span>{{ $expedition['starts_at'] ?? '' }} - {{ $expedition['ends_at'] ?? '' }}</span>
                 </div>
                 @if(!empty($expedition['leader']))
                 <div class="flex items-center gap-3 text-sm text-gray-300">
@@ -135,7 +135,7 @@
                     </div>
                 </div>
                 @elseif($myStatus === 'requested')
-                <div class="card text-center text-sm text-gray-400">Prośba o dołączenie wysłana — oczekuje na akceptację kierownika.</div>
+                <div class="card text-center text-sm text-gray-400">Prośba o dołączenie wysłana - oczekuje na akceptację kierownika.</div>
                 @else
                 <button id="requestJoinBtn" class="btn-primary">Poproś o dołączenie</button>
                 @endif
@@ -165,7 +165,7 @@
         {{-- === FINDINGS (leader) === --}}
         @if($isLeader)
         <div id="paneFindings" class="tab-panel flex-col gap-3">
-            <p class="text-xs text-gray-500">Wszystkie znaleziska przypięte do poszukiwania przez uczestników — także prywatne.</p>
+            <p class="text-xs text-gray-500">Wszystkie znaleziska przypięte do poszukiwania przez uczestników - także prywatne.</p>
             <button id="exportFindingsBtn" class="export-trigger-btn" onclick="startExpeditionExport()">📄 Eksportuj znaleziska do PDF</button>
             <div id="findingsList" class="flex flex-col gap-3">
                 <p class="text-gray-400 text-sm text-center py-4">Ładowanie...</p>
@@ -185,7 +185,7 @@
                 <div class="export-progress-bar" id="export-bar"></div>
             </div>
             <div class="export-message" id="export-message">Inicjalizacja…</div>
-            <div id="export-hint" style="font-size:0.7rem;color:#6b7280;margin-bottom:0.75rem">Możesz zamknąć to okno i wrócić później — eksport będzie kontynuowany w tle.</div>
+            <div id="export-hint" style="font-size:0.7rem;color:#6b7280;margin-bottom:0.75rem">Możesz zamknąć to okno i wrócić później - eksport będzie kontynuowany w tle.</div>
             <a id="export-download-btn" class="export-done-btn" href="#" style="display:none;text-decoration:none;text-align:center">Pobierz PDF</a>
             <button class="export-close-btn" onclick="closeExpeditionExport()">Zamknij</button>
         </div>
@@ -340,7 +340,7 @@
             btn.addEventListener('click', () => {
                 const pid = parseInt(btn.dataset.pid, 10), act = btn.dataset.act;
                 const isRoleChange = act === 'promote' || act === 'demote';
-                if (act === 'promote' && !confirm('Mianować tę osobę kierownikiem? Otrzyma pełne uprawnienia w tym poszukiwaniu — takie same jak Ty.')) { return; }
+                if (act === 'promote' && !confirm('Mianować tę osobę kierownikiem? Otrzyma pełne uprawnienia w tym poszukiwaniu - takie same jak Ty.')) { return; }
                 if (act === 'demote' && !confirm('Odebrać tej osobie rolę kierownika?')) { return; }
                 const method = act === 'remove' ? 'DELETE' : (isRoleChange ? 'PATCH' : 'POST');
                 const url = act === 'remove'

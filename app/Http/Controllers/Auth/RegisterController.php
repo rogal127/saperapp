@@ -16,7 +16,7 @@ class RegisterController extends Controller
     public function store(Request $request)
     {
         if (filled($request->input('website'))) {
-            // Honeypot field filled in — silently pretend it worked so the bot doesn't adapt.
+            // Honeypot field filled in - silently pretend it worked so the bot doesn't adapt.
             return redirect()->route('login');
         }
 

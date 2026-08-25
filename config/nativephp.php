@@ -100,7 +100,7 @@ return [
     |
     | Override iOS Info.plist usage descriptions provided by plugins. Anything
     | you set here is applied AFTER all plugin manifests are merged, so it
-    | always wins — useful when multiple plugins claim the same key (e.g.
+    | always wins - useful when multiple plugins claim the same key (e.g.
     | mobile-camera and mobile-scanner both set NSCameraUsageDescription) and
     | you want a single explicit string for App Store review.
     |
@@ -266,7 +266,7 @@ return [
         'build_path' => env('NATIVEPHP_BUILD_PATH', 'storage/app/native-build'),
 
         // Automatically open browser with QR code when server starts.
-        // Default off — the terminal renders a scannable QR. Pass --browser
+        // Default off - the terminal renders a scannable QR. Pass --browser
         // to native:jump (or set NATIVEPHP_OPEN_BROWSER=true) to opt in.
         'open_browser' => env('NATIVEPHP_OPEN_BROWSER', false),
 

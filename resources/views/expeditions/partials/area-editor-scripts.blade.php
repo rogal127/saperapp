@@ -3,11 +3,11 @@
 
     Must be pushed onto the `scripts` stack before the host view's own script.
     Exposes `window.AreaEditor`:
-      · load(geojson)  — draw an existing Polygon/MultiPolygon as saved areas
-      · toGeoJson()    — commit the pending polygon and return a MultiPolygon
-      · hasArea()      — whether anything is drawn
-      · showStep(n)    — switch between #step1 (map) and #step2 (details)
-      · invalidate()   — recompute the map size after a layout change
+      · load(geojson)  - draw an existing Polygon/MultiPolygon as saved areas
+      · toGeoJson()    - commit the pending polygon and return a MultiPolygon
+      · hasArea()      - whether anything is drawn
+      · showStep(n)    - switch between #step1 (map) and #step2 (details)
+      · invalidate()   - recompute the map size after a layout change
     Confirming the area fills the hidden #area input and fires the `area:confirmed`
     event on `document`.
 --}}
@@ -72,7 +72,7 @@
         if (!hasAreas && vertices.length === 0) {
             hint = 'Dodaj co najmniej 3 punkty, aby wyznaczyć obszar.';
         } else if (vertices.length > 0 && !currentReady) {
-            hint = `Bieżący obszar: ${vertices.length}/3 punktów — dodaj jeszcze ${3 - vertices.length}.`;
+            hint = `Bieżący obszar: ${vertices.length}/3 punktów - dodaj jeszcze ${3 - vertices.length}.`;
         } else {
             const parts = [];
             if (hasAreas) { parts.push(`Zapisane obszary: ${committed.length}`); }
@@ -141,7 +141,7 @@
     }
 
     map.on('click', e => {
-        // While picking imported areas the sheet is open — don't add vertices.
+        // While picking imported areas the sheet is open - don't add vertices.
         if (importOverlay.classList.contains('sheet-mode')) { return; }
         addVertex(e.latlng.lat, e.latlng.lng);
     });
@@ -393,7 +393,7 @@
             const ring = Array.isArray(rings) ? rings[0] : null;
             if (!Array.isArray(ring) || ring.length < 4) { return; }
 
-            // Drop the repeated closing point — vertices are kept open here.
+            // Drop the repeated closing point - vertices are kept open here.
             const latlngs = [];
             for (let i = 0; i < ring.length - 1; i++) {
                 latlngs.push({ lat: ring[i][1], lng: ring[i][0] });

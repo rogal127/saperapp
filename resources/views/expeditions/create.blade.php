@@ -10,8 +10,8 @@
     @include('expeditions.partials.area-editor-step', [
         'backHref' => route('expeditions.index'),
         'title' => 'Zaznacz teren',
-        'subtitle' => 'Krok 1 z 2 — narysuj jeden lub więcej obszarów',
-        'nextLabel' => 'Dalej — szczegóły →',
+        'subtitle' => 'Krok 1 z 2 - narysuj jeden lub więcej obszarów',
+        'nextLabel' => 'Dalej - szczegóły →',
     ])
 
     {{-- === STEP 2: Details === --}}
@@ -128,7 +128,7 @@
         .then(async r => {
             // If the server answered with a redirect (successful creation via the
             // non-JSON branch), fetch transparently follows it to the show page.
-            // That is a success signal — go there rather than treating it as error.
+            // That is a success signal - go there rather than treating it as error.
             if (r.redirected && r.url) {
                 window.location.href = r.url;
                 return { handled: true };

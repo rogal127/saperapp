@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 
 /**
  * Przekazuje żądania mapy stowarzyszeń do API. Dostęp mają wyłącznie
- * administratorzy — pilnuje tego zarówno ten kontroler, jak i polityka po
+ * administratorzy - pilnuje tego zarówno ten kontroler, jak i polityka po
  * stronie API.
  */
 class AssociationController extends Controller

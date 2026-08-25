@@ -10,16 +10,16 @@ Plugins extend NativePHP for Mobile with native functionality. They package PHP 
 
 Plugins can leverage:
 
-- **Bridge functions** — call native code from PHP with results returned
-- **Events** — dispatch from native code to Laravel/Livewire
-- **Permissions** — declare required permissions (camera, location, etc.)
-- **Dependencies** — Gradle, CocoaPods, or Swift Package Manager
-- **Custom repositories** — for enterprise/private SDKs
-- **Android components** — Activities, Services, Receivers, Content Providers
-- **Asset bundling** — ML models, configuration files
-- **Lifecycle hooks** — build-time commands
-- **Secrets** — environment variables with validation
-- **init_function** — native code called during app initialization
+- **Bridge functions** - call native code from PHP with results returned
+- **Events** - dispatch from native code to Laravel/Livewire
+- **Permissions** - declare required permissions (camera, location, etc.)
+- **Dependencies** - Gradle, CocoaPods, or Swift Package Manager
+- **Custom repositories** - for enterprise/private SDKs
+- **Android components** - Activities, Services, Receivers, Content Providers
+- **Asset bundling** - ML models, configuration files
+- **Lifecycle hooks** - build-time commands
+- **Secrets** - environment variables with validation
+- **init_function** - native code called during app initialization
 
 ## Directory Structure
 
@@ -80,7 +80,7 @@ Kotlin files **must** declare vendor-namespaced packages to prevent conflicts:
 package com.myvendor.plugins.myplugin
 ```
 
-The compiler places files based on their package declaration — always include it.
+The compiler places files based on their package declaration - always include it.
 
 ## JavaScript Integration
 
@@ -113,12 +113,12 @@ public function handleResult($data) { } // Listen for events
 ## Requirements
 
 - **JavaScript library**: Export JS functions for each bridge method. Must work across Livewire v3/v4, Inertia + Vue, and Inertia + React. Document any stack limitations.
-- **Real device testing**: Test on physical Android and iOS devices — emulators lack camera, biometrics, and hardware features. Provide TestFlight / Google Play test builds.
+- **Real device testing**: Test on physical Android and iOS devices - emulators lack camera, biometrics, and hardware features. Provide TestFlight / Google Play test builds.
 - **Documentation**: README must include installation steps, PHP and JS usage examples, method/event/permission docs, and environment variable configuration.
 
 ## Development Workflow
 
-**Local development** — add as path repository in the app's `composer.json`:
+**Local development** - add as path repository in the app's `composer.json`:
 
 ```json
 {
@@ -132,7 +132,7 @@ public function handleResult($data) { } // Listen for events
 - Native code changes require: `php artisan native:run`
 - Significant manifest changes may need: `php artisan native:install --force`
 
-**Registration** — after composer install, explicitly register the plugin:
+**Registration** - after composer install, explicitly register the plugin:
 
 ```
 php artisan native:plugin:register vendor/plugin-name
@@ -142,11 +142,11 @@ This adds the service provider to `NativeServiceProvider.php` and acts as a secu
 
 ## Commands
 
-- `php artisan native:plugin:create` — Scaffold a new plugin interactively
-- `php artisan native:plugin:register vendor/name` — Register plugin in the app
-- `php artisan native:plugin:validate` — Catch manifest errors, bridge function mismatches, and missing assets before release
-- `php artisan native:plugin:boost` — Generate AI-friendly guidelines at `resources/boost/guidelines/core.blade.php`
-- `php artisan native:plugin:install-agent` — Install specialized AI agents for Kotlin, Swift, and JavaScript development
+- `php artisan native:plugin:create` - Scaffold a new plugin interactively
+- `php artisan native:plugin:register vendor/name` - Register plugin in the app
+- `php artisan native:plugin:validate` - Catch manifest errors, bridge function mismatches, and missing assets before release
+- `php artisan native:plugin:boost` - Generate AI-friendly guidelines at `resources/boost/guidelines/core.blade.php`
+- `php artisan native:plugin:install-agent` - Install specialized AI agents for Kotlin, Swift, and JavaScript development
 
 ## Submission Checklist
 

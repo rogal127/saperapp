@@ -53,7 +53,7 @@
         {{-- Status banner (widoczny dla zgłaszającego i administratora) --}}
         @if($status === 'pending')
         <div class="px-4 py-3 bg-amber-900/40 border border-amber-700 rounded-xl text-amber-300 text-sm">
-            ⏳ Impreza czeka na akceptację administratora — nie jest jeszcze widoczna na liście.
+            ⏳ Impreza czeka na akceptację administratora - nie jest jeszcze widoczna na liście.
         </div>
         @elseif($status === 'rejected')
         <div class="px-4 py-3 bg-red-900/40 border border-red-700 rounded-xl text-red-300 text-sm">
@@ -84,7 +84,7 @@
             </div>
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-xl flex-shrink-0">🗺️</div>
-                <p class="text-sm text-gray-200">woj. {{ $event['voivodeship'] ?? '—' }}</p>
+                <p class="text-sm text-gray-200">woj. {{ $event['voivodeship'] ?? '-' }}</p>
             </div>
             @if(!empty($event['organizer']))
             <div class="flex items-center gap-3">
@@ -146,7 +146,7 @@
 <div id="rejectModal" class="fixed inset-0 z-50 hidden items-center justify-center p-6" style="background:rgba(0,0,0,0.6)">
     <div class="card w-full max-w-sm">
         <h3 class="text-base font-bold text-white mb-1">Odrzuć imprezę</h3>
-        <p class="text-xs text-gray-400 mb-3">Podaj powód — zobaczy go osoba zgłaszająca.</p>
+        <p class="text-xs text-gray-400 mb-3">Podaj powód - zobaczy go osoba zgłaszająca.</p>
         <textarea id="rejectReason" rows="3" class="input-field mb-3 resize-none" placeholder="np. Brak dokładnej lokalizacji"></textarea>
         <p id="rejectError" class="text-red-400 text-xs mb-2 hidden"></p>
         <div class="flex gap-2">

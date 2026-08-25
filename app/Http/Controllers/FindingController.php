@@ -569,7 +569,7 @@ class FindingController extends Controller
             );
         }
 
-        // PHP nie czyta multipart body przy PUT — używamy POST z _method=PUT (method spoofing)
+        // PHP nie czyta multipart body przy PUT - używamy POST z _method=PUT (method spoofing)
         $payload = [
             '_method' => 'PUT',
             'name' => $request->name,

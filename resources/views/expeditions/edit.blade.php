@@ -5,9 +5,9 @@
 
 @php
     $statuses = [
-        'draft' => ['Szkic', 'Widoczne tylko dla Ciebie — nie pojawia się w „Odkrywaj".'],
+        'draft' => ['Szkic', 'Widoczne tylko dla Ciebie - nie pojawia się w „Odkrywaj".'],
         'published' => ['Opublikowane', 'Aktywne poszukiwanie.'],
-        'finished' => ['Zakończone', 'Archiwalne — uczestnicy nie przypinają już znalezisk.'],
+        'finished' => ['Zakończone', 'Archiwalne - uczestnicy nie przypinają już znalezisk.'],
         'cancelled' => ['Anulowane', 'Odwołane; znika z mapy poszukiwań.'],
     ];
 @endphp
@@ -20,7 +20,7 @@
         'backHref' => null,
         'active' => false,
         'title' => 'Zmień teren',
-        'subtitle' => 'Dotknij obszaru, aby go usunąć — lub narysuj nowy',
+        'subtitle' => 'Dotknij obszaru, aby go usunąć - lub narysuj nowy',
         'nextLabel' => 'Zapisz teren →',
     ])
 
@@ -164,7 +164,7 @@
         if (!payload.starts_at || !payload.ends_at) { alert('Podaj daty poszukiwania.'); return; }
         if (payload.ends_at < payload.starts_at) { alert('Data zakończenia nie może być wcześniejsza niż rozpoczęcia.'); return; }
 
-        // Only sent when the user actually redrew the area — the API keeps the
+        // Only sent when the user actually redrew the area - the API keeps the
         // stored polygon when the field is absent.
         const area = document.getElementById('area').value;
         if (area) { payload.area = area; }

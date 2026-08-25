@@ -97,8 +97,13 @@
                 <p id="manualCoordsError" class="text-red-400 text-xs mt-1 text-center hidden"></p>
             </div>
 
+            <div id="pinFindingsPanel" class="hidden mb-3">
+                <p class="text-xs text-gray-400 font-semibold mb-2" id="pinFindingsTitle">Znaleziska przy tej pinezce</p>
+                <div id="pinFindingsList" class="flex flex-col gap-1.5 max-h-40 overflow-y-auto"></div>
+            </div>
+
             <button type="button" id="nextBtn" class="btn-primary opacity-40" disabled>
-                Dalej — uzupełnij szczegóły →
+                Dalej - uzupełnij szczegóły →
             </button>
         </div>
 
@@ -157,7 +162,7 @@
                     <span class="text-2xl">📍</span>
                     <div class="flex-1 min-w-0">
                         <p class="text-xs text-gray-500 mb-0.5">Lokalizacja</p>
-                        <p class="text-sm font-semibold text-white truncate" id="locationSummary">—</p>
+                        <p class="text-sm font-semibold text-white truncate" id="locationSummary">-</p>
                     </div>
                     <button type="button" id="changeLocationBtn" class="text-amber-400 text-xs font-semibold whitespace-nowrap">
                         Zmień
@@ -175,7 +180,7 @@
                     </label>
                     <div id="expeditionBody"></div>
                     <p class="text-xs text-gray-400 mt-2">Uzupełnia się automatycznie, gdy pinezka leży w terenie poszukiwania. Możesz to zmienić.</p>
-                    <p class="text-xs text-amber-300/80 mt-1">Jeśli przypniesz znalezisko do poszukiwania, jego kierownik je zobaczy — także gdy oznaczysz je jako prywatne.</p>
+                    <p class="text-xs text-amber-300/80 mt-1">Jeśli przypniesz znalezisko do poszukiwania, jego kierownik je zobaczy - także gdy oznaczysz je jako prywatne.</p>
                 </div>
 
                 {{-- Name --}}
@@ -242,7 +247,7 @@
                     </label>
                     <textarea
                         name="private_notes"
-                        placeholder="Notatki widoczne tylko dla Ciebie — współrzędne, szczegóły znaleziska, plany..."
+                        placeholder="Notatki widoczne tylko dla Ciebie - współrzędne, szczegóły znaleziska, plany..."
                         rows="3"
                         class="input-field resize-none @error('private_notes') border-red-500 @enderror"
                     >{{ old('private_notes') }}</textarea>
@@ -257,7 +262,7 @@
                     <label class="flex items-center justify-between gap-3 card cursor-pointer">
                         <span class="min-w-0">
                             <span class="block text-sm font-semibold text-gray-300">🙈 Tylko do mojego wglądu</span>
-                            <span class="block text-xs text-gray-500 mt-0.5">Znalezisko będzie prywatne — nie zobaczy go nikt poza Tobą.</span>
+                            <span class="block text-xs text-gray-500 mt-0.5">Znalezisko będzie prywatne - nie zobaczy go nikt poza Tobą.</span>
                         </span>
                         <input type="checkbox" name="is_private" value="1" class="w-5 h-5 accent-amber-500 shrink-0" {{ old('is_private') ? 'checked' : '' }}>
                     </label>
@@ -275,7 +280,7 @@
                             <input type="file" name="photos[]" accept="image/*" multiple class="hidden" id="photoInput">
                         </label>
                     </div>
-                    <p class="text-xs text-gray-500 mt-1 ml-1" id="photoHint">Możesz dodać kilka zdjęć — pierwsze będzie głównym.</p>
+                    <p class="text-xs text-gray-500 mt-1 ml-1" id="photoHint">Możesz dodać kilka zdjęć - pierwsze będzie głównym.</p>
                     <p class="text-xs text-gray-500 mt-1 ml-1">Dotknij 🔒 na zdjęciu, aby ukryć je przed innymi (zobaczysz je tylko Ty).</p>
                     <div id="photosPrivateContainer" class="hidden"></div>
                 </div>
@@ -456,7 +461,7 @@
                 select.className = 'input-field';
                 const defaultOpt = document.createElement('option');
                 defaultOpt.value = '';
-                defaultOpt.textContent = '— Bez kategorii —';
+                defaultOpt.textContent = '- Bez kategorii -';
                 select.appendChild(defaultOpt);
                 categories.forEach(cat => {
                     const opt = document.createElement('option');
@@ -495,7 +500,7 @@
                 select.className = 'input-field';
                 const defaultOpt = document.createElement('option');
                 defaultOpt.value = '';
-                defaultOpt.textContent = '— Nie przypisuj zgody —';
+                defaultOpt.textContent = '- Nie przypisuj zgody -';
                 select.appendChild(defaultOpt);
                 consents.forEach(c => {
                     const opt = document.createElement('option');
@@ -571,7 +576,7 @@
     }
 
     // Auto-fill the expedition select only when the pin actually falls inside
-    // one of the user's active expedition areas — never guess otherwise.
+    // one of the user's active expedition areas - never guess otherwise.
     function autoSelectExpeditionForLocation(lat, lng) {
         if (!expeditionSelect) { pendingLocation = { lat, lng }; return; }
         const match = expeditionCandidates.find(e => areaContainsPoint(e.area, lat, lng));
@@ -581,7 +586,7 @@
     (function loadExpeditions() {
         const section = document.getElementById('expeditionSection');
         const body = document.getElementById('expeditionBody');
-        // scope=live: expeditions the user leads or joined — the same set the
+        // scope=live: expeditions the user leads or joined - the same set the
         // API accepts in expedition_id validation. Follows pagination so the
         // select isn't cut off at the first 20 expeditions.
         const fetchPage = (page, acc) => fetch(EXPEDITIONS_URL + '?scope=live&page=' + page)
@@ -606,7 +611,7 @@
                 select.className = 'input-field';
                 const def = document.createElement('option');
                 def.value = '';
-                def.textContent = '— Nie przypisuj —';
+                def.textContent = '- Nie przypisuj -';
                 def.selected = !OLD_EXPEDITION_ID;
                 select.appendChild(def);
                 items.forEach(e => {
@@ -748,7 +753,7 @@
         document.getElementById('coordsLabel').textContent = `📍 Istniejąca pinezka: ${pin.city ?? pin.latitude + ', ' + pin.longitude}`;
 
         const cityLabel = document.getElementById('cityLabel');
-        cityLabel.textContent = pin.city ? `🏘️ ${pin.city}${pin.voivodeship ? ', ' + pin.voivodeship : ''} — dodaj do tej pinezki` : '📍 Dodaj kolejne znalezisko do tej pinezki';
+        cityLabel.textContent = pin.city ? `🏘️ ${pin.city}${pin.voivodeship ? ', ' + pin.voivodeship : ''} - dodaj do tej pinezki` : '📍 Dodaj kolejne znalezisko do tej pinezki';
         cityLabel.classList.remove('hidden');
 
         const loc = pin.city ?? `${parseFloat(pin.latitude).toFixed(4)}, ${parseFloat(pin.longitude).toFixed(4)}`;
@@ -758,6 +763,52 @@
         document.getElementById('nextBtn').removeAttribute('disabled');
         document.getElementById('nextBtn').classList.remove('opacity-40');
         autoSelectExpeditionForLocation(parseFloat(pin.latitude), parseFloat(pin.longitude));
+        loadPinFindings(pin.id);
+    }
+
+    // --- Lista znalezisk przypisanych do wybranej pinezki (krok 1) ---
+    const PINS_API_BASE = "{{ url('/api/pins') }}";
+
+    function escHtmlCreate(str) {
+        return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function hidePinFindings() {
+        document.getElementById('pinFindingsPanel').classList.add('hidden');
+        document.getElementById('pinFindingsList').innerHTML = '';
+    }
+
+    function loadPinFindings(pinId) {
+        const panel = document.getElementById('pinFindingsPanel');
+        const list  = document.getElementById('pinFindingsList');
+        panel.classList.remove('hidden');
+        list.innerHTML = '<p class="text-xs text-gray-500 text-center py-2">Ładowanie…</p>';
+
+        fetch(`${PINS_API_BASE}/${pinId}/findings`)
+            .then(r => r.json())
+            .then(data => {
+                // Użytkownik mógł w międzyczasie kliknąć inną pinezkę.
+                if (selectedPinId !== pinId) { return; }
+                const findings = data.data ?? [];
+                document.getElementById('pinFindingsTitle').textContent = `Znaleziska przy tej pinezce (${findings.length})`;
+                if (!findings.length) {
+                    list.innerHTML = '<p class="text-xs text-gray-500 text-center py-2">Brak znalezisk przy tej pinezce.</p>';
+                    return;
+                }
+                list.innerHTML = findings.map(f => `
+                    <a href="/findings/${f.id}" class="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-card text-left active:opacity-70">
+                        <span class="flex-1 min-w-0">
+                            <span class="block text-sm text-white truncate">🪙 ${escHtmlCreate(f.name)}</span>
+                            <span class="block text-xs text-gray-500">📅 ${escHtmlCreate(f.found_at ?? '')}${f.depth_cm != null ? ` · 📏 ${escHtmlCreate(f.depth_cm)} cm` : ''}</span>
+                        </span>
+                        <span class="text-gray-500">›</span>
+                    </a>
+                `).join('');
+            })
+            .catch(() => {
+                if (selectedPinId !== pinId) { return; }
+                list.innerHTML = '<p class="text-xs text-red-400 text-center py-2">Nie udało się pobrać znalezisk.</p>';
+            });
     }
 
     function clearNewPinInputs() {
@@ -782,7 +833,7 @@
     @endif
 
     @if(!empty($initialPinId))
-    // Pinezka z URL — od razu krok 2, bez potrzeby wyboru lokalizacji
+    // Pinezka z URL - od razu krok 2, bez potrzeby wyboru lokalizacji
     (function () {
         const pinId = {{ (int) $initialPinId }};
         document.getElementById('pin_id').value = pinId;
@@ -802,7 +853,7 @@
                         : `${parseFloat(pin.latitude).toFixed(4)}, ${parseFloat(pin.longitude).toFixed(4)}`;
                     document.getElementById('locationSummary').textContent = loc + ' (istniejąca pinezka)';
                     document.getElementById('cityLabel').textContent = pin.city
-                        ? `🏘️ ${pin.city}${pin.voivodeship ? ', ' + pin.voivodeship : ''} — dodaj kolejne znalezisko`
+                        ? `🏘️ ${pin.city}${pin.voivodeship ? ', ' + pin.voivodeship : ''} - dodaj kolejne znalezisko`
                         : '📍 Dodaj kolejne znalezisko do tej pinezki';
                     document.getElementById('cityLabel').classList.remove('hidden');
                     autoSelectExpeditionForLocation(parseFloat(pin.latitude), parseFloat(pin.longitude));
@@ -825,8 +876,9 @@
         }
         selectedPinId = null;
         document.getElementById('pin_id').value = '';
+        hidePinFindings();
 
-        // Usuń koło dokładności GPS — obowiązuje tylko dla pozycji z „Moja pozycja"
+        // Usuń koło dokładności GPS - obowiązuje tylko dla pozycji z „Moja pozycja"
         if (accuracyCircle) { map.removeLayer(accuracyCircle); accuracyCircle = null; }
 
         if (newMarker) { map.removeLayer(newMarker); }
@@ -874,7 +926,7 @@
             voivodeshipInput.value = voivodeship;
             countyInput.value      = county;
 
-            const label = city ? `🏘️ ${city}${voivodeship ? ', ' + voivodeship : ''} — nowa pinezka` : '❓ Nie udało się wykryć miejscowości';
+            const label = city ? `🏘️ ${city}${voivodeship ? ', ' + voivodeship : ''} - nowa pinezka` : '❓ Nie udało się wykryć miejscowości';
             cityLabel.textContent = label;
             locationSummary.textContent = city
                 ? `${city}${voivodeship ? ', ' + voivodeship : ''} (${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)})`
@@ -1029,7 +1081,7 @@
     const photoHint = document.getElementById('photoHint');
     const photosPrivateContainer = document.getElementById('photosPrivateContainer');
     let selectedPhotos = [];  // File[]
-    let selectedPrivate = []; // bool[] — równolegle do selectedPhotos
+    let selectedPrivate = []; // bool[] - równolegle do selectedPhotos
 
     function renderPhotoGallery() {
         photoGallery.querySelectorAll('.photo-thumb').forEach(el => el.remove());
@@ -1056,7 +1108,7 @@
             lockBtn.type = 'button';
             lockBtn.className = 'absolute top-1 left-1 rounded-full w-7 h-7 flex items-center justify-center text-sm leading-none ' + (isPrivate ? 'bg-purple-500 text-white' : 'bg-black/60 text-white/70');
             lockBtn.textContent = isPrivate ? '🔒' : '🔓';
-            lockBtn.title = isPrivate ? 'Prywatne — tylko Ty' : 'Publiczne';
+            lockBtn.title = isPrivate ? 'Prywatne - tylko Ty' : 'Publiczne';
             lockBtn.addEventListener('click', () => {
                 selectedPrivate[index] = !selectedPrivate[index];
                 renderPhotoGallery();
@@ -1084,7 +1136,7 @@
         photoAddTile.classList.toggle('hidden', full);
         photoHint.textContent = full
             ? 'Osiągnięto limit 8 zdjęć.'
-            : (selectedPhotos.length ? `Wybrano ${selectedPhotos.length} z ${MAX_PHOTOS}.` : 'Możesz dodać kilka zdjęć — pierwsze będzie głównym.');
+            : (selectedPhotos.length ? `Wybrano ${selectedPhotos.length} z ${MAX_PHOTOS}.` : 'Możesz dodać kilka zdjęć - pierwsze będzie głównym.');
     }
 
     function syncPrivateInputs() {
@@ -1237,7 +1289,7 @@
                 // Odświeżamy stronę: gdy działa „Pamiętaj mnie", sesja odtworzy
                 // się z cookie (bez ponownego logowania); w przeciwnym razie
                 // użytkownik trafi na logowanie i wróci tu z odtworzonym opisem.
-                alert('Twoja sesja wygasła. Wpisane dane zostały zapisane i wrócą — odświeżam stronę.');
+                alert('Twoja sesja wygasła. Wpisane dane zostały zapisane i wrócą - odświeżam stronę.');
                 window.location.reload();
                 return;
             }

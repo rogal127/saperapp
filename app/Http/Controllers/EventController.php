@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 /**
- * Imprezy (zloty, giełdy, wydarzenia) — cienki proxy do saperapp-api.
+ * Imprezy (zloty, giełdy, wydarzenia) - cienki proxy do saperapp-api.
  * Zgłoszenia użytkowników czekają na akceptację administratora.
  */
 class EventController extends Controller
@@ -119,7 +119,7 @@ class EventController extends Controller
 
     public function pendingCount(Request $request)
     {
-        // Endpoint moderacyjny — dla zwykłych użytkowników od razu 0 bez pytania API.
+        // Endpoint moderacyjny - dla zwykłych użytkowników od razu 0 bez pytania API.
         if (! $request->session()->get('api_user.is_admin', false)) {
             return response()->json(['count' => 0]);
         }
@@ -132,7 +132,7 @@ class EventController extends Controller
 
     public function store(Request $request)
     {
-        // Formularz wysyła zawsze przez fetch — walidujemy ręcznie, żeby
+        // Formularz wysyła zawsze przez fetch - walidujemy ręcznie, żeby
         // niezależnie od nagłówków webview odpowiedź była JSON-em, a nie
         // przekierowaniem (patrz ExpeditionController::store).
         $validator = Validator::make($request->all(), [
@@ -217,7 +217,7 @@ class EventController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // PHP nie czyta multipart body przy PUT — używamy POST z _method=PUT (method spoofing).
+        // PHP nie czyta multipart body przy PUT - używamy POST z _method=PUT (method spoofing).
         $payload = [
             '_method' => 'PUT',
             ...$request->only('name', 'description', 'starts_at', 'ends_at', 'voivodeship', 'latitude', 'longitude'),
@@ -254,7 +254,7 @@ class EventController extends Controller
         }
 
         if ($response->json('data.status') === 'pending') {
-            $request->session()->flash('success', 'Zmiany zapisane — impreza ponownie czeka na akceptację administratora.');
+            $request->session()->flash('success', 'Zmiany zapisane - impreza ponownie czeka na akceptację administratora.');
         } else {
             $request->session()->flash('success', 'Zmiany zostały zapisane.');
         }

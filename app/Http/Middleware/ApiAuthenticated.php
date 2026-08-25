@@ -25,7 +25,7 @@ class ApiAuthenticated
 
             // Uwaga: świadomie NIE używamy redirect()->guest(), bo zapisałoby
             // ono bieżący URL jako "intended". W layoucie działają tłowe fetche
-            // (np. licznik nieprzeczytanych), które są zwykłymi GET-ami — gdyby
+            // (np. licznik nieprzeczytanych), które są zwykłymi GET-ami - gdyby
             // taki fetch trafił tu bez sesji, po zalogowaniu przerzuciłoby
             // użytkownika na endpoint API zamiast na stronę.
             return redirect()->route('login');

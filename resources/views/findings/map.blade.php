@@ -97,7 +97,7 @@
     }
 
     /* Przełącznik trybu mapy */
-    /* Zakładki zawijają się do kolejnych rzędów — każda musi być widoczna w całości */
+    /* Zakładki zawijają się do kolejnych rzędów - każda musi być widoczna w całości */
     #mode-switch {
         display: inline-flex; background: #2a2a3e;
         border-radius: 0.75rem; padding: 3px; gap: 3px;
@@ -553,7 +553,7 @@
         <div id="panel">
             <div id="panel-toggle" onclick="togglePanel()">
                 <span id="toggle-arrow" style="font-size:1.1rem;color:#e2e8f0">‹</span>
-                <span id="toggle-count">—</span>
+                <span id="toggle-count">-</span>
             </div>
             <div id="panel-header">
                 <div id="panel-level">Widok globalny</div>
@@ -759,13 +759,13 @@ let lastLevel       = null;
 let panelTotalCount = 0;
 
 // 'findings' (klastry i pinezki), 'expeditions' (obszary poszukiwań)
-// albo 'associations' (stowarzyszenia — wyłącznie dla administratorów)
+// albo 'associations' (stowarzyszenia - wyłącznie dla administratorów)
 let mapMode = 'findings';
 
 const ROLE_COLORS = { owner: '#ef4444', member: '#eab308', public: '#22c55e' };
 const ROLE_LABELS = { owner: 'Twoje poszukiwanie', member: 'Uczestniczysz', public: 'Publiczne' };
 
-// Poniżej tego zoomu obszary są rysowane jako punkt — API nie wysyła wtedy geometrii.
+// Poniżej tego zoomu obszary są rysowane jako punkt - API nie wysyła wtedy geometrii.
 const EXPEDITION_POLYGON_ZOOM = 10;
 
 const PHASE_STYLES = {
@@ -783,7 +783,7 @@ const orthoLayer = L.tileLayer(
 );
 let currentLayer = 'osm';
 
-// Wejście z widoku znaleziska: ?lat=&lng=&zoom=&finding=&pin= — mapa startuje
+// Wejście z widoku znaleziska: ?lat=&lng=&zoom=&finding=&pin= - mapa startuje
 // na miejscowości znaleziska i po załadowaniu klastrów sama otwiera jego kartę.
 const FOCUS = (() => {
     const params = new URLSearchParams(window.location.search);
@@ -963,7 +963,7 @@ function updateExpeditionPanel(items) {
     panelTotalCount = items.length;
 
     document.getElementById('panel-level').textContent = 'Poszukiwania';
-    document.getElementById('toggle-count').textContent = items.length > 0 ? items.length : '—';
+    document.getElementById('toggle-count').textContent = items.length > 0 ? items.length : '-';
     document.getElementById('findings-count').textContent = items.length > 0
         ? `${items.length} ${expeditionNoun(items.length)} w widoku`
         : 'Brak poszukiwań w widoku';
@@ -986,7 +986,7 @@ function updateExpeditionPanel(items) {
                 <span class="exp-role-dot" style="background:${color}"></span>${escHtml(item.name ?? 'Poszukiwanie')}
                 ${phaseBadge(item.phase)}
             </div>
-            <div class="finding-item-meta">📅 ${escHtml(item.starts_at ?? '')} — ${escHtml(item.ends_at ?? '')}</div>
+            <div class="finding-item-meta">📅 ${escHtml(item.starts_at ?? '')} - ${escHtml(item.ends_at ?? '')}</div>
             <div class="finding-item-meta">${ROLE_LABELS[item.role] ?? ''} · 👥 ${item.participants_count ?? 0} · ⚒️ ${item.findings_count ?? 0}</div>
         `;
         el.addEventListener('click', () => {
@@ -1077,7 +1077,7 @@ function associationPopupHtml(item) {
 }
 
 /**
- * Panel listuje stowarzyszenia widoczne w bieżącym wycinku mapy — dane są
+ * Panel listuje stowarzyszenia widoczne w bieżącym wycinku mapy - dane są
  * pobierane raz, więc przy przesuwaniu mapy filtrujemy je lokalnie.
  */
 function updateAssociationPanel() {
@@ -1089,7 +1089,7 @@ function updateAssociationPanel() {
     panelTotalCount = items.length;
 
     document.getElementById('panel-level').textContent = 'Stowarzyszenia';
-    document.getElementById('toggle-count').textContent = items.length > 0 ? items.length : '—';
+    document.getElementById('toggle-count').textContent = items.length > 0 ? items.length : '-';
     document.getElementById('findings-count').textContent = items.length > 0
         ? `${items.length} ${associationNoun(items.length)} w widoku`
         : 'Brak stowarzyszeń w widoku';
@@ -1153,7 +1153,7 @@ function onAssociationPlaceClick(e) {
 }
 
 /**
- * Otwiera formularz stowarzyszenia — z podanym id w trybie edycji, bez id
+ * Otwiera formularz stowarzyszenia - z podanym id w trybie edycji, bez id
  * w trybie dodawania nowej pinezki (współrzędne trzyma associationDraft).
  */
 function openAssociationModal(associationId) {
@@ -1279,7 +1279,7 @@ if (IS_ADMIN) {
 
 // --- Tryb imprez ---
 // Domyślny listing API zwraca wyłącznie zaakceptowane imprezy, które jeszcze
-// się nie skończyły — pobieramy je raz i filtrujemy lokalnie przy przesuwaniu mapy.
+// się nie skończyły - pobieramy je raz i filtrujemy lokalnie przy przesuwaniu mapy.
 
 let allEvents      = [];
 let eventMarkers   = {};   // id imprezy → marker (do otwierania popupu z panelu)
@@ -1298,7 +1298,7 @@ async function fetchEvents() {
         let page = 1;
         let items = [];
 
-        // Listing jest stronicowany po 20 — dociągamy kolejne strony (z bezpiecznym limitem).
+        // Listing jest stronicowany po 20 - dociągamy kolejne strony (z bezpiecznym limitem).
         while (page <= 10) {
             const res = await fetch(`${EVENTS_API_URL}?page=${page}`);
             if (!res.ok) { throw new Error(); }
@@ -1343,7 +1343,7 @@ function eventPopupHtml(item) {
     return `
         ${photo}
         <div style="font-weight:700;font-size:0.85rem">🎉 ${escHtml(item.name)}</div>
-        <div style="font-size:0.78rem;margin-top:3px">📅 ${escHtml(item.starts_at ?? '')} — ${escHtml(item.ends_at ?? '')}</div>
+        <div style="font-size:0.78rem;margin-top:3px">📅 ${escHtml(item.starts_at ?? '')} - ${escHtml(item.ends_at ?? '')}</div>
         <div style="font-size:0.78rem;margin-top:3px;color:#9ca3af">📍 woj. ${escHtml(item.voivodeship ?? '')}</div>
         <a href="/events/${item.id}"
             style="display:block;margin-top:0.5rem;width:100%;padding:0.4rem;border:1px solid #a78bfa;color:#a78bfa;border-radius:0.5rem;font-size:0.75rem;font-weight:700;text-align:center;text-decoration:none;box-sizing:border-box">
@@ -1353,7 +1353,7 @@ function eventPopupHtml(item) {
 }
 
 /**
- * Panel listuje imprezy widoczne w bieżącym wycinku mapy — dane są pobierane
+ * Panel listuje imprezy widoczne w bieżącym wycinku mapy - dane są pobierane
  * raz, więc przy przesuwaniu mapy filtrujemy je lokalnie (jak stowarzyszenia).
  */
 function updateEventPanel() {
@@ -1366,7 +1366,7 @@ function updateEventPanel() {
     panelTotalCount = items.length;
 
     document.getElementById('panel-level').textContent = 'Imprezy';
-    document.getElementById('toggle-count').textContent = items.length > 0 ? items.length : '—';
+    document.getElementById('toggle-count').textContent = items.length > 0 ? items.length : '-';
     document.getElementById('findings-count').textContent = items.length > 0
         ? `${items.length} ${eventNoun(items.length)} w widoku`
         : 'Brak imprez w widoku';
@@ -1387,7 +1387,7 @@ function updateEventPanel() {
         el.className = 'finding-item';
         el.innerHTML = `
             <div class="finding-item-name">🎉 ${escHtml(item.name)} ${phaseBadge(item.phase)}</div>
-            <div class="finding-item-meta">📅 ${escHtml(item.starts_at ?? '')} — ${escHtml(item.ends_at ?? '')}</div>
+            <div class="finding-item-meta">📅 ${escHtml(item.starts_at ?? '')} - ${escHtml(item.ends_at ?? '')}</div>
             <div class="finding-item-meta">📍 woj. ${escHtml(item.voivodeship ?? '')}</div>
         `;
         el.addEventListener('click', () => {
@@ -1478,7 +1478,7 @@ function renderLiveExpeditionList(items) {
         el.className = 'finding-item';
         el.innerHTML = `
             <div class="finding-item-name">${escHtml(item.name ?? 'Poszukiwanie')} ${phaseBadge(item.phase)}</div>
-            <div class="finding-item-meta">📅 ${escHtml(item.starts_at ?? '')} — ${escHtml(item.ends_at ?? '')}</div>
+            <div class="finding-item-meta">📅 ${escHtml(item.starts_at ?? '')} - ${escHtml(item.ends_at ?? '')}</div>
             <div class="finding-item-meta">${item.is_leader ? '⭐ Organizujesz' : '👥 Uczestniczysz'} · ⚒️ ${item.findings_count ?? 0}</div>
         `;
         el.addEventListener('click', () => selectLiveExpedition(item.id));
@@ -1531,7 +1531,7 @@ function updateLivePanel() {
     panelTotalCount = liveExpedition ? 1 : 0;
 
     document.getElementById('panel-level').textContent = 'Live';
-    document.getElementById('toggle-count').textContent = liveExpedition ? '1' : '—';
+    document.getElementById('toggle-count').textContent = liveExpedition ? '1' : '-';
     document.getElementById('findings-count').textContent = liveExpedition
         ? liveExpedition.name
         : 'Nie wybrano poszukiwania';
@@ -1549,7 +1549,7 @@ function updateLivePanel() {
     el.className = 'finding-item';
     el.innerHTML = `
         <div class="finding-item-name">${escHtml(e.name ?? 'Poszukiwanie')} ${phaseBadge(e.phase)}</div>
-        <div class="finding-item-meta">📅 ${escHtml(e.starts_at ?? '')} — ${escHtml(e.ends_at ?? '')}</div>
+        <div class="finding-item-meta">📅 ${escHtml(e.starts_at ?? '')} - ${escHtml(e.ends_at ?? '')}</div>
         <div class="finding-item-meta">${e.is_leader ? '⭐ Organizujesz' : '👥 Uczestniczysz'} · 👥 ${e.participants_count ?? 0} · ⚒️ ${e.findings_count ?? 0}</div>
     `;
     el.addEventListener('click', () => {
@@ -1691,7 +1691,7 @@ function renderData(items, zoom) {
 
 /**
  * Otwiera modal z kartą znaleziska wskazanego w adresie (wejście z widoku znaleziska).
- * Własne pinezki trafiają na mapę osobno, cudze — w klastrze miejscowości.
+ * Własne pinezki trafiają na mapę osobno, cudze - w klastrze miejscowości.
  */
 function applyPendingFocus(items) {
     pendingFocus = false;
@@ -1728,7 +1728,7 @@ function updatePanel(items, zoom) {
     const level    = clusters[0]?.level ?? (pins.length ? 'pin' : null);
 
     document.getElementById('panel-level').textContent = LEVEL_LABELS[level] ?? 'Dane mapy';
-    document.getElementById('toggle-count').textContent = items.length > 0 ? items.length : '—';
+    document.getElementById('toggle-count').textContent = items.length > 0 ? items.length : '-';
 
     const totalFindings = clusters.reduce((s, c) => s + c.count, 0)
         + pins.reduce((s, p) => s + (p.findings_count ?? 1), 0);
@@ -1873,7 +1873,7 @@ function photosHtml(f) {
     const photos = (Array.isArray(f.photos) && f.photos.length)
         ? f.photos.map(p => {
             if (typeof p === 'string') { return { thumb: p, full: p }; }
-            // Prywatne zdjęcia idą przez własny proxy — URL API wymaga nagłówka Bearer, którego <img> nie wyśle.
+            // Prywatne zdjęcia idą przez własny proxy - URL API wymaga nagłówka Bearer, którego <img> nie wyśle.
             const full = p.is_private ? `/findings/${f.id}/photos/${p.id}` : p.url;
             const thumb = p.is_private ? `/findings/${f.id}/photos/${p.id}/thumb` : (p.thumb_url || p.url);
             return { thumb, full };

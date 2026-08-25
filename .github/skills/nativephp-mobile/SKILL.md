@@ -13,7 +13,7 @@ Before implementing any feature, fetch the relevant docs using `WebFetch`. Find 
 WebFetch("https://nativephp.com/docs/mobile/3/apis/camera", "Explain Camera API methods, events, and fluent builder options")
 ```
 
-## Build Commands — Tell the User, Don't Run
+## Build Commands - Tell the User, Don't Run
 
 Never auto-run these commands. Always tell the user to run them manually:
 
@@ -90,7 +90,7 @@ await scanner.scan().prompt('Scan ticket').formats(['qr', 'ean13']);
 await biometric.prompt().id('auth-check');
 ```
 
-Event handling — always clean up in `onUnmounted`:
+Event handling - always clean up in `onUnmounted`:
 
 ```javascript
 const handler = (payload) => { /* handle */ };
@@ -141,7 +141,7 @@ EDGE renders Blade components as native UI. Works with both Livewire and Inertia
 
 ## Plugin System (v3)
 
-Modular plugin architecture — device features as separate Composer packages:
+Modular plugin architecture - device features as separate Composer packages:
 
 | Package | Feature | Cost |
 |---------|---------|------|
@@ -172,4 +172,4 @@ For authoring plugins: [references/plugin-best-practices.md](references/plugin-b
 - Using core facades for plugin features (e.g. `Scanner` requires `nativephp/mobile-scanner`)
 - Forgetting `nativephpMobile()` / `nativephpHotFile()` in `vite.config.js`
 - Not passing `--mode=ios` or `--mode=android` to `npm run build`
-- Not fetching v3 docs before implementing — use WebFetch with URLs from [references/available-docs.md](references/available-docs.md)
+- Not fetching v3 docs before implementing - use WebFetch with URLs from [references/available-docs.md](references/available-docs.md)

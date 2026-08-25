@@ -95,7 +95,7 @@
                 </label>
                 <textarea
                     name="private_notes"
-                    placeholder="Notatki widoczne tylko dla Ciebie — współrzędne, szczegóły znaleziska, plany..."
+                    placeholder="Notatki widoczne tylko dla Ciebie - współrzędne, szczegóły znaleziska, plany..."
                     rows="3"
                     class="input-field resize-none @error('private_notes') border-red-500 @enderror"
                 >{{ old('private_notes', $finding['private_notes'] ?? '') }}</textarea>
@@ -110,7 +110,7 @@
                 <label class="flex items-center justify-between gap-3 card cursor-pointer">
                     <span class="min-w-0">
                         <span class="block text-sm font-semibold text-gray-300">🙈 Tylko do mojego wglądu</span>
-                        <span class="block text-xs text-gray-500 mt-0.5">Znalezisko będzie prywatne — nie zobaczy go nikt poza Tobą.</span>
+                        <span class="block text-xs text-gray-500 mt-0.5">Znalezisko będzie prywatne - nie zobaczy go nikt poza Tobą.</span>
                     </span>
                     <input type="checkbox" name="is_private" value="1" class="w-5 h-5 accent-amber-500 shrink-0" {{ old('is_private', ($finding['is_private'] ?? false)) ? 'checked' : '' }}>
                 </label>
@@ -151,7 +151,7 @@
                     🏷️ Kategoria <span class="text-gray-500 font-normal">(opcjonalna)</span>
                 </label>
                 <select name="finding_category_id" class="input-field">
-                    <option value="">— Bez kategorii —</option>
+                    <option value="">- Bez kategorii -</option>
                     @foreach($findingCategories as $cat)
                         <option value="{{ $cat['id'] }}"
                             {{ old('finding_category_id', $finding['category']['id'] ?? '') == $cat['id'] ? 'selected' : '' }}>
@@ -175,7 +175,7 @@
                 </label>
                 @if(!empty($wkzConsents))
                     <select name="wkz_consent_id" class="input-field">
-                        <option value="">— Nie przypisuj zgody —</option>
+                        <option value="">- Nie przypisuj zgody -</option>
                         @foreach($wkzConsents as $consent)
                             <option value="{{ $consent['id'] }}"
                                 {{ old('wkz_consent_id', $finding['wkz_consent_id'] ?? '') == $consent['id'] ? 'selected' : '' }}>
@@ -194,7 +194,7 @@
                     🧭 Przypisz do poszukiwania <span class="text-gray-500 font-normal">(opcjonalne)</span>
                 </label>
                 <div id="expeditionBody"></div>
-                <p class="text-xs text-amber-300/80 mt-1 ml-1">Kierownik poszukiwania zobaczy to znalezisko — także jeśli oznaczysz je jako prywatne.</p>
+                <p class="text-xs text-amber-300/80 mt-1 ml-1">Kierownik poszukiwania zobaczy to znalezisko - także jeśli oznaczysz je jako prywatne.</p>
             </div>
 
             {{-- Photos --}}
@@ -322,7 +322,7 @@
     (function loadExpeditions() {
         const section = document.getElementById('expeditionSection');
         const body = document.getElementById('expeditionBody');
-        // scope=live: expeditions the user leads or joined — the same set the
+        // scope=live: expeditions the user leads or joined - the same set the
         // API accepts in expedition_id validation. Follows pagination so the
         // select isn't cut off at the first 20 expeditions.
         const fetchPage = (page, acc) => fetch("{{ route('expeditions.api') }}?scope=live&page=" + page)
@@ -349,7 +349,7 @@
                 select.className = 'input-field';
                 const def = document.createElement('option');
                 def.value = '';
-                def.textContent = '— Nie przypisuj —';
+                def.textContent = '- Nie przypisuj -';
                 select.appendChild(def);
                 items.forEach(e => {
                     const opt = document.createElement('option');
@@ -373,7 +373,7 @@
     const privacyIdsContainer = document.getElementById('privacyIdsContainer');
     const photosPrivateContainer = document.getElementById('photosPrivateContainer');
     let selectedPhotos = [];  // newly added File[]
-    let selectedPrivate = []; // bool[] — równolegle do selectedPhotos
+    let selectedPrivate = []; // bool[] - równolegle do selectedPhotos
 
     // Przebudowuje make_private/make_public dla istniejących zdjęć (tylko gdy zmienione względem stanu początkowego).
     function syncExistingPrivacy() {

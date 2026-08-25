@@ -140,7 +140,7 @@
 
             @if(!empty($finding['is_private']))
                 <span class="inline-flex items-center gap-1 self-start px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-xs font-semibold">
-                    🙈 Prywatne — widoczne tylko dla Ciebie
+                    🙈 Prywatne - widoczne tylko dla Ciebie
                 </span>
             @endif
 
@@ -357,14 +357,14 @@
                 <span class="text-2xl">📄</span>
                 <span class="flex-1 min-w-0">
                     <span class="block text-sm font-semibold text-white">Sprawozdanie</span>
-                    <span class="block text-xs text-gray-500">Dokument PDF — widoczny tylko dla Ciebie</span>
+                    <span class="block text-xs text-gray-500">Dokument PDF - widoczny tylko dla Ciebie</span>
                 </span>
                 <span class="text-amber-400 text-sm font-semibold whitespace-nowrap">Pobierz</span>
             </a>
             @endif
 
             {{-- Podgląd na mapie aplikacji: własne znaleziska w dokładnym miejscu,
-                 cudze — w środku miejscowości, tak jak pokazuje je mapa. --}}
+                 cudze - w środku miejscowości, tak jak pokazuje je mapa. --}}
             @php
                 $canViewExact = ! empty($finding['can_view_exact_location']) && isset($finding['latitude'], $finding['longitude']);
                 $mapLat = $canViewExact ? $finding['latitude'] : ($finding['city_lat'] ?? null);

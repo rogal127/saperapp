@@ -99,7 +99,7 @@
                 '<h3 class="font-bold text-white text-base flex-1 min-w-0 truncate">' + (e.name || '') + '</h3>' +
                 phaseBadge(e.phase) +
             '</div>' +
-            '<p class="text-xs text-gray-400 mt-1">📅 ' + (e.starts_at || '') + ' — ' + (e.ends_at || '') + '</p>' +
+            '<p class="text-xs text-gray-400 mt-1">📅 ' + (e.starts_at || '') + ' - ' + (e.ends_at || '') + '</p>' +
             '<div class="flex items-center gap-3 mt-2 text-xs text-gray-500">' +
                 '<span>👥 ' + (e.participants_count ?? 0) + '</span>' +
                 '<span>⚒️ ' + (e.findings_count ?? 0) + '</span>' +
@@ -162,7 +162,7 @@
                 const moreBtn = pane.querySelector('[data-more]');
                 if (moreBtn) {
                     moreBtn.disabled = false;
-                    moreBtn.textContent = 'Błąd — spróbuj ponownie';
+                    moreBtn.textContent = 'Błąd - spróbuj ponownie';
                 }
             });
     }
