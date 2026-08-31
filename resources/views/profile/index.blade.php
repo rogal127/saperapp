@@ -85,6 +85,7 @@
     .finding-card[data-type="archaeological_monument"] { border-left-color: #ef4444; }
     .finding-card[data-type="monument"] { border-left-color: #facc15; }
     .finding-card[data-type="non_monument"] { border-left-color: #22c55e; }
+    .finding-card[data-type="awaiting_wkz_classification"] { border-left-color: #3b82f6; }
     .finding-thumb {
         width: 40px; height: 40px; border-radius: 0.5rem;
         object-fit: contain; flex-shrink: 0; background: #323248;

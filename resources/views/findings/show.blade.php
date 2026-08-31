@@ -167,6 +167,7 @@
                     'archaeological_monument' => ['label' => 'Zabytek archeologiczny', 'style' => 'background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)'],
                     'monument'                => ['label' => 'Zabytek',                'style' => 'background:rgba(250,204,21,0.15);color:#fde047;border:1px solid rgba(250,204,21,0.3)'],
                     'non_monument'            => ['label' => 'Przedmiot niezabytkowy', 'style' => 'background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3)'],
+                    'awaiting_wkz_classification' => ['label' => 'Oczekuje na klasyfikację z WKZ', 'style' => 'background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3)'],
                     default => null,
                 };
             @endphp

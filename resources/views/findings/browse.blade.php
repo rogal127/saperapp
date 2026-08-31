@@ -369,6 +369,7 @@
             archaeological_monument: { label: 'Zabytek archeologiczny', bg: 'rgba(239,68,68,0.15)', color: '#f87171' },
             monument: { label: 'Zabytek', bg: 'rgba(250,204,21,0.15)', color: '#fde047' },
             non_monument: { label: 'Przedmiot niezabytkowy', bg: 'rgba(34,197,94,0.15)', color: '#4ade80' },
+            awaiting_wkz_classification: { label: 'Oczekuje na klasyfikację z WKZ', bg: 'rgba(59,130,246,0.15)', color: '#60a5fa' },
         };
         const badge = map[type];
         if (!badge) { return ''; }

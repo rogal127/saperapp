@@ -311,6 +311,7 @@
     .pin-finding-card[data-type="archaeological_monument"] { border-left-color: #ef4444; }
     .pin-finding-card[data-type="monument"]                { border-left-color: #facc15; }
     .pin-finding-card[data-type="non_monument"]            { border-left-color: #22c55e; }
+    .pin-finding-card[data-type="awaiting_wkz_classification"] { border-left-color: #3b82f6; }
     .pin-finding-name { font-weight: 700; font-size: 0.85rem; color: #fff; }
     .pin-finding-meta { font-size: 0.72rem; color: #9ca3af; margin-top: 2px; }
     .pin-finding-depth { font-size: 0.75rem; color: #f59e0b; font-weight: 600; margin-top: 3px; }

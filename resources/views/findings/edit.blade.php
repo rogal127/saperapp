@@ -141,6 +141,12 @@
                         <span class="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-green-500"></span>
                         <span class="text-sm font-medium text-gray-200">Przedmiot niezabytkowy</span>
                     </label>
+                    <label class="finding-type-btn flex items-center gap-3 card cursor-pointer border-2 transition-all {{ $currentType === 'awaiting_wkz_classification' ? 'border-blue-500 bg-blue-500/10' : 'border-transparent' }}"
+                        data-active-border="border-blue-500" data-active-bg="bg-blue-500/10">
+                        <input type="radio" name="type" value="awaiting_wkz_classification" class="hidden" {{ $currentType === 'awaiting_wkz_classification' ? 'checked' : '' }}>
+                        <span class="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-blue-500"></span>
+                        <span class="text-sm font-medium text-gray-200">Oczekuje na klasyfikację z WKZ</span>
+                    </label>
                 </div>
             </div>
 
