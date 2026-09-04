@@ -114,6 +114,7 @@
                     </span>
                     <input type="checkbox" name="is_private" value="1" class="w-5 h-5 accent-amber-500 shrink-0" {{ old('is_private', ($finding['is_private'] ?? false)) ? 'checked' : '' }}>
                 </label>
+                <p id="privacyForcedHint" class="hidden text-xs text-teal-400 mt-1 ml-1">Kierownik tego poszukiwania ustawił znaleziska uczestników jako prywatne. Tylko on może zmienić widoczność.</p>
             </div>
 
             {{-- Finding type --}}
@@ -364,8 +365,28 @@
                     if (CURRENT_EXPEDITION_ID === e.id) { opt.selected = true; }
                     select.appendChild(opt);
                 });
+                // When the chosen expedition keeps participants' findings private
+                // the author has no say over the flag: it stays as the leader left
+                // it for the current expedition, and locks on when moving into one.
+                const checkbox = document.querySelector('input[name="is_private"]');
+                const hint = document.getElementById('privacyForcedHint');
+                const applyExpeditionPrivacy = () => {
+                    if (!checkbox || !hint) { return; }
+                    const selectedId = Number(select.value);
+                    const expedition = items.find(e => e.id === selectedId);
+                    const forced = !!(expedition && expedition.findings_private && !expedition.is_leader);
+                    if (forced) {
+                        if (selectedId !== CURRENT_EXPEDITION_ID) { checkbox.checked = true; }
+                        checkbox.disabled = true;
+                    } else if (checkbox.disabled) {
+                        checkbox.disabled = false;
+                    }
+                    hint.classList.toggle('hidden', !forced);
+                };
+                select.addEventListener('change', applyExpeditionPrivacy);
                 body.appendChild(select);
                 section.classList.remove('hidden');
+                applyExpeditionPrivacy();
             })
             .catch(() => {});
     })();

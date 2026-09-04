@@ -423,8 +423,19 @@
             '<p class="text-xs text-gray-500 mt-0.5">📅 ' + (f.found_at || '') + '</p>' +
             (f.finder ? '<p class="text-xs text-amber-400 mt-0.5">' + f.finder.name + '</p>' : '') +
             '</div></a>' +
-            '<button class="text-xs text-red-400 font-semibold px-2 flex-shrink-0" data-remove-finding="' + f.id + '">Usuń</button>' +
+            '<div class="flex flex-col items-end gap-1 flex-shrink-0">' +
+            privacyToggle(f) +
+            '<button class="text-xs text-red-400 font-semibold px-2" data-remove-finding="' + f.id + '">Usuń</button>' +
+            '</div>' +
             '</div>';
+    }
+
+    // Leader-only switch shown when the expedition keeps participants' findings
+    // private: the author cannot change the flag, so the leader does it here.
+    function privacyToggle(f) {
+        if (!EXP.findings_private || f.is_mine) { return ''; }
+        return '<button class="text-xs text-teal-400 font-semibold px-2" data-toggle-privacy="' + f.id + '" data-private="' + (f.is_private ? '1' : '0') + '">' +
+            (f.is_private ? 'Ustaw publiczne' : 'Ustaw prywatne') + '</button>';
     }
 
     function loadFindings() {
@@ -437,23 +448,50 @@
                     list.innerHTML = '<div class="flex flex-col items-center justify-center py-10 text-gray-500"><div class="text-4xl mb-2">⚒️</div><p class="text-sm">Uczestnicy nie przypięli jeszcze znalezisk.</p></div>';
                     return;
                 }
-                list.innerHTML = items.map(findingCard).join('');
-                list.querySelectorAll('[data-remove-finding]').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        if (!confirm('Usunąć to znalezisko z poszukiwania? Samo znalezisko zostanie zachowane w aplikacji.')) { return; }
-                        const findingId = btn.dataset.removeFinding;
-                        btn.disabled = true;
-                        fetch("/api/expeditions/" + EXP_ID + "/findings/" + findingId, { method: 'DELETE', headers: jsonHeaders })
-                            .then(async r => ({ ok: r.ok, data: await r.json().catch(() => ({})) }))
-                            .then(({ ok, data }) => {
-                                if (!ok) { alert(data.message || 'Błąd.'); btn.disabled = false; return; }
-                                btn.closest('.card').remove();
-                            })
-                            .catch(() => { alert('Błąd.'); btn.disabled = false; });
-                    });
-                });
+                renderFindings(list, items);
             })
             .catch(() => { list.innerHTML = '<p class="text-red-400 text-sm text-center py-6">Błąd ładowania.</p>'; });
+    }
+
+    function renderFindings(list, items) {
+        list.innerHTML = items.map(findingCard).join('');
+
+        list.querySelectorAll('[data-toggle-privacy]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const findingId = btn.dataset.togglePrivacy;
+                const makePrivate = btn.dataset.private !== '1';
+                btn.disabled = true;
+                fetch("/api/expeditions/" + EXP_ID + "/findings/" + findingId + "/privacy", {
+                    method: 'PATCH',
+                    headers: jsonHeaders,
+                    body: JSON.stringify({ is_private: makePrivate }),
+                })
+                    .then(async r => ({ ok: r.ok, data: await r.json().catch(() => ({})) }))
+                    .then(({ ok, data }) => {
+                        if (!ok) { alert(data.message || 'Błąd.'); btn.disabled = false; return; }
+                        const updated = data.data || data;
+                        const item = items.find(i => String(i.id) === String(findingId));
+                        if (item) { item.is_private = !!updated.is_private; }
+                        renderFindings(list, items);
+                    })
+                    .catch(() => { alert('Błąd.'); btn.disabled = false; });
+            });
+        });
+
+        list.querySelectorAll('[data-remove-finding]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!confirm('Usunąć to znalezisko z poszukiwania? Samo znalezisko zostanie zachowane w aplikacji.')) { return; }
+                const findingId = btn.dataset.removeFinding;
+                btn.disabled = true;
+                fetch("/api/expeditions/" + EXP_ID + "/findings/" + findingId, { method: 'DELETE', headers: jsonHeaders })
+                    .then(async r => ({ ok: r.ok, data: await r.json().catch(() => ({})) }))
+                    .then(({ ok, data }) => {
+                        if (!ok) { alert(data.message || 'Błąd.'); btn.disabled = false; return; }
+                        btn.closest('.card').remove();
+                    })
+                    .catch(() => { alert('Błąd.'); btn.disabled = false; });
+            });
+        });
     }
 
     // --- Export findings to PDF (leader) ---

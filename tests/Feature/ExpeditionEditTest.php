@@ -80,6 +80,37 @@ it('forwards edited details to the api', function () {
         && ! array_key_exists('area', $request->data()));
 });
 
+it('forwards the private findings switch to the api', function () {
+    Http::fake(['*/expeditions/5' => Http::response(['data' => ['id' => 5]], 200)]);
+
+    $this->withSession(leaderSession())->putJson('/api/expeditions/5', [
+        'name' => 'Rajd nad Wisłą',
+        'findings_private' => true,
+    ])->assertOk();
+
+    Http::assertSent(fn ($request) => $request->method() === 'PUT' && $request['findings_private'] === true);
+});
+
+it('shows the private findings switch checked on the edit form', function () {
+    $payload = expeditionPayload();
+    $payload['data']['findings_private'] = true;
+    Http::fake(['*/expeditions/5' => Http::response($payload, 200)]);
+
+    $this->withSession(leaderSession())->get('/expeditions/5/edit')
+        ->assertOk()
+        ->assertSee('name="findings_private" value="1" class="w-5 h-5 accent-amber-500 shrink-0" checked', false);
+});
+
+it('forwards a finding privacy change to the api', function () {
+    Http::fake(['*/expeditions/5/findings/9/privacy' => Http::response(['data' => ['id' => 9, 'is_private' => false]], 200)]);
+
+    $this->withSession(leaderSession())->patchJson('/api/expeditions/5/findings/9/privacy', ['is_private' => false])
+        ->assertOk()
+        ->assertJsonPath('data.is_private', false);
+
+    Http::assertSent(fn ($request) => $request->method() === 'PATCH' && $request['is_private'] === false);
+});
+
 it('decodes a redrawn area before forwarding it', function () {
     Http::fake(['*/expeditions/5' => Http::response(['data' => ['id' => 5]], 200)]);
 

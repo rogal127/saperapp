@@ -266,6 +266,7 @@
                         </span>
                         <input type="checkbox" name="is_private" value="1" class="w-5 h-5 accent-amber-500 shrink-0" {{ old('is_private') ? 'checked' : '' }}>
                     </label>
+                    <p id="privacyForcedHint" class="hidden text-xs text-teal-400 mt-1 ml-1">Kierownik tego poszukiwania ustawił znaleziska uczestników jako prywatne. Tylko on może zmienić widoczność.</p>
                 </div>
 
                 {{-- Photos --}}
@@ -583,10 +584,29 @@
 
     // Auto-fill the expedition select only when the pin actually falls inside
     // one of the user's active expedition areas - never guess otherwise.
+    // When the chosen expedition keeps participants' findings private the
+    // author has no say: the flag is locked on and the API enforces it anyway.
+    function applyExpeditionPrivacy() {
+        const checkbox = document.querySelector('input[name="is_private"]');
+        const hint = document.getElementById('privacyForcedHint');
+        if (!checkbox || !hint) { return; }
+        const selectedId = expeditionSelect ? Number(expeditionSelect.value) : 0;
+        const expedition = expeditionCandidates.find(e => e.id === selectedId);
+        const forced = !!(expedition && expedition.findings_private && !expedition.is_leader);
+        if (forced) {
+            checkbox.checked = true;
+            checkbox.disabled = true;
+        } else if (checkbox.disabled) {
+            checkbox.disabled = false;
+        }
+        hint.classList.toggle('hidden', !forced);
+    }
+
     function autoSelectExpeditionForLocation(lat, lng) {
         if (!expeditionSelect) { pendingLocation = { lat, lng }; return; }
         const match = expeditionCandidates.find(e => areaContainsPoint(e.area, lat, lng));
         expeditionSelect.value = match ? String(match.id) : '';
+        applyExpeditionPrivacy();
     }
 
     (function loadExpeditions() {
@@ -627,9 +647,11 @@
                     if (OLD_EXPEDITION_ID === e.id) { opt.selected = true; }
                     select.appendChild(opt);
                 });
+                select.addEventListener('change', applyExpeditionPrivacy);
                 body.appendChild(select);
                 section.classList.remove('hidden');
                 expeditionSelect = select;
+                applyExpeditionPrivacy();
 
                 if (!OLD_EXPEDITION_ID && pendingLocation) {
                     autoSelectExpeditionForLocation(pendingLocation.lat, pendingLocation.lng);

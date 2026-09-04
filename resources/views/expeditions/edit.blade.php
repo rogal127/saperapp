@@ -85,6 +85,14 @@
                     </div>
                 </div>
 
+                <label class="flex items-center justify-between gap-3 card cursor-pointer">
+                    <span class="min-w-0">
+                        <span class="block text-sm font-semibold text-gray-300">🔒 Znaleziska uczestników prywatne</span>
+                        <span class="block text-xs text-gray-500 mt-0.5">Znaleziska przypięte do poszukiwania będą zawsze prywatne. Tylko Ty możesz później ustawić je jako publiczne.</span>
+                    </span>
+                    <input type="checkbox" name="findings_private" value="1" class="w-5 h-5 accent-amber-500 shrink-0" {{ ! empty($expedition['findings_private']) ? 'checked' : '' }}>
+                </label>
+
                 <div>
                     <label class="block text-sm font-semibold text-gray-300 mb-1.5 ml-1">🚦 Status</label>
                     <div class="flex flex-col gap-2">
@@ -157,6 +165,7 @@
             starts_at: form.get('starts_at'),
             ends_at: form.get('ends_at'),
             visibility: form.get('visibility'),
+            findings_private: form.get('findings_private') === '1',
             status: form.get('status'),
         };
 

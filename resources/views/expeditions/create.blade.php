@@ -74,6 +74,14 @@
 
                 <label class="flex items-center justify-between gap-3 card cursor-pointer">
                     <span class="min-w-0">
+                        <span class="block text-sm font-semibold text-gray-300">🔒 Znaleziska uczestników prywatne</span>
+                        <span class="block text-xs text-gray-500 mt-0.5">Znaleziska przypięte do poszukiwania będą zawsze prywatne. Tylko Ty możesz później ustawić je jako publiczne.</span>
+                    </span>
+                    <input type="checkbox" name="findings_private" value="1" class="w-5 h-5 accent-amber-500 shrink-0" {{ old('findings_private') ? 'checked' : '' }}>
+                </label>
+
+                <label class="flex items-center justify-between gap-3 card cursor-pointer">
+                    <span class="min-w-0">
                         <span class="block text-sm font-semibold text-gray-300">📣 Opublikuj od razu</span>
                         <span class="block text-xs text-gray-500 mt-0.5">Inaczej zapisze się jako szkic (draft).</span>
                     </span>

@@ -66,6 +66,7 @@ Route::middleware('api.auth')->group(function () {
     Route::post('/api/expeditions/join', [ExpeditionController::class, 'joinByCode'])->name('expeditions.join-code');
     Route::get('/api/expeditions/{id}/findings', [ExpeditionController::class, 'findings'])->name('expeditions.findings');
     Route::delete('/api/expeditions/{id}/findings/{findingId}', [ExpeditionController::class, 'removeFinding'])->name('expeditions.findings.remove');
+    Route::patch('/api/expeditions/{id}/findings/{findingId}/privacy', [ExpeditionController::class, 'updateFindingPrivacy'])->name('expeditions.findings.privacy');
     Route::post('/api/expeditions/{id}/findings-export', [ExpeditionController::class, 'startFindingsExport'])->name('expeditions.findings-export.start');
     Route::get('/api/expeditions/{id}/findings-export/{exportId}/progress', [ExpeditionController::class, 'findingsExportProgress'])->name('expeditions.findings-export.progress');
     Route::get('/api/expeditions/{id}/findings-export/{exportId}/download', [ExpeditionController::class, 'findingsExportDownload'])->name('expeditions.findings-export.download');

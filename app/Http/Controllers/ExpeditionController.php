@@ -161,6 +161,7 @@ class ExpeditionController extends Controller
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after_or_equal:starts_at'],
             'visibility' => ['required', 'in:private,public'],
+            'findings_private' => ['nullable', 'boolean'],
             'publish' => ['nullable', 'boolean'],
         ]);
 
@@ -180,6 +181,7 @@ class ExpeditionController extends Controller
                     'starts_at' => $request->starts_at,
                     'ends_at' => $request->ends_at,
                     'visibility' => $request->visibility,
+                    'findings_private' => $request->boolean('findings_private'),
                     'publish' => $request->boolean('publish'),
                 ]);
         } catch (ConnectionException $e) {
@@ -410,6 +412,10 @@ class ExpeditionController extends Controller
     {
         $payload = $request->only('name', 'description', 'starts_at', 'ends_at', 'visibility', 'status');
 
+        if ($request->has('findings_private')) {
+            $payload['findings_private'] = $request->boolean('findings_private');
+        }
+
         if ($request->filled('area')) {
             // The edit screen posts the polygon as a JSON string (same as the
             // create form); accept a decoded array too.
@@ -530,6 +536,20 @@ class ExpeditionController extends Controller
     {
         $response = Http::withToken($this->apiToken($request))
             ->delete($this->base()."/expeditions/{$id}/findings/{$findingId}");
+
+        return $this->passthrough($response);
+    }
+
+    /**
+     * Leader-only switch of the private flag on a finding pinned to an
+     * expedition that keeps participants' findings private.
+     */
+    public function updateFindingPrivacy(Request $request, int $id, int $findingId)
+    {
+        $response = Http::withToken($this->apiToken($request))
+            ->patch($this->base()."/expeditions/{$id}/findings/{$findingId}/privacy", [
+                'is_private' => $request->boolean('is_private'),
+            ]);
 
         return $this->passthrough($response);
     }
