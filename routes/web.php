@@ -129,6 +129,7 @@ Route::middleware('api.auth')->group(function () {
 Route::get('/ustawienia-cookies', fn () => view('cookies.settings'))->name('cookies.settings');
 Route::get('/polityka-prywatnosci', fn () => response()->file(public_path('polityka-prywatnosci.pdf')))->name('legal.privacy');
 Route::get('/regulamin', fn () => response()->file(public_path('regulamin.pdf')))->name('legal.terms');
+Route::get('/usuwanie-konta', fn () => view('legal.account-deletion'))->name('legal.account-deletion');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->name('login');
